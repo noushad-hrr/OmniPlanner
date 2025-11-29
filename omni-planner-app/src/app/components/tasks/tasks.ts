@@ -38,9 +38,9 @@ export class TasksComponent implements OnInit, OnDestroy {
     completionRate: 0,
     averageDuration: 0
   };
-  
+
   private destroy$ = new Subject<void>();
-  
+
   viewMode: 'list' | 'kanban' | 'periodic-tasks' | 'calendar' | 'analytics' = 'list';
   showAddTaskModal: boolean = false;
   showEditTaskModal: boolean = false;
@@ -69,14 +69,14 @@ export class TasksComponent implements OnInit, OnDestroy {
   isStatsPanelCollapsed: boolean = false;
   targetPeriodicTaskId: number | null = null; // Store target periodic task ID for navigation
   controlBarTheme: string = 'dark'; // Control bar theme from settings
-  
+
   // Store original IDs when editing task (to preserve values on update)
   originalTaskIds: {
     priority_level_id: number | null;
     status_id: number | null;
     url_ids: number[];
   } | null = null;
-  
+
   // Filter state
   currentFilters: FilterState = {
     category: [],
@@ -87,14 +87,14 @@ export class TasksComponent implements OnInit, OnDestroy {
     endDate: '',
     searchQuery: ''
   };
-  
+
   filterOptions: FilterOptions = {
     categories: [],
     statuses: [],
     priorities: [],
     dateRanges: []
   };
-  
+
   newTask: Partial<Task> = {
     title: '',
     description: '',
@@ -113,6 +113,22 @@ export class TasksComponent implements OnInit, OnDestroy {
     completed: false,
     subtasks: []
   };
+
+  // Periodic Task Properties
+  showAddPeriodicTaskModal: boolean = false;
+  showEditPeriodicTaskModal: boolean = false;
+  newPeriodicTask: any = {};
+  monthlyRepeatType: 'day' | 'week' = 'day';
+  weekDays = [
+    { label: 'Sun', value: 0 },
+    { label: 'Mon', value: 1 },
+    { label: 'Tue', value: 2 },
+    { label: 'Wed', value: 3 },
+    { label: 'Thu', value: 4 },
+    { label: 'Fri', value: 5 },
+    { label: 'Sat', value: 6 }
+  ];
+
 
   // Form validation errors
   titleError: string = '';
@@ -271,10 +287,10 @@ export class TasksComponent implements OnInit, OnDestroy {
   // Get table columns based on view mode
   get tableColumns(): TableColumn[] {
     const columns = [...this.baseTableColumns];
-    
+
     // Find index where to insert date column
     const statusIndex = columns.findIndex(c => c.key === 'status');
-    
+
     if (this.viewMode === 'list') {
       // For Tasks: Only Date column (renamed from SD), no End Date
       columns.splice(statusIndex + 1, 0, {
@@ -316,7 +332,7 @@ export class TasksComponent implements OnInit, OnDestroy {
         type: 'date'
       });
     }
-    
+
     return columns;
   }
 
@@ -411,7 +427,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     private categoryMasterService: CategoryMasterService,
     private notesService: NotesService,
     private toaster: ToasterService
-  ) {}
+  ) { }
 
   // Get the appropriate service based on view mode
   private getService(): TaskService | PeriodicTaskService {
@@ -428,7 +444,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     this.loadControlBarTheme();
     this.setupThemeListener();
   }
-  
+
   loadControlBarTheme(): void {
     this.settingsService.getUserPreferences().subscribe({
       next: (prefs) => {
@@ -452,7 +468,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       }
     });
   }
-  
+
   setupThemeListener(): void {
     window.addEventListener('control-bar-theme-changed', ((event: CustomEvent) => {
       if (event.detail && event.detail.theme) {
@@ -554,7 +570,7 @@ export class TasksComponent implements OnInit, OnDestroy {
   // Helper method to check if task is overdue
   private isTaskOverdue(task: Task): boolean {
     if (task.completed) return false;
-    
+
     if (this.viewMode === 'periodic-tasks') {
       const periodicTask = task as any;
       const endDate = periodicTask.endDate;
@@ -578,31 +594,31 @@ export class TasksComponent implements OnInit, OnDestroy {
   // Helper method to check if periodic task matches date filter
   private periodicTaskMatchesDateFilter(task: Task, startDate?: string, endDate?: string): boolean {
     if (this.viewMode !== 'periodic-tasks') return true;
-    
+
     const periodicTask = task as any;
     const taskStartDate = periodicTask.startDate;
     const taskEndDate = periodicTask.endDate;
-    
+
     // If both task dates are null, accept it
     if (!taskStartDate && !taskEndDate) return true;
-    
+
     // If filter has no dates, accept all
     if (!startDate && !endDate) return true;
-    
+
     // Check if task overlaps with filter date range
     // Task overlaps if: (taskStartDate <= filterEndDate OR null) AND (taskEndDate >= filterStartDate OR null)
     const filterStart = startDate ? new Date(startDate) : null;
     const filterEnd = endDate ? new Date(endDate) : null;
     const taskStart = taskStartDate ? new Date(taskStartDate) : null;
     const taskEnd = taskEndDate ? new Date(taskEndDate) : null;
-    
+
     if (filterStart && taskEnd) {
       if (taskEnd < filterStart) return false;
     }
     if (filterEnd && taskStart) {
       if (taskStart > filterEnd) return false;
     }
-    
+
     return true;
   }
 
@@ -611,7 +627,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     const allTasks = this.tasks;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const todaysTasks = allTasks.filter(task => {
       if (this.viewMode === 'periodic-tasks') {
         // For periodic tasks, check if today falls within startDate and endDate
@@ -633,11 +649,11 @@ export class TasksComponent implements OnInit, OnDestroy {
         return taskDateObj.getTime() === today.getTime();
       }
     });
-    
+
     const total = todaysTasks.length;
     const completed = todaysTasks.filter(t => t.completed === true).length;
     const pending = total - completed;
-    
+
     return { total, completed, pending };
   }
 
@@ -648,7 +664,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     const completed = allTasks.filter(t => t.completed === true).length;
     const pending = total - completed;
     const overdue = allTasks.filter(t => this.isTaskOverdue(t)).length;
-    
+
     return { total, completed, pending, overdue };
   }
 
@@ -659,7 +675,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     const completed = filtered.filter(t => t.completed === true).length;
     const pending = total - completed;
     const overdue = filtered.filter(t => this.isTaskOverdue(t)).length;
-    
+
     return { total, completed, pending, overdue };
   }
 
@@ -675,10 +691,10 @@ export class TasksComponent implements OnInit, OnDestroy {
   initializeFilterOptions(): void {
     // Use category masters - no fallback
     const categoryNames = this.categoryMasters.map(c => c.category);
-    
+
     // Use status masters - no fallback
     const statusNames = this.statuses.map(s => s.status);
-    
+
     // Use priority masters - no fallback
     const priorityNames = this.priorities.map(p => p.priority);
 
@@ -711,14 +727,14 @@ export class TasksComponent implements OnInit, OnDestroy {
 
   filterTasks(): void {
     // Handle array or string values for multi-select
-    const categoryArray = Array.isArray(this.currentFilters.category) 
-      ? this.currentFilters.category 
+    const categoryArray = Array.isArray(this.currentFilters.category)
+      ? this.currentFilters.category
       : (this.currentFilters.category !== 'all' ? [this.currentFilters.category] : []);
-    const statusArray = Array.isArray(this.currentFilters.status) 
-      ? this.currentFilters.status 
+    const statusArray = Array.isArray(this.currentFilters.status)
+      ? this.currentFilters.status
       : (this.currentFilters.status !== 'all' ? [this.currentFilters.status] : []);
-    const priorityArray = Array.isArray(this.currentFilters.priority) 
-      ? this.currentFilters.priority 
+    const priorityArray = Array.isArray(this.currentFilters.priority)
+      ? this.currentFilters.priority
       : (this.currentFilters.priority !== 'all' ? [this.currentFilters.priority] : []);
 
     const filter: TaskFilter = {
@@ -775,12 +791,12 @@ export class TasksComponent implements OnInit, OnDestroy {
   scrollToPeriodicTask(periodicTaskId: number): void {
     // Try to find by main task ID first
     let element = document.querySelector(`[data-task-id="${periodicTaskId}"]`);
-    
+
     // If not found, try to find by subtask ID
     if (!element) {
       element = document.querySelector(`[data-subtask-id="${periodicTaskId}"]`);
     }
-    
+
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
       // Add highlight class temporarily
@@ -789,7 +805,7 @@ export class TasksComponent implements OnInit, OnDestroy {
         element?.classList.remove('highlight-periodic-task');
       }, 2000);
     }
-    
+
     // Clear target after scrolling
     this.targetPeriodicTaskId = null;
   }
@@ -807,31 +823,31 @@ export class TasksComponent implements OnInit, OnDestroy {
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     const todayString = `${year}-${month}-${day}`;
-    
+
     // Get default status (is_default = true, or first available)
     // Handle boolean true and truthy values (in case API returns different types)
-    const defaultStatus = this.statuses.find(s => s.is_default === true || Boolean(s.is_default)) || 
+    const defaultStatus = this.statuses.find(s => s.is_default === true || Boolean(s.is_default)) ||
       (this.statuses.length > 0 ? this.statuses[0] : null);
-    
+
     // Get default priority (is_default = true, or first available)
     // Handle boolean true and truthy values (in case API returns different types)
-    const defaultPriority = this.priorities.find(p => p.is_default === true || Boolean(p.is_default)) || 
+    const defaultPriority = this.priorities.find(p => p.is_default === true || Boolean(p.is_default)) ||
       (this.priorities.length > 0 ? this.priorities[0] : null);
-    
+
     // Create objects that match EXACTLY what the dropdown options use
     // The dropdown uses: [ngValue]="{ name: status.status, color: status.color }"
     // We need to create the exact same object structure with the same property names
     // Using the exact same format ensures Angular's [ngValue] comparison works correctly
-    const statusValue = defaultStatus ? { 
-      name: defaultStatus.status as any, 
-      color: defaultStatus.color 
+    const statusValue = defaultStatus ? {
+      name: defaultStatus.status as any,
+      color: defaultStatus.color
     } : null;
-    
-    const priorityValue = defaultPriority ? { 
-      name: defaultPriority.priority as any, 
-      color: defaultPriority.color 
+
+    const priorityValue = defaultPriority ? {
+      name: defaultPriority.priority as any,
+      color: defaultPriority.color
     } : null;
-    
+
     // Debug: Log to verify defaults are being found and the object structure
     if (defaultStatus) {
       console.log('Default status found:', defaultStatus.status, 'is_default:', defaultStatus.is_default);
@@ -841,7 +857,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       console.log('Default priority found:', defaultPriority.priority, 'is_default:', defaultPriority.is_default);
       console.log('Priority value object:', priorityValue);
     }
-    
+
     this.newTask = {
       title: '',
       description: '',
@@ -1039,6 +1055,168 @@ export class TasksComponent implements OnInit, OnDestroy {
     return isValid;
   }
 
+  // Periodic Task Methods
+  onAddPeriodicTaskClicked(): void {
+    this.initializePeriodicTaskDefaults();
+    this.showAddPeriodicTaskModal = true;
+  }
+
+  initializePeriodicTaskDefaults(): void {
+    const today = new Date().toISOString().split('T')[0];
+    const defaultStatus = this.statuses.find(s => s.is_default === true || Boolean(s.is_default)) ||
+      (this.statuses.length > 0 ? this.statuses[0] : null);
+    const defaultPriority = this.priorities.find(p => p.is_default === true || Boolean(p.is_default)) ||
+      (this.priorities.length > 0 ? this.priorities[0] : null);
+
+    this.newPeriodicTask = {
+      title: '',
+      description: '',
+      startDate: today,
+      endDate: null,
+      startTime: '09:00',
+      endTime: '17:00',
+      recurrence_pattern: 'daily',
+      recurrence_interval: 1,
+      recurrence_days: [],
+      recurrence_month_day: 1,
+      recurrence_week_of_month: 1,
+      recurrence_day_of_week: 1,
+      recurrence_month: 1,
+      recurrence_end_type: 'never',
+      recurrence_end_date: null,
+      recurrence_occurrences: null,
+      priorityLevel: defaultPriority ? { name: defaultPriority.priority as any, color: defaultPriority.color } : null,
+      status: defaultStatus ? { name: defaultStatus.status as any, color: defaultStatus.color } : null,
+      category: null,
+      estimatedHours: null,
+      remarks: '',
+      important: false
+    };
+  }
+
+  closePeriodicTaskModal(): void {
+    this.showAddPeriodicTaskModal = false;
+    this.showEditPeriodicTaskModal = false;
+    this.newPeriodicTask = {};
+  }
+
+  savePeriodicTask(): void {
+    // Validate
+    if (!this.newPeriodicTask.title || !this.newPeriodicTask.title.trim()) {
+      this.toaster.error('Title is required');
+      return;
+    }
+
+    // Get IDs from master data
+    const categoryId = this.categoryMasters.find(c => c.category === this.newPeriodicTask.category?.name)?.id || null;
+    const priorityId = this.priorities.find(p => p.priority === this.newPeriodicTask.priorityLevel?.name)?.id || null;
+    const statusId = this.statuses.find(s => s.status === this.newPeriodicTask.status?.name)?.id || null;
+
+    const taskData = {
+      title: this.newPeriodicTask.title,
+      description: this.newPeriodicTask.description || null,
+      priority_level_id: priorityId,
+      status_id: statusId,
+      category_id: categoryId,
+      startDate: this.newPeriodicTask.startDate,
+      endDate: this.newPeriodicTask.endDate,
+      startTime: this.newPeriodicTask.startTime,
+      endTime: this.newPeriodicTask.endTime,
+      recurrence_pattern: this.newPeriodicTask.recurrence_pattern,
+      recurrence_interval: this.newPeriodicTask.recurrence_interval,
+      recurrence_days: this.newPeriodicTask.recurrence_days,
+      recurrence_month_day: this.newPeriodicTask.recurrence_month_day,
+      recurrence_week_of_month: this.newPeriodicTask.recurrence_week_of_month,
+      recurrence_day_of_week: this.newPeriodicTask.recurrence_day_of_week,
+      recurrence_month: this.newPeriodicTask.recurrence_month,
+      recurrence_end_type: this.newPeriodicTask.recurrence_end_type,
+      recurrence_end_date: this.newPeriodicTask.recurrence_end_date,
+      recurrence_occurrences: this.newPeriodicTask.recurrence_occurrences,
+      estimatedHours: this.newPeriodicTask.estimatedHours,
+      priorityOrder: null,
+      remarks: this.newPeriodicTask.remarks,
+      important: this.newPeriodicTask.important
+    };
+
+    if (this.newPeriodicTask.id) {
+      (taskData as any).id = this.newPeriodicTask.id;
+      this.periodicTaskService.updateTask(this.newPeriodicTask.id, taskData).subscribe({
+        next: (task) => {
+          this.toaster.success('Periodic task updated successfully');
+          this.closePeriodicTaskModal();
+          this.periodicTaskService.refreshTasks();
+        },
+        error: (error) => {
+          this.toaster.error(error.message || 'Failed to update periodic task');
+        }
+      });
+    } else {
+      this.periodicTaskService.createTask(taskData).subscribe({
+        next: (task) => {
+          this.toaster.success('Periodic task created successfully');
+          this.closePeriodicTaskModal();
+          this.periodicTaskService.refreshTasks();
+        },
+        error: (error) => {
+          this.toaster.error(error.message || 'Failed to create periodic task');
+        }
+      });
+    }
+  }
+
+  getIntervalLabel(): string {
+    const pattern = this.newPeriodicTask.recurrence_pattern;
+    const interval = this.newPeriodicTask.recurrence_interval || 1;
+
+    if (interval === 1) {
+      return pattern?.slice(0, -2) || ''; // Remove 'ly' from 'daily', 'weekly', etc.
+    }
+
+    const labels: any = {
+      daily: 'days',
+      weekly: 'weeks',
+      monthly: 'months',
+      yearly: 'years'
+    };
+
+    return labels[pattern] || '';
+  }
+
+  isDaySelected(day: number): boolean {
+    return this.newPeriodicTask.recurrence_days?.includes(day) || false;
+  }
+
+  toggleDay(day: number): void {
+    if (!this.newPeriodicTask.recurrence_days) {
+      this.newPeriodicTask.recurrence_days = [];
+    }
+
+    const index = this.newPeriodicTask.recurrence_days.indexOf(day);
+    if (index > -1) {
+      this.newPeriodicTask.recurrence_days.splice(index, 1);
+    } else {
+      this.newPeriodicTask.recurrence_days.push(day);
+    }
+  }
+
+  onRecurrencePatternChange(): void {
+    // Reset pattern-specific fields when pattern changes
+    this.newPeriodicTask.recurrence_days = [];
+    this.newPeriodicTask.recurrence_month_day = 1;
+    this.newPeriodicTask.recurrence_week_of_month = 1;
+    this.newPeriodicTask.recurrence_day_of_week = 1;
+    this.newPeriodicTask.recurrence_month = 1;
+  }
+
+  onAddTaskClickedFromFilter(viewMode: string): void {
+    if (viewMode === 'periodic-tasks') {
+      this.onAddPeriodicTaskClicked();
+    } else {
+      this.onAddTaskClicked();
+    }
+  }
+
+
   onInput(field: string): void {
     // Clear error when user starts typing
     switch (field) {
@@ -1094,7 +1272,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     // Check if we're in add mode or edit mode
     const isEditMode = !!this.selectedTask;
     const category = isEditMode ? this.selectedTask?.category : this.newTask.category;
-    
+
     if (!category) {
       return;
     }
@@ -1103,7 +1281,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       if (isEditMode) {
         this.loadAvailableUrlsForEdit();
       } else {
-      this.loadAvailableUrls();
+        this.loadAvailableUrls();
       }
     }
   }
@@ -1116,7 +1294,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     // Check if we're in add mode or edit mode
     const isEditMode = !!this.selectedTask;
     const availableUrlsList = isEditMode ? this.availableUrls : this.availableUrls;
-    
+
     const selectedUrl = availableUrlsList.find((u: any) => u.url_id === this.selectedUrlId);
     if (!selectedUrl) {
       return;
@@ -1132,36 +1310,36 @@ export class TasksComponent implements OnInit, OnDestroy {
         url: selectedUrl.url,
         url_id: selectedUrl.url_id // Store url_id for API
       });
-      
+
       // Update stored URL IDs if available
       if (this.originalTaskIds && !this.originalTaskIds.url_ids.includes(selectedUrl.url_id)) {
         this.originalTaskIds.url_ids.push(selectedUrl.url_id);
       }
-      
+
       // Reload available URLs to remove the added one from dropdown
       this.loadAvailableUrlsForEdit();
     } else {
       // Add mode - add to newTask
-    if (!this.newTask.urls) {
-      this.newTask.urls = [];
-    }
-    (this.newTask.urls as any[]).push({
-      label: selectedUrl.label,
-      url: selectedUrl.url,
-      url_id: selectedUrl.url_id // Store url_id for API
-    });
+      if (!this.newTask.urls) {
+        this.newTask.urls = [];
+      }
+      (this.newTask.urls as any[]).push({
+        label: selectedUrl.label,
+        url: selectedUrl.url,
+        url_id: selectedUrl.url_id // Store url_id for API
+      });
 
-    // Remove from available URLs
-    this.availableUrls = this.availableUrls.filter((u: any) => u.url_id !== this.selectedUrlId);
+      // Remove from available URLs
+      this.availableUrls = this.availableUrls.filter((u: any) => u.url_id !== this.selectedUrlId);
     }
-    
+
     this.selectedUrlId = null;
     this.showAddUrlDropdown = false;
   }
 
   removeUrlFromSelectedTask(index: number): void {
     if (!this.selectedTask || !this.selectedTask.urls) return;
-    
+
     const removedUrl = this.selectedTask.urls[index];
     // Remove url_id from stored IDs if available
     if (this.originalTaskIds && removedUrl && (removedUrl as any).url_id) {
@@ -1170,7 +1348,7 @@ export class TasksComponent implements OnInit, OnDestroy {
         this.originalTaskIds.url_ids.splice(urlIdIndex, 1);
       }
     }
-    
+
     this.selectedTask.urls.splice(index, 1);
     // Reload available URLs to include the removed one
     if (this.selectedTask.category) {
@@ -1186,23 +1364,49 @@ export class TasksComponent implements OnInit, OnDestroy {
       'Operations': ['Monitor system performance', 'Create backup procedures', 'Document processes'],
       'Research': ['Validate assumptions', 'Gather user feedback', 'Document findings']
     };
-    
+
     return suggestions[category] || ['Break down into smaller tasks', 'Set clear success criteria'];
   }
 
   updateTaskStatus(taskId: number, newStatus: Task['status']): void {
-    (this.getService() as any).updateTask(taskId, { status: newStatus } as any);
+    if (this.viewMode === 'periodic-tasks') {
+      (this.periodicTaskService as any).updateTask(taskId, { status: newStatus } as any).subscribe({
+        next: () => {
+          this.toaster.success('Task status updated');
+          this.periodicTaskService.refreshTasks();
+        },
+        error: (err: any) => this.toaster.error('Failed to update task status')
+      });
+    } else {
+      this.taskService.updateTask(taskId, { status: newStatus } as any);
+    }
   }
 
   async deleteTask(taskId: number): Promise<void> {
     if (this.viewMode === 'periodic-tasks') {
-      // Handle periodic tasks separately if needed
+      const confirmed = await this.confirmationService.confirm({
+        title: 'Delete Periodic Task',
+        message: 'Are you sure you want to delete this periodic task? This will stop all future occurrences.',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        confirmClass: 'danger'
+      });
+
+      if (confirmed) {
+        this.periodicTaskService.deleteTask(taskId).subscribe({
+          next: () => {
+            this.toaster.success('Periodic task deleted successfully');
+            this.periodicTaskService.refreshTasks();
+          },
+          error: (err: any) => this.toaster.error('Failed to delete periodic task')
+        });
+      }
       return;
     }
 
     const task = this.tasks.find(t => t.id === taskId) || null;
     const taskTitle = task?.title || 'this task';
-    
+
     const confirmed = await this.confirmationService.confirm({
       title: 'Delete Main Task',
       message: `Are you sure you want to delete "${taskTitle}"? This will also delete all level 1 and level 2 subtasks. This action cannot be undone.`,
@@ -1210,7 +1414,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       cancelText: 'Cancel',
       confirmClass: 'danger'
     });
-    
+
     if (confirmed) {
       this.taskService.deleteMainTask(taskId).subscribe({
         next: (response: any) => {
@@ -1235,17 +1439,17 @@ export class TasksComponent implements OnInit, OnDestroy {
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     const todayString = `${year}-${month}-${day}`;
-    
+
     // Get default status (is_default = true, or first available)
-    const defaultStatus = this.statuses.find(s => s.is_default === true || Boolean(s.is_default)) || 
+    const defaultStatus = this.statuses.find(s => s.is_default === true || Boolean(s.is_default)) ||
       (this.statuses.length > 0 ? this.statuses[0] : null);
     const statusValue = defaultStatus ? { name: defaultStatus.status as any, color: defaultStatus.color } : null;
-    
+
     // Get default priority (is_default = true, or first available)
-    const defaultPriority = this.priorities.find(p => p.is_default === true || Boolean(p.is_default)) || 
+    const defaultPriority = this.priorities.find(p => p.is_default === true || Boolean(p.is_default)) ||
       (this.priorities.length > 0 ? this.priorities[0] : null);
     const priorityValue = defaultPriority ? { name: defaultPriority.priority as any, color: defaultPriority.color } : null;
-    
+
     this.newTask = {
       title: '',
       description: '',
@@ -1300,7 +1504,7 @@ export class TasksComponent implements OnInit, OnDestroy {
         }
       });
       this.urlErrors = newErrors;
-      
+
       // Reload available URLs to add removed URL back to the list
       this.loadAvailableUrls();
     }
@@ -1319,26 +1523,36 @@ export class TasksComponent implements OnInit, OnDestroy {
   }
 
   updateSubtask(taskId: number, subtaskId: number, updates: Partial<Subtask>): void {
+    if (this.viewMode === 'periodic-tasks') {
+      (this.periodicTaskService as any).updateSubtask(taskId, subtaskId, updates as any).subscribe({
+        next: () => {
+          this.toaster.success('Periodic subtask updated');
+          this.periodicTaskService.refreshTasks();
+        },
+        error: (err: any) => this.toaster.error('Failed to update periodic subtask')
+      });
+      return;
+    }
     (this.getService() as any).updateSubtask(taskId, subtaskId, updates as any);
   }
 
   async deleteSubtask(taskId: number, subtaskId: number): Promise<void> {
     const task = this.tasks.find(t => t.id === taskId);
     if (!task || !task.subtasks) return;
-    
+
     const subtask = this.findSubtaskById(task.subtasks, subtaskId);
     if (!subtask) return;
-    
+
     const subtaskTitle = subtask.title || 'this subtask';
     const isLevel1 = subtask.level === 1;
     const isLevel2 = subtask.level === 2;
-    
+
     let confirmMessage = `Are you sure you want to delete "${subtaskTitle}"?`;
     if (isLevel1) {
       confirmMessage += ' This will also delete all level 2 subtasks.';
     }
     confirmMessage += ' This action cannot be undone.';
-    
+
     const confirmed = await this.confirmationService.confirm({
       title: isLevel1 ? 'Delete Level 1 Subtask' : isLevel2 ? 'Delete Level 2 Subtask' : 'Delete Subtask',
       message: confirmMessage,
@@ -1346,8 +1560,19 @@ export class TasksComponent implements OnInit, OnDestroy {
       cancelText: 'Cancel',
       confirmClass: 'danger'
     });
-    
+
     if (confirmed) {
+      if (this.viewMode === 'periodic-tasks') {
+        this.periodicTaskService.deleteSubtask(taskId, subtaskId).subscribe({
+          next: () => {
+            this.toaster.success('Periodic subtask deleted successfully');
+            this.periodicTaskService.refreshTasks();
+          },
+          error: (err: any) => this.toaster.error('Failed to delete periodic subtask')
+        });
+        return;
+      }
+
       if (isLevel1) {
         this.taskService.deleteLevel1Subtask(subtaskId).subscribe({
           next: (response: any) => {
@@ -1379,7 +1604,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       }
     }
   }
-  
+
   private findSubtaskById(subtasks: Subtask[], id: number): Subtask | null {
     for (const subtask of subtasks) {
       if (subtask.id === id) return subtask;
@@ -1401,7 +1626,7 @@ export class TasksComponent implements OnInit, OnDestroy {
 
   private getAllSubtasksFlat(subtasks: Subtask[]): Subtask[] {
     const flat: Subtask[] = [];
-    
+
     const addSubtasks = (subs: Subtask[]) => {
       subs.forEach(sub => {
         flat.push(sub);
@@ -1410,7 +1635,7 @@ export class TasksComponent implements OnInit, OnDestroy {
         }
       });
     };
-    
+
     addSubtasks(subtasks);
     return flat;
   }
@@ -1421,24 +1646,24 @@ export class TasksComponent implements OnInit, OnDestroy {
       this.newTask.subtasks = [];
     }
     // Get default priority from masters (is_default = true, or first available)
-    const defaultPriority = this.priorities.find(p => p.is_default === true || Boolean(p.is_default)) || 
+    const defaultPriority = this.priorities.find(p => p.is_default === true || Boolean(p.is_default)) ||
       (this.priorities.length > 0 ? this.priorities[0] : null);
-    const priorityValue = defaultPriority 
+    const priorityValue = defaultPriority
       ? { name: defaultPriority.priority as any, color: defaultPriority.color }
       : (this.getDefaultPriority() || null);
-    
+
     // Get default status from masters (is_default = true, or first available)
-    const defaultStatus = this.statuses.find(s => s.is_default === true || Boolean(s.is_default)) || 
+    const defaultStatus = this.statuses.find(s => s.is_default === true || Boolean(s.is_default)) ||
       (this.statuses.length > 0 ? this.statuses[0] : null);
     const statusValue = defaultStatus
       ? { name: defaultStatus.status as any, color: defaultStatus.color }
       : (this.getDefaultStatus() || null);
-    
+
     // Ensure we have valid status and priority (use first available if defaults not found)
     // These should never be undefined as master data should always be loaded
     const finalStatus = statusValue || (this.statuses.length > 0 ? { name: this.statuses[0].status as any, color: this.statuses[0].color } : { name: '' as any, color: '' });
     const finalPriority = priorityValue || (this.priorities.length > 0 ? { name: this.priorities[0].priority as any, color: this.priorities[0].color } : { name: '' as any, color: '' });
-    
+
     this.newTask.subtasks.push({
       id: Date.now(),
       title: '',
@@ -1502,15 +1727,15 @@ export class TasksComponent implements OnInit, OnDestroy {
     if (!this.selectedSubtask || !this.selectedSubtaskParent) return;
 
     // Get default status (is_default = true, or first available)
-    const defaultStatus = this.statuses.find(s => s.is_default === true || Boolean(s.is_default)) || 
+    const defaultStatus = this.statuses.find(s => s.is_default === true || Boolean(s.is_default)) ||
       (this.statuses.length > 0 ? this.statuses[0] : null);
-    const statusValue = defaultStatus ? { name: defaultStatus.status as any, color: defaultStatus.color } : 
+    const statusValue = defaultStatus ? { name: defaultStatus.status as any, color: defaultStatus.color } :
       (this.getDefaultStatus() || null);
-    
+
     // Get default priority (is_default = true, or first available)
-    const defaultPriority = this.priorities.find(p => p.is_default === true || Boolean(p.is_default)) || 
+    const defaultPriority = this.priorities.find(p => p.is_default === true || Boolean(p.is_default)) ||
       (this.priorities.length > 0 ? this.priorities[0] : null);
-    const priorityValue = defaultPriority ? { name: defaultPriority.priority as any, color: defaultPriority.color } : 
+    const priorityValue = defaultPriority ? { name: defaultPriority.priority as any, color: defaultPriority.color } :
       (this.getDefaultPriority() || null);
 
     (this.getService() as any).addSubtask(this.selectedSubtaskParent.id, {
@@ -1565,7 +1790,7 @@ export class TasksComponent implements OnInit, OnDestroy {
 
     const nestedSubtask = this.selectedSubtask.subtasks.find(s => s.id === subtaskId);
     const subtaskTitle = nestedSubtask?.title || 'this nested subtask';
-    
+
     const confirmed = await this.confirmationService.confirm({
       title: 'Delete Nested Subtask',
       message: `Are you sure you want to delete "${subtaskTitle}"? This action cannot be undone.`,
@@ -1573,7 +1798,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       cancelText: 'Cancel',
       confirmClass: 'danger'
     });
-    
+
     if (confirmed) {
       this.selectedSubtask.subtasks = this.selectedSubtask.subtasks.filter(s => s.id !== subtaskId);
       this.selectedSubtask.updatedAt = new Date();
@@ -1588,7 +1813,7 @@ export class TasksComponent implements OnInit, OnDestroy {
   addSubtaskToTask(taskId: number): void {
     const task = this.tasks.find(t => t.id === taskId);
     if (!task) return;
-    
+
     this.parentTaskForSubtask = task;
     this.initializeSubtaskDefaults();
     this.showAddSubtaskModal = true;
@@ -1598,7 +1823,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     // Get date from parent task or parent Level 1 subtask in local format (YYYY-MM-DD)
     let taskOnDateString: string | null = null;
     let parentDate: Date | null = null;
-    
+
     // For Level 2 subtasks, get date from parent Level 1 subtask (which inherits from main task)
     if (this.parentLevel1SubtaskForLevel2?.taskOnDate) {
       parentDate = new Date(this.parentLevel1SubtaskForLevel2.taskOnDate);
@@ -1609,35 +1834,35 @@ export class TasksComponent implements OnInit, OnDestroy {
       // For Level 1 subtasks, get date from main task
       parentDate = new Date(this.parentTaskForSubtask.taskOnDate);
     }
-    
+
     if (parentDate) {
       const year = parentDate.getFullYear();
       const month = String(parentDate.getMonth() + 1).padStart(2, '0');
       const day = String(parentDate.getDate()).padStart(2, '0');
       taskOnDateString = `${year}-${month}-${day}`;
     }
-    
+
     // Get default status (is_default = true, or first available)
     // Create object with exact same structure as template: { name: status.status, color: status.color }
-    const defaultStatus = this.statuses.find(s => s.is_default === true || Boolean(s.is_default)) || 
+    const defaultStatus = this.statuses.find(s => s.is_default === true || Boolean(s.is_default)) ||
       (this.statuses.length > 0 ? this.statuses[0] : null);
     const statusValue = defaultStatus ? { name: defaultStatus.status as any, color: defaultStatus.color } : null;
-    
+
     // Get default priority (is_default = true, or first available)
     // Create object with exact same structure as template: { name: priority.priority, color: priority.color }
-    const defaultPriority = this.priorities.find(p => p.is_default === true || Boolean(p.is_default)) || 
+    const defaultPriority = this.priorities.find(p => p.is_default === true || Boolean(p.is_default)) ||
       (this.priorities.length > 0 ? this.priorities[0] : null);
     const priorityValue = defaultPriority ? { name: defaultPriority.priority as any, color: defaultPriority.color } : null;
-    
+
     // Get category from parent task (for display only, disabled in form)
     // For Level 2, get from main task (parentTaskForLevel1Subtask)
     // For Level 1, get from parentTaskForSubtask
-    const categoryValue = (this.parentTaskForLevel1Subtask?.category || this.parentTaskForSubtask?.category) ? 
-      { 
-        name: (this.parentTaskForLevel1Subtask?.category || this.parentTaskForSubtask?.category)!.name, 
-        icon: (this.parentTaskForLevel1Subtask?.category || this.parentTaskForSubtask?.category)!.icon 
+    const categoryValue = (this.parentTaskForLevel1Subtask?.category || this.parentTaskForSubtask?.category) ?
+      {
+        name: (this.parentTaskForLevel1Subtask?.category || this.parentTaskForSubtask?.category)!.name,
+        icon: (this.parentTaskForLevel1Subtask?.category || this.parentTaskForSubtask?.category)!.icon
       } : null;
-    
+
     this.newSubtask = {
       title: '',
       description: '',
@@ -1691,7 +1916,7 @@ export class TasksComponent implements OnInit, OnDestroy {
 
   addSubtask(): void {
     if (!this.parentTaskForSubtask) return;
-    
+
     // Validate form
     if (!this.validateSubtaskForm()) {
       return;
@@ -1703,6 +1928,34 @@ export class TasksComponent implements OnInit, OnDestroy {
 
     // estimated_hours now supports decimals
     const estimatedHours = this.newSubtask.estimatedHours;
+
+    if (this.viewMode === 'periodic-tasks') {
+      const subtaskData: any = {
+        periodic_tasks_main_task_id: this.parentTaskForSubtask.id,
+        title: this.newSubtask.title,
+        description: this.newSubtask.description ?? null,
+        priority_level_id: priorityId,
+        status_id: statusId,
+        start_time: this.newSubtask.startTime ?? null,
+        end_time: this.newSubtask.endTime ?? null,
+        estimated_hours: estimatedHours ?? null,
+        priority_order: this.newSubtask.priorityOrder ?? null,
+        important: this.newSubtask.important ?? false,
+        completed: this.newSubtask.completed ?? false
+      };
+
+      (this.periodicTaskService as any).addSubtask(this.parentTaskForSubtask.id, subtaskData).subscribe({
+        next: () => {
+          this.toaster.success('Periodic subtask added successfully');
+          this.resetNewSubtask();
+          this.showAddSubtaskModal = false;
+          this.parentTaskForSubtask = null;
+          this.periodicTaskService.refreshTasks();
+        },
+        error: (err: any) => this.toaster.error('Failed to add periodic subtask')
+      });
+      return;
+    }
 
     // Prepare subtask data matching API structure (Level 1 Subtask)
     // Use nullish coalescing to preserve 0 and empty string values
@@ -1899,7 +2152,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     if (this.newSubtask.urls && this.newSubtask.urls[index]) {
       const removedUrl = this.newSubtask.urls[index];
       this.newSubtask.urls.splice(index, 1);
-      
+
       // Add back to available URLs if it was from master
       if (removedUrl.label && removedUrl.url) {
         // Reload available URLs (uses parent task's category)
@@ -1914,15 +2167,15 @@ export class TasksComponent implements OnInit, OnDestroy {
   // Nested Subtask Methods
   addNestedSubtask(taskId: number, parentSubtaskId: number, nestedParentId?: number): void {
     // Get default status (is_default = true, or first available)
-    const defaultStatus = this.statuses.find(s => s.is_default === true || Boolean(s.is_default)) || 
+    const defaultStatus = this.statuses.find(s => s.is_default === true || Boolean(s.is_default)) ||
       (this.statuses.length > 0 ? this.statuses[0] : null);
-    const statusValue = defaultStatus ? { name: defaultStatus.status as any, color: defaultStatus.color } : 
+    const statusValue = defaultStatus ? { name: defaultStatus.status as any, color: defaultStatus.color } :
       (this.getDefaultStatus() || null);
-    
+
     // Get default priority (is_default = true, or first available)
-    const defaultPriority = this.priorities.find(p => p.is_default === true || Boolean(p.is_default)) || 
+    const defaultPriority = this.priorities.find(p => p.is_default === true || Boolean(p.is_default)) ||
       (this.priorities.length > 0 ? this.priorities[0] : null);
-    const priorityValue = defaultPriority ? { name: defaultPriority.priority as any, color: defaultPriority.color } : 
+    const priorityValue = defaultPriority ? { name: defaultPriority.priority as any, color: defaultPriority.color } :
       (this.getDefaultPriority() || null);
 
     (this.getService() as any).addSubtask(taskId, {
@@ -1953,10 +2206,10 @@ export class TasksComponent implements OnInit, OnDestroy {
   async deleteNestedSubtask(taskId: number, parentSubtaskId: number, nestedSubtaskId: number): Promise<void> {
     const task = this.tasks.find(t => t.id === taskId);
     if (!task || !task.subtasks) return;
-    
+
     const nestedSubtask = this.findSubtaskById(task.subtasks, nestedSubtaskId);
     const subtaskTitle = nestedSubtask?.title || 'this nested subtask';
-    
+
     const confirmed = await this.confirmationService.confirm({
       title: 'Delete Nested Subtask',
       message: `Are you sure you want to delete "${subtaskTitle}"? This action cannot be undone.`,
@@ -1964,7 +2217,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       cancelText: 'Cancel',
       confirmClass: 'danger'
     });
-    
+
     if (confirmed) {
       this.getService().deleteSubtask(taskId, nestedSubtaskId);
     }
@@ -1987,10 +2240,10 @@ export class TasksComponent implements OnInit, OnDestroy {
     if (this.isCompletedStatus(status)) {
       const task = this.getService().getTask(taskId);
       if (task) {
-    const subtask = (this.getService() as any).findSubtask(task as any, subtaskId);
+        const subtask = (this.getService() as any).findSubtask(task as any, subtaskId);
         if (subtask && subtask.level === 1 && subtask.subtasks && subtask.subtasks.length > 0) {
           // Check if all Level 2 subtasks are completed
-      const allLevel2Completed = subtask.subtasks.every((level2Subtask: any) => this.isCompletedStatus(level2Subtask.status));
+          const allLevel2Completed = subtask.subtasks.every((level2Subtask: any) => this.isCompletedStatus(level2Subtask.status));
           if (!allLevel2Completed) {
             // Prevent checking Level 1 subtask if not all Level 2 subtasks are done
             return;
@@ -1998,7 +2251,7 @@ export class TasksComponent implements OnInit, OnDestroy {
         }
       }
     }
-    
+
     this.updateSubtask(taskId, subtaskId, { status });
   }
 
@@ -2018,7 +2271,7 @@ export class TasksComponent implements OnInit, OnDestroy {
   // Helper method to get default status (is_default = true, or first available)
   private getDefaultStatus(): Task['status'] | null {
     // Handle both boolean true and string "true" cases, and also check for truthy values
-    const defaultStatus = this.statuses.find(s => s.is_default === true || Boolean(s.is_default)) || 
+    const defaultStatus = this.statuses.find(s => s.is_default === true || Boolean(s.is_default)) ||
       (this.statuses.length > 0 ? this.statuses[0] : null);
     return defaultStatus ? { name: defaultStatus.status as any, color: defaultStatus.color } : null;
   }
@@ -2026,7 +2279,7 @@ export class TasksComponent implements OnInit, OnDestroy {
   // Helper method to get default priority (is_default = true, or first available)
   private getDefaultPriority(): Task['priorityLevel'] | null {
     // Handle both boolean true and string "true" cases, and also check for truthy values
-    const defaultPriority = this.priorities.find(p => p.is_default === true || Boolean(p.is_default)) || 
+    const defaultPriority = this.priorities.find(p => p.is_default === true || Boolean(p.is_default)) ||
       (this.priorities.length > 0 ? this.priorities[0] : null);
     return defaultPriority ? { name: defaultPriority.priority as any, color: defaultPriority.color } : null;
   }
@@ -2074,7 +2327,7 @@ export class TasksComponent implements OnInit, OnDestroy {
 
   private getCategoryFromMaster(categoryName?: string): { name: string; icon: string } | null {
     if (!categoryName) {
-      return this.categoryMasters.length > 0 
+      return this.categoryMasters.length > 0
         ? { name: this.categoryMasters[0].category, icon: this.categoryMasters[0].icon }
         : null;
     }
@@ -2117,7 +2370,7 @@ export class TasksComponent implements OnInit, OnDestroy {
   addLevel2SubtaskToLevel1(taskId: number, level1Subtask: Subtask): void {
     const task = this.tasks.find(t => t.id === taskId);
     if (!task || !level1Subtask) return;
-    
+
     this.parentTaskForLevel1Subtask = task;
     this.parentLevel1SubtaskForLevel2 = level1Subtask;
     this.initializeSubtaskDefaults();
@@ -2127,9 +2380,9 @@ export class TasksComponent implements OnInit, OnDestroy {
   editLevel1Subtask(taskId: number, level1Subtask: Subtask): void {
     const task = this.tasks.find(t => t.id === taskId);
     if (!task || !level1Subtask) return;
-    
+
     this.parentTaskForLevel1Subtask = task;
-    
+
     // Debug: Log the original subtask values
     console.log('Editing level 1 subtask - original values:', {
       startTime: level1Subtask.startTime,
@@ -2137,7 +2390,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       estimatedHours: level1Subtask.estimatedHours,
       priorityOrder: level1Subtask.priorityOrder
     });
-    
+
     // Create a copy and explicitly preserve all field values
     // Preserve actual values - don't override with defaults if values exist
     this.selectedLevel1Subtask = {
@@ -2157,7 +2410,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       completed: level1Subtask.completed ?? false,
       important: (level1Subtask as any).important ?? false
     };
-    
+
     // Debug: Log the values after processing
     console.log('Editing level 1 subtask - processed values:', {
       startTime: this.selectedLevel1Subtask.startTime,
@@ -2165,7 +2418,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       estimatedHours: this.selectedLevel1Subtask.estimatedHours,
       priorityOrder: this.selectedLevel1Subtask.priorityOrder
     });
-    
+
     // Set date from parent task in YYYY-MM-DD format (disabled in form)
     if (this.parentTaskForLevel1Subtask.taskOnDate) {
       const date = new Date(this.parentTaskForLevel1Subtask.taskOnDate);
@@ -2176,7 +2429,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     } else {
       (this.selectedLevel1Subtask as any).taskOnDate = null;
     }
-    
+
     // Set category from parent task (for display only, disabled in form)
     if (this.parentTaskForLevel1Subtask.category) {
       (this.selectedLevel1Subtask as any).category = {
@@ -2186,11 +2439,11 @@ export class TasksComponent implements OnInit, OnDestroy {
     } else {
       (this.selectedLevel1Subtask as any).category = null;
     }
-    
+
     // Match status and priority to master list objects for proper dropdown binding
     // Angular [ngValue] uses reference equality, so we need to match the exact objects from master lists
     if (this.selectedLevel1Subtask.status?.name) {
-      const matchedStatus = this.statuses.find(s => 
+      const matchedStatus = this.statuses.find(s =>
         s.status.toLowerCase() === this.selectedLevel1Subtask?.status?.name?.toLowerCase()
       );
       if (matchedStatus) {
@@ -2198,9 +2451,9 @@ export class TasksComponent implements OnInit, OnDestroy {
         (this.selectedLevel1Subtask as any).status = { name: matchedStatus.status, color: matchedStatus.color };
       }
     }
-    
+
     if (this.selectedLevel1Subtask.priority?.name) {
-      const matchedPriority = this.priorities.find(p => 
+      const matchedPriority = this.priorities.find(p =>
         p.priority.toLowerCase() === this.selectedLevel1Subtask?.priority?.name?.toLowerCase()
       );
       if (matchedPriority) {
@@ -2208,19 +2461,19 @@ export class TasksComponent implements OnInit, OnDestroy {
         (this.selectedLevel1Subtask as any).priority = { name: matchedPriority.priority, color: matchedPriority.color };
       }
     }
-    
+
     this.showEditLevel1SubtaskModal = true;
   }
 
   viewLevel1Subtask(taskId: number, level1Subtask: Subtask): void {
     const task = this.tasks.find(t => t.id === taskId);
     if (!task || !level1Subtask) return;
-    
+
     this.parentTaskForLevel1Subtask = task;
-    
+
     // Create a copy and ensure category and taskOnDate are set from parent
     this.selectedLevel1Subtask = { ...level1Subtask };
-    
+
     // Set date from parent task in YYYY-MM-DD format (for display)
     if (this.parentTaskForLevel1Subtask.taskOnDate) {
       const date = new Date(this.parentTaskForLevel1Subtask.taskOnDate);
@@ -2231,7 +2484,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     } else {
       (this.selectedLevel1Subtask as any).taskOnDate = null;
     }
-    
+
     // Set category from parent task (for display only)
     if (this.parentTaskForLevel1Subtask.category) {
       (this.selectedLevel1Subtask as any).category = {
@@ -2241,7 +2494,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     } else {
       (this.selectedLevel1Subtask as any).category = null;
     }
-    
+
     this.showViewLevel1SubtaskModal = true;
   }
 
@@ -2314,15 +2567,15 @@ export class TasksComponent implements OnInit, OnDestroy {
   // Helper method to open edit modal from view modal
   openEditLevel1SubtaskFromView(): void {
     if (!this.selectedLevel1Subtask || !this.parentTaskForLevel1Subtask) return;
-    
+
     // Save references before closing view modal
     const subtask = { ...this.selectedLevel1Subtask };
     const taskId = this.parentTaskForLevel1Subtask.id;
     const parentTask = this.parentTaskForLevel1Subtask;
-    
+
     // Close view modal first
     this.showViewLevel1SubtaskModal = false;
-    
+
     // Use setTimeout to ensure smooth transition (view modal closes before edit opens)
     setTimeout(() => {
       // Restore references and open edit modal
@@ -2335,16 +2588,16 @@ export class TasksComponent implements OnInit, OnDestroy {
   editLevel2Subtask(taskId: number, level1Subtask: Subtask, level2Subtask: Subtask): void {
     const task = this.tasks.find(t => t.id === taskId);
     if (!task || !level1Subtask || !level2Subtask) return;
-    
+
     this.parentTaskForLevel1Subtask = task;
     this.parentLevel1SubtaskForLevel2 = level1Subtask;
     this.selectedLevel2Subtask = { ...level2Subtask };
-    
+
     // Set category from parent main task (Level 2 subtasks inherit from main task)
     if (this.parentTaskForLevel1Subtask?.category) {
       (this.selectedLevel2Subtask as any).category = this.parentTaskForLevel1Subtask.category;
     }
-    
+
     // Set taskOnDate from parent Level 1 subtask (which inherits from main task) and format to YYYY-MM-DD
     if (this.parentLevel1SubtaskForLevel2?.taskOnDate) {
       const date = new Date(this.parentLevel1SubtaskForLevel2.taskOnDate);
@@ -2360,7 +2613,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       const day = String(date.getDate()).padStart(2, '0');
       (this.selectedLevel2Subtask as any).taskOnDate = `${year}-${month}-${day}`;
     }
-    
+
     // Preserve actual values - only default if null/undefined (preserves 0, false, empty string)
     (this.selectedLevel2Subtask as any).startTime = this.selectedLevel2Subtask.startTime ?? '';
     (this.selectedLevel2Subtask as any).endTime = this.selectedLevel2Subtask.endTime ?? '';
@@ -2368,11 +2621,11 @@ export class TasksComponent implements OnInit, OnDestroy {
     (this.selectedLevel2Subtask as any).priorityOrder = this.selectedLevel2Subtask.priorityOrder ?? null;
     (this.selectedLevel2Subtask as any).completed = this.selectedLevel2Subtask.completed ?? false;
     (this.selectedLevel2Subtask as any).important = (this.selectedLevel2Subtask as any).important ?? false;
-    
+
     // Match status and priority to master list objects for proper dropdown binding
     // Angular [ngValue] uses reference equality, so we need to match the exact objects from master lists
     if (this.selectedLevel2Subtask.status?.name) {
-      const matchedStatus = this.statuses.find(s => 
+      const matchedStatus = this.statuses.find(s =>
         s.status.toLowerCase() === this.selectedLevel2Subtask?.status?.name?.toLowerCase()
       );
       if (matchedStatus) {
@@ -2380,9 +2633,9 @@ export class TasksComponent implements OnInit, OnDestroy {
         (this.selectedLevel2Subtask as any).status = { name: matchedStatus.status, color: matchedStatus.color };
       }
     }
-    
+
     if (this.selectedLevel2Subtask.priority?.name) {
-      const matchedPriority = this.priorities.find(p => 
+      const matchedPriority = this.priorities.find(p =>
         p.priority.toLowerCase() === this.selectedLevel2Subtask?.priority?.name?.toLowerCase()
       );
       if (matchedPriority) {
@@ -2390,14 +2643,14 @@ export class TasksComponent implements OnInit, OnDestroy {
         (this.selectedLevel2Subtask as any).priority = { name: matchedPriority.priority, color: matchedPriority.color };
       }
     }
-    
+
     this.showEditLevel2SubtaskModal = true;
   }
 
   viewLevel2Subtask(taskId: number, level1Subtask: Subtask, level2Subtask: Subtask): void {
     const task = this.tasks.find(t => t.id === taskId);
     if (!task || !level1Subtask || !level2Subtask) return;
-    
+
     this.parentTaskForLevel1Subtask = task;
     this.parentLevel1SubtaskForLevel2 = level1Subtask;
     this.selectedLevel2Subtask = { ...level2Subtask };
@@ -2469,16 +2722,16 @@ export class TasksComponent implements OnInit, OnDestroy {
   // Helper method to open edit modal from view modal
   openEditLevel2SubtaskFromView(): void {
     if (!this.selectedLevel2Subtask || !this.parentTaskForLevel1Subtask || !this.parentLevel1SubtaskForLevel2) return;
-    
+
     // Save references before closing view modal
     const subtask = { ...this.selectedLevel2Subtask };
     const taskId = this.parentTaskForLevel1Subtask.id;
     const parentTask = this.parentTaskForLevel1Subtask;
     const parentLevel1Subtask = this.parentLevel1SubtaskForLevel2;
-    
+
     // Close view modal first
     this.showViewLevel2SubtaskModal = false;
-    
+
     // Use setTimeout to ensure smooth transition (view modal closes before edit opens)
     setTimeout(() => {
       // Restore references and open edit modal
@@ -2526,7 +2779,7 @@ export class TasksComponent implements OnInit, OnDestroy {
 
   addLevel2Subtask(): void {
     if (!this.parentTaskForLevel1Subtask || !this.parentLevel1SubtaskForLevel2) return;
-    
+
     // Validate form
     if (!this.validateSubtaskForm()) {
       return;
@@ -2600,7 +2853,7 @@ export class TasksComponent implements OnInit, OnDestroy {
   }
 
   getTasksByStatus(status: string): Task[] {
-      return this.filteredTasks.filter(task => task.status?.name === status);
+    return this.filteredTasks.filter(task => task.status?.name === status);
   }
 
   // Helper methods for template to get priority/status objects from master data
@@ -2648,7 +2901,7 @@ export class TasksComponent implements OnInit, OnDestroy {
 
     // Progress is based on checkboxes being checked (completed === true)
     const completedSubtasks = allSubtasks.filter(subtask => subtask.completed === true).length;
-    
+
     return Math.round((completedSubtasks / allSubtasks.length) * 100);
   }
 
@@ -2701,6 +2954,38 @@ export class TasksComponent implements OnInit, OnDestroy {
 
   // Task Management Methods
   editTask(task: Task): void {
+    // Handle periodic tasks separately
+    if (this.viewMode === 'periodic-tasks') {
+      const periodicTask = task as any;
+      this.newPeriodicTask = {
+        id: periodicTask.id,
+        title: periodicTask.title,
+        description: periodicTask.description,
+        category: periodicTask.category,
+        priorityLevel: periodicTask.priorityLevel,
+        status: periodicTask.status,
+        startDate: periodicTask.startDate,
+        endDate: periodicTask.endDate,
+        startTime: periodicTask.startTime,
+        endTime: periodicTask.endTime,
+        estimatedHours: periodicTask.estimatedHours,
+        remarks: periodicTask.remarks,
+        important: periodicTask.important,
+        recurrence_pattern: periodicTask.recurrence_pattern || 'daily',
+        recurrence_interval: periodicTask.recurrence_interval || 1,
+        recurrence_days: periodicTask.recurrence_days || null,
+        recurrence_month_day: periodicTask.recurrence_month_day || 1,
+        recurrence_week_of_month: periodicTask.recurrence_week_of_month || 1,
+        recurrence_day_of_week: periodicTask.recurrence_day_of_week || 1,
+        recurrence_month: periodicTask.recurrence_month || 1,
+        recurrence_end_type: periodicTask.recurrence_end_type || 'never',
+        recurrence_end_date: periodicTask.recurrence_end_date || null,
+        recurrence_occurrences: periodicTask.recurrence_occurrences || null
+      };
+      this.showEditPeriodicTaskModal = true;
+      return;
+    }
+
     this.selectedTask = { ...task };
     // Convert taskOnDate to YYYY-MM-DD format if it exists
     if (this.selectedTask.taskOnDate) {
@@ -2714,35 +2999,35 @@ export class TasksComponent implements OnInit, OnDestroy {
     if (!this.selectedTask.urls) {
       (this.selectedTask as any).urls = [];
     }
-    
+
     // Store original IDs before any transformations
     // Helper function to normalize status name for comparison
     const normalizeStatusName = (name: string): string => {
       return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     };
-    
+
     // Helper function to normalize priority/status name for comparison
     const normalizeName = (name: string): string => {
       return name.toLowerCase().trim();
     };
-    
+
     // Find and store original priority_level_id
     let priorityId: number | null = null;
     if (this.selectedTask.priorityLevel?.name && this.priorities.length > 0) {
-      const matchedPriority = this.priorities.find(p => 
+      const matchedPriority = this.priorities.find(p =>
         normalizeName(p.priority) === normalizeName(this.selectedTask?.priorityLevel?.name || '')
       );
       if (matchedPriority) {
         priorityId = matchedPriority.id;
-        this.selectedTask.priorityLevel = { 
-          name: matchedPriority.priority.toLowerCase() as 'low' | 'medium' | 'high' | 'urgent' | 'normal', 
-          color: matchedPriority.color 
+        this.selectedTask.priorityLevel = {
+          name: matchedPriority.priority.toLowerCase() as 'low' | 'medium' | 'high' | 'urgent' | 'normal',
+          color: matchedPriority.color
         };
       } else {
         console.warn('Priority not found:', this.selectedTask.priorityLevel.name, 'Available:', this.priorities.map(p => p.priority));
       }
     }
-    
+
     // Find and store original status_id
     let statusId: number | null = null;
     if (this.selectedTask.status?.name && this.statuses.length > 0) {
@@ -2750,23 +3035,23 @@ export class TasksComponent implements OnInit, OnDestroy {
       const taskStatusName = normalizeStatusName(this.selectedTask.status.name);
       const matchedStatus = this.statuses.find(s => {
         const statusName = normalizeStatusName(s.status);
-        return statusName === taskStatusName || 
-               normalizeName(s.status) === normalizeName(this.selectedTask?.status?.name || '');
+        return statusName === taskStatusName ||
+          normalizeName(s.status) === normalizeName(this.selectedTask?.status?.name || '');
       });
       if (matchedStatus) {
         statusId = matchedStatus.id;
-        this.selectedTask.status = { 
-          name: matchedStatus.status.toLowerCase().replace(/\s+/g, '-') as 'todo' | 'in-progress' | 'review' | 'done' | 'open', 
-          color: matchedStatus.color 
+        this.selectedTask.status = {
+          name: matchedStatus.status.toLowerCase().replace(/\s+/g, '-') as 'todo' | 'in-progress' | 'review' | 'done' | 'open',
+          color: matchedStatus.color
         };
       } else {
         console.warn('Status not found:', this.selectedTask.status.name, 'Available:', this.statuses.map(s => s.status));
       }
     }
-    
+
     // Match category to master list objects for proper dropdown binding
     if (this.selectedTask.category?.name && this.categoryMasters.length > 0) {
-      const matchedCategory = this.categoryMasters.find(c => 
+      const matchedCategory = this.categoryMasters.find(c =>
         normalizeName(c.category) === normalizeName(this.selectedTask?.category?.name || '')
       );
       if (matchedCategory) {
@@ -2775,14 +3060,14 @@ export class TasksComponent implements OnInit, OnDestroy {
         console.warn('Category not found:', this.selectedTask.category.name, 'Available:', this.categoryMasters.map(c => c.category));
       }
     }
-    
+
     // Store original IDs for use in updateTask (URL IDs will be added after URLs are loaded)
     this.originalTaskIds = {
       priority_level_id: priorityId,
       status_id: statusId,
       url_ids: []
     };
-    
+
     // Load available URLs if category is set, then store URL IDs
     if (this.selectedTask.category) {
       // First, try to extract URL IDs directly from task URLs if they have url_id property
@@ -2795,23 +3080,23 @@ export class TasksComponent implements OnInit, OnDestroy {
           }
         }
       }
-      
+
       // Store initial URL IDs (will be updated after loading all URLs)
       if (this.originalTaskIds) {
         this.originalTaskIds.url_ids = urlIds;
       }
-      
+
       // Load all available URLs (including existing ones) to get IDs for any missing ones
       this.loadAllUrlsForEdit().then(() => {
         // After all URLs are loaded, match and store any missing URL IDs
         if (this.selectedTask && this.selectedTask.urls && this.selectedTask.urls.length > 0) {
           const taskUrls = this.selectedTask.urls;
           const currentUrlIds = this.originalTaskIds?.url_ids || [];
-          
+
           for (const url of taskUrls) {
             // If URL doesn't have url_id, try to find it in all available URLs
             if (!(url as any).url_id) {
-              const matchedUrl = this.allAvailableUrlsForEdit.find(au => 
+              const matchedUrl = this.allAvailableUrlsForEdit.find(au =>
                 (au.label && url.label && normalizeName(au.label) === normalizeName(url.label)) ||
                 (au.url && url.url && normalizeName(au.url) === normalizeName(url.url))
               );
@@ -2829,23 +3114,23 @@ export class TasksComponent implements OnInit, OnDestroy {
               }
             }
           }
-          
+
           // Update stored URL IDs
           if (this.originalTaskIds) {
             this.originalTaskIds.url_ids = currentUrlIds;
           }
         }
       });
-      
+
       // Also load filtered URLs for the dropdown (this filters out already-added URLs)
       this.loadAvailableUrlsForEdit();
     }
     this.showEditTaskModal = true;
   }
-  
+
   // Store all available URLs for edit (without filtering)
   allAvailableUrlsForEdit: any[] = [];
-  
+
   // Load all available URLs for edit task modal (without filtering - used for ID matching)
   async loadAllUrlsForEdit(): Promise<void> {
     if (!this.selectedTask?.category) {
@@ -2859,7 +3144,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     };
 
     // Get category ID from category masters
-    const categoryMaster = this.categoryMasters.find(c => 
+    const categoryMaster = this.categoryMasters.find(c =>
       normalizeName(c.category) === normalizeName(this.selectedTask?.category?.name || '')
     );
     if (!categoryMaster) {
@@ -2876,7 +3161,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       this.allAvailableUrlsForEdit = [];
     }
   }
-  
+
   // Load available URLs for edit task modal (uses selectedTask instead of newTask)
   // This filters out already-added URLs for the dropdown
   async loadAvailableUrlsForEdit(): Promise<void> {
@@ -2891,7 +3176,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     };
 
     // Get category ID from category masters
-    const categoryMaster = this.categoryMasters.find(c => 
+    const categoryMaster = this.categoryMasters.find(c =>
       normalizeName(c.category) === normalizeName(this.selectedTask?.category?.name || '')
     );
     if (!categoryMaster) {
@@ -2930,13 +3215,13 @@ export class TasksComponent implements OnInit, OnDestroy {
     const normalizeName = (name: string): string => {
       return name.toLowerCase().trim();
     };
-    
+
     const normalizeStatusName = (name: string): string => {
       return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     };
 
     // Get category ID from masters (this works fine)
-    const categoryId = this.categoryMasters.find(c => 
+    const categoryId = this.categoryMasters.find(c =>
       normalizeName(c.category) === normalizeName(this.selectedTask?.category?.name || '')
     )?.id || null;
 
@@ -2950,13 +3235,13 @@ export class TasksComponent implements OnInit, OnDestroy {
         priorityId = this.originalTaskIds.priority_level_id;
       } else {
         // Priority changed, find new ID
-        priorityId = this.priorities.find(p => 
+        priorityId = this.priorities.find(p =>
           normalizeName(p.priority) === normalizeName(currentPriorityName || '')
         )?.id || null;
       }
     } else {
       // No stored ID, try to find by name
-      priorityId = this.priorities.find(p => 
+      priorityId = this.priorities.find(p =>
         normalizeName(p.priority) === normalizeName(this.selectedTask?.priorityLevel?.name || '')
       )?.id || null;
     }
@@ -2969,16 +3254,16 @@ export class TasksComponent implements OnInit, OnDestroy {
       if (storedStatus) {
         const storedStatusNormalized = normalizeStatusName(storedStatus.status);
         const currentStatusNormalized = normalizeStatusName(currentStatusName || '');
-        if (storedStatusNormalized === currentStatusNormalized || 
-            normalizeName(storedStatus.status) === normalizeName(currentStatusName || '')) {
+        if (storedStatusNormalized === currentStatusNormalized ||
+          normalizeName(storedStatus.status) === normalizeName(currentStatusName || '')) {
           statusId = this.originalTaskIds.status_id;
         } else {
           // Status changed, find new ID
           const taskStatusName = normalizeStatusName(currentStatusName || '');
           statusId = this.statuses.find(s => {
             const statusName = normalizeStatusName(s.status);
-            return statusName === taskStatusName || 
-                   normalizeName(s.status) === normalizeName(currentStatusName || '');
+            return statusName === taskStatusName ||
+              normalizeName(s.status) === normalizeName(currentStatusName || '');
           })?.id || null;
         }
       }
@@ -2987,15 +3272,15 @@ export class TasksComponent implements OnInit, OnDestroy {
       const taskStatusName = normalizeStatusName(this.selectedTask?.status?.name || '');
       statusId = this.statuses.find(s => {
         const statusName = normalizeStatusName(s.status);
-        return statusName === taskStatusName || 
-               normalizeName(s.status) === normalizeName(this.selectedTask?.status?.name || '');
+        return statusName === taskStatusName ||
+          normalizeName(s.status) === normalizeName(this.selectedTask?.status?.name || '');
       })?.id || null;
     }
 
     // Extract URL IDs - only use URLs that are currently in selectedTask.urls
     // This ensures removed URLs are not included
     let urlIds: number[] = [];
-    
+
     // First, check if URLs have url_id property directly (from API response or when added)
     if (this.selectedTask.urls && this.selectedTask.urls.length > 0) {
       for (const url of this.selectedTask.urls) {
@@ -3004,13 +3289,13 @@ export class TasksComponent implements OnInit, OnDestroy {
         }
       }
     }
-    
+
     // If some URLs don't have url_id, try to match from all available URLs
     if (this.selectedTask.urls && this.selectedTask.urls.length > 0 && this.allAvailableUrlsForEdit.length > 0) {
       for (const url of this.selectedTask.urls) {
         // If URL doesn't have url_id yet, try to find it
         if (!(url as any).url_id) {
-          const matchedUrl = this.allAvailableUrlsForEdit.find(au => 
+          const matchedUrl = this.allAvailableUrlsForEdit.find(au =>
             (au.label && url.label && normalizeName(au.label) === normalizeName(url.label)) ||
             (au.url && url.url && normalizeName(au.url) === normalizeName(url.url))
           );
@@ -3022,7 +3307,7 @@ export class TasksComponent implements OnInit, OnDestroy {
         }
       }
     }
-    
+
     // Fallback: If we still have URLs without IDs, check originalTaskIds for any that match current URLs
     // This handles edge cases where URLs were loaded before allAvailableUrlsForEdit was populated
     if (urlIds.length < (this.selectedTask.urls?.length || 0) && this.originalTaskIds?.url_ids) {
@@ -3037,7 +3322,7 @@ export class TasksComponent implements OnInit, OnDestroy {
           const matchedUrl = this.allAvailableUrlsForEdit.find(au => au.url_id === storedId);
           if (matchedUrl) {
             // Check if a URL with matching label/url exists in selectedTask.urls
-            const matchingUrl = this.selectedTask.urls?.find((u: any) => 
+            const matchingUrl = this.selectedTask.urls?.find((u: any) =>
               (matchedUrl.label && u.label && normalizeName(matchedUrl.label) === normalizeName(u.label)) ||
               (matchedUrl.url && u.url && normalizeName(matchedUrl.url) === normalizeName(u.url))
             );
@@ -3091,7 +3376,7 @@ export class TasksComponent implements OnInit, OnDestroy {
 
   validateEditTaskForm(): boolean {
     if (!this.selectedTask) return false;
-    
+
     let isValid = true;
 
     // Validate title
@@ -3132,7 +3417,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       const newImportantStatus = !task.important;
       task.important = newImportantStatus;
       task.updatedAt = new Date();
-      
+
       // Call the dedicated API endpoint for updating important status
       this.taskService.updateTaskImportant(taskId, newImportantStatus).subscribe({
         next: (response: any) => {
@@ -3151,7 +3436,7 @@ export class TasksComponent implements OnInit, OnDestroy {
           this.toaster.error(error.error?.message || 'Failed to update task important status');
         }
       });
-      
+
       this.filterTasks();
     }
   }
@@ -3162,7 +3447,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       const previousCompleted = task.completed;
       task.completed = completed;
       task.updatedAt = new Date();
-      
+
       // Call the dedicated API endpoint for updating completed status
       this.taskService.updateTaskCompleted(taskId, completed).subscribe({
         next: (response: any) => {
@@ -3181,12 +3466,12 @@ export class TasksComponent implements OnInit, OnDestroy {
           this.toaster.error(error.error?.message || 'Failed to update task completed status');
         }
       });
-      
+
       this.filterTasks();
     }
   }
 
-  updateSubtaskCompleted(taskId: number, subtaskId: number, completed: boolean, sub_task:any): void {
+  updateSubtaskCompleted(taskId: number, subtaskId: number, completed: boolean, sub_task: any): void {
     const task = this.tasks.find(t => t.id === taskId);
     if (task) {
       const subtask = sub_task;//(this.getService() as any).findSubtask(task as any, subtaskId);
@@ -3195,11 +3480,11 @@ export class TasksComponent implements OnInit, OnDestroy {
         subtask.completed = completed;
         subtask.updatedAt = new Date();
         task.updatedAt = new Date();
-        
+
         // Determine if it's Level 1 or Level 2 subtask and call the appropriate API
         const isLevel1 = subtask.level === 1;
         const isLevel2 = subtask.level === 2;
-        
+
         let apiCall: Observable<any>;
         if (isLevel1) {
           apiCall = this.taskService.updateLevel1SubtaskCompleted(subtaskId, completed);
@@ -3210,7 +3495,7 @@ export class TasksComponent implements OnInit, OnDestroy {
           console.warn('Unknown subtask level:', subtask.level);
           return;
         }
-        
+
         apiCall.subscribe({
           next: (response: any) => {
             if (response.success) {
@@ -3228,7 +3513,7 @@ export class TasksComponent implements OnInit, OnDestroy {
             this.toaster.error(error.error?.message || 'Failed to update subtask completed status');
           }
         });
-        
+
         // Refresh filtered tasks to update progress calculation
         this.filterTasks();
       }
@@ -3275,11 +3560,11 @@ export class TasksComponent implements OnInit, OnDestroy {
     const highPriority = this.priorities.length >= 3 ? this.priorities[2] : (this.priorities.length > 0 ? this.priorities[this.priorities.length - 1] : null);
     const mediumPriority = this.priorities.length >= 2 ? this.priorities[1] : (this.priorities.length > 0 ? this.priorities[0] : null);
     const lowPriority = this.priorities.length > 0 ? this.priorities[0] : null;
-    
+
     // Get categories dynamically from master data (using first available)
     const firstCategory = this.categoryMasters.length > 0 ? this.categoryMasters[0] : null;
     const secondCategory = this.categoryMasters.length >= 2 ? this.categoryMasters[1] : firstCategory;
-    
+
     const templates: { [key: string]: Partial<Task> } = {
       'bug-fix': {
         title: 'Bug Fix',
@@ -3330,7 +3615,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     const task = this.tasks.find(t => t.id === taskId);
     if (task && this.priorities.length > 0) {
       // Use a high priority (second to last or high non-default)
-      const highPriority = this.priorities.length >= 2 ? this.priorities[this.priorities.length - 2] : 
+      const highPriority = this.priorities.length >= 2 ? this.priorities[this.priorities.length - 2] :
         (this.priorities.find(p => !p.is_default) || this.priorities[0]);
       if (highPriority) {
         task.priorityLevel = { name: highPriority.priority as any, color: highPriority.color };
@@ -3396,7 +3681,7 @@ export class TasksComponent implements OnInit, OnDestroy {
   getUpcomingTasks(days: number = 7): Task[] {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + days);
-    
+
     return this.filteredTasks.filter(task => {
       const d: any = (task as any)['taskOnDate'];
       if (!d || this.isCompletedStatus(task.status)) return false;
@@ -3419,15 +3704,15 @@ export class TasksComponent implements OnInit, OnDestroy {
     const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
-    
+
     const days: Date[] = [];
     const current = new Date(startDate);
-    
+
     for (let i = 0; i < 42; i++) {
       days.push(new Date(current));
       current.setDate(current.getDate() + 1);
     }
-    
+
     return days;
   }
 
@@ -3477,7 +3762,7 @@ export class TasksComponent implements OnInit, OnDestroy {
   }
 
   getTasksByCategory(categoryName: string): Task[] {
-      return this.tasks.filter(task => task.category?.name === categoryName);
+    return this.tasks.filter(task => task.category?.name === categoryName);
   }
 
   updateTaskEndDate(dateString: string): void {
@@ -3500,7 +3785,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     // Handle bulk actions here
   }
 
-  onTableActionClick(event: {action: string, row: TableData, subtask?: any}): void {
+  onTableActionClick(event: { action: string, row: TableData, subtask?: any }): void {
     // Handle navigation to periodic task
     if (event.action === 'navigate-to-periodic-task' && event.row['periodicTaskId']) {
       this.navigateToPeriodicTask(event.row['periodicTaskId']);
@@ -3593,17 +3878,17 @@ export class TasksComponent implements OnInit, OnDestroy {
     }
   }
 
-  onTableSortChange(event: {column: string, direction: 'asc' | 'desc'}): void {
+  onTableSortChange(event: { column: string, direction: 'asc' | 'desc' }): void {
     console.log('Sort changed:', event);
     // The table component handles sorting internally
   }
 
-  onTableFilterChange(event: {column: string, value: any}): void {
+  onTableFilterChange(event: { column: string, value: any }): void {
     console.log('Filter changed:', event);
     // The table component handles filtering internally
   }
 
-  onTablePageChange(event: {page: number, pageSize: number}): void {
+  onTablePageChange(event: { page: number, pageSize: number }): void {
     console.log('Page changed:', event);
     // The table component handles pagination internally
   }
@@ -3622,7 +3907,7 @@ export class TasksComponent implements OnInit, OnDestroy {
 
     const startMinutes = this.timeToMinutes(startTime);
     const endMinutes = this.timeToMinutes(endTime);
-    
+
     // Handle case where end time is next day (e.g., 23:00 to 02:00)
     let diffMinutes = endMinutes - startMinutes;
     if (diffMinutes < 0) {
@@ -3657,11 +3942,11 @@ export class TasksComponent implements OnInit, OnDestroy {
   // Check if priority_order is misaligned with start_time order for the same date
   hasOrderMismatch(task: Task): boolean {
     // Only check tasks with valid start_time and priority_order
-    if (!task.startTime || 
-        !task.taskOnDate || 
-        task.startTime === '00:00' || 
-        task.priorityOrder === null || 
-        task.priorityOrder === undefined) {
+    if (!task.startTime ||
+      !task.taskOnDate ||
+      task.startTime === '00:00' ||
+      task.priorityOrder === null ||
+      task.priorityOrder === undefined) {
       return false;
     }
 
@@ -3670,7 +3955,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       if (!t.taskOnDate || !t.startTime || t.startTime === '00:00') {
         return false;
       }
-      
+
       // Compare dates (normalize to date only, ignoring time)
       if (!task.taskOnDate || !t.taskOnDate) {
         return false;
@@ -3678,8 +3963,8 @@ export class TasksComponent implements OnInit, OnDestroy {
       const taskDate = new Date(task.taskOnDate);
       const otherDate = new Date(t.taskOnDate);
       return taskDate.getFullYear() === otherDate.getFullYear() &&
-             taskDate.getMonth() === otherDate.getMonth() &&
-             taskDate.getDate() === otherDate.getDate();
+        taskDate.getMonth() === otherDate.getMonth() &&
+        taskDate.getDate() === otherDate.getDate();
     });
 
     // Sort by start_time (ascending)
@@ -3719,10 +4004,10 @@ export class TasksComponent implements OnInit, OnDestroy {
       }
 
       // Must be on the same date
-      if (!otherTask.taskOnDate || 
-          !otherTask.startTime || 
-          !otherTask.endTime ||
-          otherTask.startTime === '00:00' && otherTask.endTime === '00:00') {
+      if (!otherTask.taskOnDate ||
+        !otherTask.startTime ||
+        !otherTask.endTime ||
+        otherTask.startTime === '00:00' && otherTask.endTime === '00:00') {
         return false;
       }
 
@@ -3733,8 +4018,8 @@ export class TasksComponent implements OnInit, OnDestroy {
       const taskDate = new Date(task.taskOnDate);
       const otherDate = new Date(otherTask.taskOnDate);
       if (taskDate.getFullYear() !== otherDate.getFullYear() ||
-          taskDate.getMonth() !== otherDate.getMonth() ||
-          taskDate.getDate() !== otherDate.getDate()) {
+        taskDate.getMonth() !== otherDate.getMonth() ||
+        taskDate.getDate() !== otherDate.getDate()) {
         return false;
       }
 
@@ -3753,7 +4038,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       const hasOverlap = this.hasScheduleOverlap(task);
       const hasHoursMismatch = this.hasHoursMismatch(task);
       const hasOrderMismatch = this.hasOrderMismatch(task);
-      
+
       const baseData: any = {
         id: String(task.id),
         title: task.title,

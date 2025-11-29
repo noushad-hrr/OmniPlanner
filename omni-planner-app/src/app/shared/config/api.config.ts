@@ -4,7 +4,7 @@ import { environment } from '../../../environments/environment';
 export const API_CONFIG = {
   baseUrl: environment.apiUrl,
   baseUrlWithoutApi: environment.apiBaseUrl,
-  
+
   // Auth endpoints
   auth: {
     login: `${environment.apiUrl}/Auth/Login`,
@@ -13,7 +13,7 @@ export const API_CONFIG = {
     forgotPassword: `${environment.apiUrl}/Auth/ForgotPassword`,
     resetPassword: `${environment.apiUrl}/Auth/ResetPassword`
   },
-  
+
   // Task endpoints
   tasks: {
     getAll: `${environment.apiUrl}/Task/GetAllTasks`,
@@ -31,16 +31,21 @@ export const API_CONFIG = {
     updateLevel2Subtask: `${environment.apiUrl}/Task/UpdateLevel2Subtask`,
     deleteLevel2Subtask: (id: number) => `${environment.apiUrl}/Task/DeleteLevel2Subtask/level2/${id}`
   },
-  
+
   // Periodic Task endpoints
   periodicTasks: {
     getAll: `${environment.apiUrl}/PeriodicTask/GetAllPeriodicTasks`,
-    getById: (id: number) => `${environment.apiUrl}/PeriodicTask/GetPeriodicTaskById/${id}`,
-    create: `${environment.apiUrl}/PeriodicTask/CreatePeriodicTask`,
-    update: (id: number) => `${environment.apiUrl}/PeriodicTask/UpdatePeriodicTask/${id}`,
-    delete: (id: number) => `${environment.apiUrl}/PeriodicTask/DeletePeriodicTask/${id}`
+    add: `${environment.apiUrl}/PeriodicTask/AddPeriodicTask`,
+    update: `${environment.apiUrl}/PeriodicTask/UpdatePeriodicTask`,
+    delete: `${environment.apiUrl}/PeriodicTask/DeletePeriodicTask`,
+    addLevel1Subtask: `${environment.apiUrl}/PeriodicTask/AddPeriodicLevel1Subtask`,
+    updateLevel1Subtask: `${environment.apiUrl}/PeriodicTask/UpdatePeriodicLevel1Subtask`,
+    deleteLevel1Subtask: `${environment.apiUrl}/PeriodicTask/DeletePeriodicLevel1Subtask`,
+    addLevel2Subtask: `${environment.apiUrl}/PeriodicTask/AddPeriodicLevel2Subtask`,
+    updateLevel2Subtask: `${environment.apiUrl}/PeriodicTask/UpdatePeriodicLevel2Subtask`,
+    deleteLevel2Subtask: `${environment.apiUrl}/PeriodicTask/DeletePeriodicLevel2Subtask`
   },
-  
+
   // Users endpoints
   users: {
     getAll: `${environment.apiUrl}/Users/GetAllUsers`,
@@ -50,7 +55,7 @@ export const API_CONFIG = {
     delete: (id: number, isHardDelete: boolean = false) => `${environment.apiUrl}/Users/DeleteUser/${id}/${isHardDelete}`,
     changePassword: (userId: number) => `${environment.apiUrl}/Users/ChangePassword/${userId}/password`
   },
-  
+
   // Category Master endpoints
   categories: {
     getAll: `${environment.apiUrl}/CategoryMaster/GetAllCategories`,
@@ -58,7 +63,7 @@ export const API_CONFIG = {
     addUpdate: `${environment.apiUrl}/CategoryMaster/AddUpdateCategory`,
     delete: (id: number, isHardDelete: boolean = false) => `${environment.apiUrl}/CategoryMaster/DeleteCategory/${id}/${isHardDelete}`
   },
-  
+
   // Status Master endpoints
   statuses: {
     getAll: `${environment.apiUrl}/StatusMaster/GetAllStatuses`,
@@ -66,7 +71,7 @@ export const API_CONFIG = {
     addUpdate: `${environment.apiUrl}/StatusMaster/AddUpdateStatus`,
     delete: (id: number, isHardDelete: boolean = false) => `${environment.apiUrl}/StatusMaster/DeleteStatus/${id}/${isHardDelete}`
   },
-  
+
   // Priority Master endpoints
   priorities: {
     getAll: `${environment.apiUrl}/PriorityMaster/GetAllPriorities`,
@@ -74,7 +79,7 @@ export const API_CONFIG = {
     addUpdate: `${environment.apiUrl}/PriorityMaster/AddUpdatePriority`,
     delete: (id: number, isHardDelete: boolean = false) => `${environment.apiUrl}/PriorityMaster/DeletePriority/${id}/${isHardDelete}`
   },
-  
+
   // URLs Master endpoints
   urls: {
     getAll: `${environment.apiUrl}/UrlsMaster/GetAllUrls`,
@@ -83,7 +88,7 @@ export const API_CONFIG = {
     delete: (id: number, isHardDelete: boolean = false) => `${environment.apiUrl}/UrlsMaster/DeleteUrl/${id}/${isHardDelete}`,
     getCredentials: (urlId: number) => `${environment.apiUrl}/UrlsMaster/GetUrlCredentials/${urlId}`
   },
-  
+
   // Credentials Master endpoints
   credentials: {
     getAll: `${environment.apiUrl}/CredentialsMaster/GetAllCredentials`,
@@ -91,7 +96,7 @@ export const API_CONFIG = {
     addUpdate: `${environment.apiUrl}/CredentialsMaster/AddUpdateCredential`,
     delete: (id: number, isHardDelete: boolean = false) => `${environment.apiUrl}/CredentialsMaster/DeleteCredential/${id}/${isHardDelete}`
   },
-  
+
   // Budget endpoints
   budget: {
     getAllMonths: `${environment.apiUrl}/Budget/GetAllMonths`,
@@ -102,7 +107,7 @@ export const API_CONFIG = {
     getCredits: (monthId: number) => `${environment.apiUrl}/Budget/GetCredits/${monthId}`,
     getDebits: (monthId: number) => `${environment.apiUrl}/Budget/GetDebits/${monthId}`
   },
-  
+
   // Notes endpoints
   notes: {
     baseUrl: `${environment.apiUrl}/notes`,
@@ -112,7 +117,7 @@ export const API_CONFIG = {
     update: (id: number) => `${environment.apiUrl}/notes/${id}`,
     delete: (id: number) => `${environment.apiUrl}/notes/${id}`
   },
-  
+
   // Roles endpoints
   roles: {
     getAll: `${environment.apiUrl}/Roles/GetAllRoles`,
@@ -122,7 +127,7 @@ export const API_CONFIG = {
     delete: (id: number, isHardDelete: boolean) => `${environment.apiUrl}/Roles/DeleteRole/${id}/${isHardDelete}`,
     getPermissions: (roleId: number) => `${environment.apiUrl}/Roles/GetRolePermissions/${roleId}`
   },
-  
+
   // Permissions endpoints
   permissions: {
     getAll: `${environment.apiUrl}/Permissions/GetAllPermissions`,

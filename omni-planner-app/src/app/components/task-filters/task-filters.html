@@ -1,52 +1,33 @@
 <div class="task-filters-container">
   <!-- Main Filters Bar -->
-  <div class="main-filters-bar" 
-       [class.theme-dark]="controlBarTheme === 'dark' || !controlBarTheme"
-       [class.theme-standard]="controlBarTheme === 'standard'"
-       [class.theme-chrome-windows11]="controlBarTheme === 'chrome-windows11'">
+  <div class="main-filters-bar" [class.theme-dark]="controlBarTheme === 'dark' || !controlBarTheme"
+    [class.theme-standard]="controlBarTheme === 'standard'"
+    [class.theme-chrome-windows11]="controlBarTheme === 'chrome-windows11'">
     <!-- Today Button with Navigation -->
     <div class="quick-filters">
       <!-- Previous Day Button -->
-      <button 
-        class="nav-day-btn prev-day-btn"
-        (click)="goToPreviousDay()"
-        title="Previous day"
-        aria-label="Go to previous day"
-      >
+      <button class="nav-day-btn prev-day-btn" (click)="goToPreviousDay()" title="Previous day"
+        aria-label="Go to previous day">
         <i class="fas fa-chevron-left nav-icon"></i>
       </button>
-      
-      <button 
-        *ngFor="let filter of quickFilters"
-        class="quick-filter-btn"
-        [class.active]="activeQuickFilter === filter.id"
-        [style.--filter-color]="filter.color"
-        (click)="onQuickFilterClick(filter.id)"
-        [title]="getSelectedDateLabel()"
-      >
+
+      <button *ngFor="let filter of quickFilters" class="quick-filter-btn"
+        [class.active]="activeQuickFilter === filter.id" [style.--filter-color]="filter.color"
+        (click)="onQuickFilterClick(filter.id)" [title]="getSelectedDateLabel()">
         <i class="fas filter-icon" [ngClass]="filter.icon"></i>
         <span class="filter-label">{{ getSelectedDateLabel() }}</span>
       </button>
 
       <!-- Next Day Button -->
-      <button 
-        class="nav-day-btn next-day-btn"
-        (click)="goToNextDay()"
-        title="Next day"
-        aria-label="Go to next day"
-      >
+      <button class="nav-day-btn next-day-btn" (click)="goToNextDay()" title="Next day" aria-label="Go to next day">
         <i class="fas fa-chevron-right nav-icon"></i>
       </button>
     </div>
 
     <!-- View Mode Controls -->
     <div class="view-mode-controls segmented">
-      <button 
-        class="view-btn" 
-        [class.active]="viewMode === 'list'"
-        (click)="onViewModeChange('list')"
-        title="By date/day tasks"
-      >
+      <button class="view-btn" [class.active]="viewMode === 'list'" (click)="onViewModeChange('list')"
+        title="By date/day tasks">
         <i class="fas fa-list-ul chip-icon"></i>
         <span class="chip-label">Tasks</span>
       </button>
@@ -58,19 +39,12 @@
         <i class="fas fa-columns chip-icon"></i>
         <span class="chip-label">Kanban</span>
       </button> -->
-      <button 
-        class="view-btn" 
-        [class.active]="viewMode === 'periodic-tasks'"
-        (click)="onViewModeChange('periodic-tasks')"
-      >
+      <button class="view-btn" [class.active]="viewMode === 'periodic-tasks'"
+        (click)="onViewModeChange('periodic-tasks')">
         <i class="fas fa-sync-alt chip-icon"></i>
         <span class="chip-label">Periodic Tasks</span>
       </button>
-      <button 
-        class="view-btn" 
-        [class.active]="viewMode === 'calendar'"
-        (click)="onViewModeChange('calendar')"
-      >
+      <button class="view-btn" [class.active]="viewMode === 'calendar'" (click)="onViewModeChange('calendar')">
         <i class="fas fa-calendar-alt chip-icon"></i>
         <span class="chip-label">Calendar</span>
       </button>
@@ -83,57 +57,38 @@
         <span class="chip-label">Analytics</span>
       </button> -->
     </div>
-    
+
     <!-- Filter Controls -->
     <div class="filter-controls">
       <!-- Stats Toggle Button -->
-      <button 
-        class="stats-toggle-btn"
-        [class.collapsed]="isStatsPanelCollapsed"
-        (click)="onStatsPanelToggle()"
-        [attr.aria-expanded]="!isStatsPanelCollapsed"
-        aria-label="Toggle statistics panel"
-        title="Toggle task statistics"
-      >
+      <button class="stats-toggle-btn" [class.collapsed]="isStatsPanelCollapsed" (click)="onStatsPanelToggle()"
+        [attr.aria-expanded]="!isStatsPanelCollapsed" aria-label="Toggle statistics panel"
+        title="Toggle task statistics">
         <i class="fas fa-chart-bar icon"></i>
         <span class="label">Stats</span>
-        <i class="fas collapse-icon" [class.fa-chevron-up]="!isStatsPanelCollapsed" [class.fa-chevron-down]="isStatsPanelCollapsed"></i>
+        <i class="fas collapse-icon" [class.fa-chevron-up]="!isStatsPanelCollapsed"
+          [class.fa-chevron-down]="isStatsPanelCollapsed"></i>
       </button>
 
-      <button 
-        class="filter-toggle-btn"
-        [class.active]="isExpanded"
-        (click)="toggleExpanded()"
-      >
+      <button class="filter-toggle-btn" [class.active]="isExpanded" (click)="toggleExpanded()">
         <i class="fas fa-filter icon"></i>
         <span class="label">Filters</span>
         <span class="count" *ngIf="getActiveFiltersCount() > 0">
           {{ getActiveFiltersCount() }}
         </span>
       </button>
-      
-      <button 
-        class="clear-filters-btn"
-        *ngIf="getActiveFiltersCount() > 0"
-        (click)="clearAllFilters()"
-        title="Clear all filters"
-      >
+
+      <button class="clear-filters-btn" *ngIf="getActiveFiltersCount() > 0" (click)="clearAllFilters()"
+        title="Clear all filters">
         <i class="fas fa-trash icon"></i>
       </button>
 
       <!-- Add Task Button -->
-      <button 
-        class="add-action-btn add-task-btn"
-        [class.loading]="isAddingTask"
-        [class.success]="taskAddedSuccessfully"
-        [class.attention]="showAttention"
-        (click)="onAddTaskClick()"
-        [disabled]="isAddingTask"
-        aria-label="Add new task"
-        title="Create a new task"
-      >
+      <button class="add-action-btn add-task-btn" [class.loading]="isAddingTask" [class.success]="taskAddedSuccessfully"
+        [class.attention]="showAttention" (click)="onAddTaskClick()" [disabled]="isAddingTask" aria-label="Add new task"
+        title="Create a new task">
         <i class="fas fa-plus icon" [attr.aria-hidden]="true"></i>
-        <span class="label">Add Task</span>
+        <span class="label">{{ viewMode === 'periodic-tasks' ? 'Add Periodic Task' : 'Add Task' }}</span>
       </button>
     </div>
   </div>
@@ -144,18 +99,10 @@
     <div class="search-section">
       <div class="search-container">
         <i class="fas fa-search search-icon"></i>
-        <input 
-          type="text" 
-          class="search-input"
-          placeholder="Search tasks or descriptions..."
-          [(ngModel)]="filters.searchQuery"
-          (input)="onSearchChange()"
-        >
-        <button 
-          class="clear-search-btn"
-          *ngIf="filters.searchQuery"
-          (click)="filters.searchQuery = ''; onSearchChange()"
-        >
+        <input type="text" class="search-input" placeholder="Search tasks or descriptions..."
+          [(ngModel)]="filters.searchQuery" (input)="onSearchChange()">
+        <button class="clear-search-btn" *ngIf="filters.searchQuery"
+          (click)="filters.searchQuery = ''; onSearchChange()">
           <i class="fas fa-times"></i>
         </button>
       </div>
@@ -170,27 +117,17 @@
           Category
         </label>
         <div class="custom-dropdown">
-          <div 
-            class="dropdown-trigger"
-            data-dropdown-trigger="category"
-            [class.open]="categoryDropdownOpen"
-            (click)="toggleCategoryDropdown($event)"
-          >
+          <div class="dropdown-trigger" data-dropdown-trigger="category" [class.open]="categoryDropdownOpen"
+            (click)="toggleCategoryDropdown($event)">
             <span class="dropdown-text">{{ getCategoryDisplayText() }}</span>
             <i class="fas fa-chevron-down dropdown-icon"></i>
           </div>
-          <div class="dropdown-menu" [class.open]="categoryDropdownOpen" [ngStyle]="categoryDropdownStyle" (click)="$event.stopPropagation()">
-            <div 
-              *ngFor="let category of filterOptions.categories"
-              class="dropdown-item"
-              (click)="toggleCategory(category)"
-            >
-              <input 
-                type="checkbox" 
-                [checked]="isCategorySelected(category)"
-                (change)="toggleCategory(category)"
-                (click)="$event.stopPropagation()"
-              >
+          <div class="dropdown-menu" [class.open]="categoryDropdownOpen" [ngStyle]="categoryDropdownStyle"
+            (click)="$event.stopPropagation()">
+            <div *ngFor="let category of filterOptions.categories" class="dropdown-item"
+              (click)="toggleCategory(category)">
+              <input type="checkbox" [checked]="isCategorySelected(category)" (change)="toggleCategory(category)"
+                (click)="$event.stopPropagation()">
               <span class="item-icon">{{ getCategoryIcon(category) }}</span>
               <span class="item-text">{{ category }}</span>
             </div>
@@ -205,31 +142,17 @@
           Status
         </label>
         <div class="custom-dropdown">
-          <div 
-            class="dropdown-trigger"
-            data-dropdown-trigger="status"
-            [class.open]="statusDropdownOpen"
-            (click)="toggleStatusDropdown($event)"
-          >
+          <div class="dropdown-trigger" data-dropdown-trigger="status" [class.open]="statusDropdownOpen"
+            (click)="toggleStatusDropdown($event)">
             <span class="dropdown-text">{{ getStatusDisplayText() }}</span>
             <i class="fas fa-chevron-down dropdown-icon"></i>
           </div>
-          <div class="dropdown-menu" [class.open]="statusDropdownOpen" [ngStyle]="statusDropdownStyle" (click)="$event.stopPropagation()">
-            <div 
-              *ngFor="let status of filterOptions.statuses"
-              class="dropdown-item"
-              (click)="toggleStatus(status)"
-            >
-              <input 
-                type="checkbox" 
-                [checked]="isStatusSelected(status)"
-                (change)="toggleStatus(status)"
-                (click)="$event.stopPropagation()"
-              >
-              <span 
-                class="color-swatch"
-                [style.background-color]="getStatusColor(status)"
-              ></span>
+          <div class="dropdown-menu" [class.open]="statusDropdownOpen" [ngStyle]="statusDropdownStyle"
+            (click)="$event.stopPropagation()">
+            <div *ngFor="let status of filterOptions.statuses" class="dropdown-item" (click)="toggleStatus(status)">
+              <input type="checkbox" [checked]="isStatusSelected(status)" (change)="toggleStatus(status)"
+                (click)="$event.stopPropagation()">
+              <span class="color-swatch" [style.background-color]="getStatusColor(status)"></span>
               <span class="item-text">{{ status | titlecase }}</span>
             </div>
           </div>
@@ -243,31 +166,18 @@
           Priority
         </label>
         <div class="custom-dropdown">
-          <div 
-            class="dropdown-trigger"
-            data-dropdown-trigger="priority"
-            [class.open]="priorityDropdownOpen"
-            (click)="togglePriorityDropdown($event)"
-          >
+          <div class="dropdown-trigger" data-dropdown-trigger="priority" [class.open]="priorityDropdownOpen"
+            (click)="togglePriorityDropdown($event)">
             <span class="dropdown-text">{{ getPriorityDisplayText() }}</span>
             <i class="fas fa-chevron-down dropdown-icon"></i>
           </div>
-          <div class="dropdown-menu" [class.open]="priorityDropdownOpen" [ngStyle]="priorityDropdownStyle" (click)="$event.stopPropagation()">
-            <div 
-              *ngFor="let priority of filterOptions.priorities"
-              class="dropdown-item"
-              (click)="togglePriority(priority)"
-            >
-              <input 
-                type="checkbox" 
-                [checked]="isPrioritySelected(priority)"
-                (change)="togglePriority(priority)"
-                (click)="$event.stopPropagation()"
-              >
-              <span 
-                class="color-swatch"
-                [style.background-color]="getPriorityColor(priority)"
-              ></span>
+          <div class="dropdown-menu" [class.open]="priorityDropdownOpen" [ngStyle]="priorityDropdownStyle"
+            (click)="$event.stopPropagation()">
+            <div *ngFor="let priority of filterOptions.priorities" class="dropdown-item"
+              (click)="togglePriority(priority)">
+              <input type="checkbox" [checked]="isPrioritySelected(priority)" (change)="togglePriority(priority)"
+                (click)="$event.stopPropagation()">
+              <span class="color-swatch" [style.background-color]="getPriorityColor(priority)"></span>
               <span class="item-text">{{ priority | titlecase }}</span>
             </div>
           </div>
@@ -281,39 +191,26 @@
           Starred
         </label>
         <div class="custom-dropdown">
-          <div 
-            class="dropdown-trigger"
-            data-dropdown-trigger="important"
-            [class.open]="importantDropdownOpen"
-            (click)="toggleImportantDropdown($event)"
-          >
+          <div class="dropdown-trigger" data-dropdown-trigger="important" [class.open]="importantDropdownOpen"
+            (click)="toggleImportantDropdown($event)">
             <span class="dropdown-text">{{ getImportantDisplayText() }}</span>
             <i class="fas fa-chevron-down dropdown-icon"></i>
           </div>
-          <div class="dropdown-menu" [class.open]="importantDropdownOpen" [ngStyle]="importantDropdownStyle" (click)="$event.stopPropagation()">
-            <div 
-              class="dropdown-item"
-              [class.selected]="isImportantSelected('all')"
-              (click)="selectImportant('all')"
-            >
+          <div class="dropdown-menu" [class.open]="importantDropdownOpen" [ngStyle]="importantDropdownStyle"
+            (click)="$event.stopPropagation()">
+            <div class="dropdown-item" [class.selected]="isImportantSelected('all')" (click)="selectImportant('all')">
               <span class="item-icon">📋</span>
               <span class="item-text">All</span>
               <i class="fas fa-check" *ngIf="isImportantSelected('all')"></i>
             </div>
-            <div 
-              class="dropdown-item"
-              [class.selected]="isImportantSelected('starred')"
-              (click)="selectImportant('starred')"
-            >
+            <div class="dropdown-item" [class.selected]="isImportantSelected('starred')"
+              (click)="selectImportant('starred')">
               <span class="item-icon">⭐</span>
               <span class="item-text">Starred</span>
               <i class="fas fa-check" *ngIf="isImportantSelected('starred')"></i>
             </div>
-            <div 
-              class="dropdown-item"
-              [class.selected]="isImportantSelected('unstarred')"
-              (click)="selectImportant('unstarred')"
-            >
+            <div class="dropdown-item" [class.selected]="isImportantSelected('unstarred')"
+              (click)="selectImportant('unstarred')">
               <span class="item-icon">☆</span>
               <span class="item-text">Unstarred</span>
               <i class="fas fa-check" *ngIf="isImportantSelected('unstarred')"></i>
@@ -329,14 +226,8 @@
           Start Date
         </label>
         <div class="filter-dropdown">
-          <input 
-            type="date" 
-            class="filter-date-input"
-            [class.error]="hasDateValidationError"
-            [attr.max]="filters.endDate || undefined"
-            [(ngModel)]="filters.startDate"
-            (change)="onStartDateChange()"
-          >
+          <input type="date" class="filter-date-input" [class.error]="hasDateValidationError"
+            [attr.max]="filters.endDate || undefined" [(ngModel)]="filters.startDate" (change)="onStartDateChange()">
           <div class="validation-error" *ngIf="dateValidationError">
             {{ dateValidationError }}
           </div>
@@ -350,22 +241,16 @@
           End Date
         </label>
         <div class="filter-dropdown">
-          <input 
-            type="date" 
-            class="filter-date-input"
-            [class.error]="hasDateValidationError"
-            [attr.min]="filters.startDate || undefined"
-            [(ngModel)]="filters.endDate"
-            (change)="onEndDateChange()"
-          >
+          <input type="date" class="filter-date-input" [class.error]="hasDateValidationError"
+            [attr.min]="filters.startDate || undefined" [(ngModel)]="filters.endDate" (change)="onEndDateChange()">
           <div class="validation-error" *ngIf="dateValidationError">
             {{ dateValidationError }}
           </div>
+        </div>
       </div>
-    </div>
 
-    <!-- Tags Filter -->
-    <!--
+      <!-- Tags Filter -->
+      <!--
     <div class="filter-group full-width">
       <label class="filter-label">
         <span class="label-icon">🏷️</span>
@@ -398,8 +283,8 @@
     </div>
     -->
 
-    <!-- Toggle Options -->
-    <!--
+      <!-- Toggle Options -->
+      <!--
     <div class="toggle-filters">
       <div class="toggle-group">
         <label class="toggle-label">
@@ -429,5 +314,5 @@
     </div>
     -->
 
+    </div>
   </div>
-</div>
