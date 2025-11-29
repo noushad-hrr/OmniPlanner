@@ -1,0 +1,23 @@
+<div class="theme-toggle">
+  <!-- Simple Toggle Button -->
+  <!-- <button class="theme-toggle-btn" (click)="toggleTheme()" [title]="isDarkTheme() ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+    <i class="fas" [class.fa-sun]="isDarkTheme()" [class.fa-moon]="isLightTheme()"></i>
+    <span class="toggle-label">{{ isDarkTheme() ? 'Light' : 'Dark' }}</span>
+  </button> -->
+
+  <!-- Theme Selector Dropdown -->
+  <div class="theme-selector">
+    <button class="theme-option" 
+            [class.active]="isDarkTheme()" 
+            (click)="setTheme('dark')">
+      <i class="fas fa-moon"></i>
+      <span>Dark</span>
+    </button>
+    <button class="theme-option" 
+            [class.active]="isLightTheme()" 
+            (click)="setTheme('light')">
+      <i class="fas fa-sun"></i>
+      <span>Light</span>
+    </button>
+  </div>
+</div>

@@ -1,0 +1,55 @@
+1. cd frontend
+ng build --configuration production
+output will be at : frontend/dist/<app-name>/
+
+
+2. cd backend
+Create folder 'wwwroot'
+
+
+3. Copy Angular build(havingindex.html) into .NET wwwroot folder
+
+4. Enable static file hosting in .NET API
+app.UseStaticFiles();
+app.MapFallbackToFile("index.html");
+
+
+5. Publish .NET as self-contained EXE
+dotnet publish -c Release -r win-x64 --self-contained true -o Published
+note: create the static files like uploads folder if needed
+
+
+6. Published\
+   OmniPlanner.exe   ← your full application
+   wwwroot\
+   appsettings.json
+   *.dll
+
+7. http://localhost:5000 (application will run on port 5000 by default)
+note: in this self contained application the both frontend and backend application will run on same production
+
+issue: what if the api URL in frontend -> environment.ts is not same as above default running URL or Port
+solu: fix the application Urls and use those fixed urls in the environment.ts
+      a. to fix frontend URL : add the line in Program.cs 
+	                           builder.WebHost.UseUrls("http://localhost:5000");
+      b. to fix backtend URL : add the line in appSettings.json 
+	                           "Kestrel": {
+                                            "Endpoints": {
+                                              "Http": {
+                                                "Url": "http://localhost:5000"
+                                              }
+                                            }
+                                          }
+8. add the shortcut of exe file to desktop
+
+9. double click exe to run the api, in terminal we will get the listening port of the frontend (as "http://localhost:5000"). run this URL in the browser this will run the frontend in browser
+
+note: if dont want to run the application manually on browser and want like on click exe the both frontend and backend runs up then add the below like to program.cs file
+
+using System.Diagnostics;
+
+Process.Start(new ProcessStartInfo
+{
+    FileName = "http://localhost:5000",
+    UseShellExecute = true
+});

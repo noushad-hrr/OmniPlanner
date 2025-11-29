@@ -1,0 +1,269 @@
+// Dark Theme Mixins for OmniPlanner Application
+@use 'variables' as *;
+
+// Button Mixins
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid transparent;
+  border-radius: $border-radius-md;
+  font-family: $font-family-primary;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all $transition-fast;
+  outline: none;
+  
+  &:focus {
+    box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.3);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@mixin button-primary {
+  @include button-base;
+  background-color: var(--primary-accent);
+  color: var(--text-primary);
+  border-color: var(--primary-accent);
+  
+  &:hover:not(:disabled) {
+    background-color: var(--hover-accent);
+    border-color: var(--hover-accent);
+    transform: translateY(-1px);
+    box-shadow: $shadow-md;
+  }
+  
+  &:active:not(:disabled) {
+    background-color: var(--active-accent);
+    border-color: var(--active-accent);
+    transform: translateY(0);
+  }
+}
+
+@mixin button-secondary {
+  @include button-base;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-primary);
+  
+  &:hover:not(:disabled) {
+    background-color: var(--hover-bg);
+    border-color: var(--border-accent);
+  }
+  
+  &:active:not(:disabled) {
+    background-color: var(--active-bg);
+  }
+}
+
+@mixin button-ghost {
+  @include button-base;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border-color: transparent;
+  
+  &:hover:not(:disabled) {
+    background-color: var(--hover-bg);
+    color: var(--text-primary);
+  }
+  
+  &:active:not(:disabled) {
+    background-color: var(--active-bg);
+  }
+}
+
+// Card Mixins
+@mixin card-base {
+  background-color: var(--secondary-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-sm;
+  transition: all $transition-normal;
+  
+  &:hover {
+    box-shadow: $shadow-md;
+    border-color: var(--border-accent);
+  }
+}
+
+@mixin card-elevated {
+  @include card-base;
+  box-shadow: $shadow-lg;
+  
+  &:hover {
+    box-shadow: $shadow-xl;
+    transform: translateY(-2px);
+  }
+}
+
+// Input Mixins
+@mixin input-base {
+  width: 100%;
+  padding: $spacing-sm $spacing-md;
+  background-color: var(--tertiary-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: $border-radius-md;
+  color: var(--text-primary);
+  font-family: $font-family-primary;
+  font-size: $font-size-sm;
+  transition: all $transition-fast;
+  outline: none;
+  
+  &::placeholder {
+    color: var(--text-muted);
+  }
+  
+  &:focus {
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+  }
+  
+  &:disabled {
+    background-color: var(--surface-bg);
+    color: var(--text-disabled);
+    cursor: not-allowed;
+  }
+}
+
+// Table Mixins
+@mixin table-base {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--secondary-bg);
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+  box-shadow: $shadow-sm;
+}
+
+@mixin table-header {
+  background-color: var(--tertiary-bg);
+  color: var(--text-primary);
+  font-weight: $font-weight-semibold;
+  font-size: $font-size-sm;
+  padding: $spacing-md;
+  text-align: left;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+@mixin table-cell {
+  padding: $spacing-md;
+  border-bottom: 1px solid var(--border-secondary);
+  color: var(--text-secondary);
+  font-size: $font-size-sm;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+@mixin table-row-hover {
+  &:hover {
+    background-color: var(--hover-bg);
+  }
+}
+
+// Sidebar Mixins
+@mixin sidebar-base {
+  background-color: var(--primary-bg);
+  border-right: 1px solid var(--border-primary);
+  min-height: 100vh;
+  width: 280px;
+  transition: all $transition-normal;
+}
+
+@mixin sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: $spacing-md;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all $transition-fast;
+  border-radius: $border-radius-md;
+  margin: $spacing-xs $spacing-sm;
+  
+  &:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-primary);
+  }
+  
+  &.active {
+    background-color: var(--primary-accent);
+    color: var(--text-primary);
+  }
+}
+
+// Calendar Mixins
+@mixin calendar-base {
+  background-color: var(--secondary-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-sm;
+  overflow: hidden;
+}
+
+@mixin calendar-header {
+  background-color: var(--tertiary-bg);
+  padding: $spacing-lg;
+  border-bottom: 1px solid var(--border-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+@mixin calendar-day {
+  padding: $spacing-sm;
+  text-align: center;
+  cursor: pointer;
+  transition: all $transition-fast;
+  border-radius: $border-radius-sm;
+  
+  &:hover {
+    background-color: var(--hover-bg);
+  }
+  
+  &.selected {
+    background-color: var(--primary-accent);
+    color: var(--text-primary);
+  }
+  
+  &.today {
+    background-color: var(--secondary-accent);
+    color: var(--text-primary);
+  }
+}
+
+// Utility Mixins
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin scrollbar-dark {
+  // Hide scrollbars but keep scrolling functionality
+  &::-webkit-scrollbar {
+    display: none; // Chrome, Safari, Edge
+  }
+  
+  -ms-overflow-style: none; // IE and Edge
+  scrollbar-width: none; // Firefox
+}

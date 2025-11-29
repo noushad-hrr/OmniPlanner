@@ -1,0 +1,159 @@
+<div class="role-management-container">
+  <!-- Search and Add Button Row -->
+  <div class="master-toolbar" *ngIf="tableConfig.searchable">
+    <div class="master-search-wrapper">
+      <input 
+        type="text" 
+        class="master-search-input" 
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearchChange()"
+        placeholder="Search roles..."
+      />
+      <button 
+        *ngIf="searchQuery" 
+        class="master-search-clear"
+        (click)="searchQuery = ''; onSearchChange()"
+        title="Clear search"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <button 
+      class="add-action-btn" 
+      (click)="openAddModal()"
+      aria-label="Add new role"
+      title="Create a new role"
+    >
+      <i class="fas fa-plus icon" [attr.aria-hidden]="true"></i>
+      <span class="label">Add Role</span>
+    </button>
+  </div>
+
+  <!-- Table View -->
+  <div class="table-view">
+    <app-data-table
+      [columns]="tableColumns"
+      [data]="getTableData()"
+      [config]="tableConfig"
+      [actions]="tableActions"
+      [loading]="false"
+      emptyMessage="No roles available"
+      searchPlaceholder="Search roles..."
+      [externalSearch]="searchQuery"
+      (rowClick)="onTableRowClick($event)"
+      (actionClick)="onTableActionClick($event)"
+      (sortChange)="onTableSortChange($event)"
+      (filterChange)="onTableFilterChange($event)"
+      (pageChange)="onTablePageChange($event)"
+    ></app-data-table>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal-overlay" *ngIf="showAddEditModal" (click)="closeModal()">
+    <div class="modal-content modal-content-large" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ isEditMode ? 'Edit Role' : 'Add New Role' }}</h3>
+        <button class="btn-icon" (click)="closeModal()" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="roleName">Role Name <span class="required">*</span></label>
+          <input 
+            type="text" 
+            id="roleName"
+            class="form-input" 
+            [class.error]="nameError"
+            [(ngModel)]="formRole.name"
+            placeholder="e.g., Manager"
+            maxlength="100"
+          />
+          <div class="error-message" *ngIf="nameError">{{ nameError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="roleDescription">Description</label>
+          <textarea 
+            id="roleDescription"
+            class="form-input" 
+            [(ngModel)]="formRole.description"
+            placeholder="Role description..."
+            rows="3"
+            maxlength="500"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Permissions</label>
+          <div class="permissions-selection">
+            <div *ngFor="let module of modules" class="permission-module">
+              <div class="module-header">
+                <label class="checkbox-label">
+                  <input 
+                    type="checkbox"
+                    #moduleCheckbox
+                    [checked]="isModuleFullySelected(module)"
+                    (change)="toggleModuleSelection(module)"
+                    class="checkbox-input"
+                  />
+                  <span class="checkbox-toggle">
+                    <span class="toggle-indicator"></span>
+                  </span>
+                  <span class="module-name">{{ module }}</span>
+                </label>
+              </div>
+              <div class="permissions-list">
+                <div 
+                  *ngFor="let permission of permissionsByModule[module]" 
+                  class="permission-item"
+                >
+                  <label class="checkbox-label">
+                    <input 
+                      type="checkbox"
+                      [checked]="isPermissionSelected(permission.id)"
+                      (change)="togglePermissionSelection(permission.id)"
+                      class="checkbox-input"
+                    />
+                    <span class="checkbox-toggle">
+                      <span class="toggle-indicator"></span>
+                    </span>
+                    <span class="permission-name">{{ permission.name }}</span>
+                    <span class="permission-code">{{ permission.code }}</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="no-permissions-message" *ngIf="modules.length === 0">
+              No active permissions available
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group form-group-checkbox">
+          <label for="roleActive" class="form-label-inline">Active</label>
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              id="roleActive"
+              [(ngModel)]="formRole.is_active"
+              class="checkbox-input"
+            />
+            <span class="checkbox-toggle">
+              <span class="toggle-indicator"></span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="saveRole()">
+          {{ isEditMode ? 'Update' : 'Create' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+

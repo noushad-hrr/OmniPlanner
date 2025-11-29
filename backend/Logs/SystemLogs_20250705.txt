@@ -1,0 +1,2 @@
+[2025-07-05 14:42:38] ? Server started successfully
+[2025-07-05 14:52:52] ? Server started successfully

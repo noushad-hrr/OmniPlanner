@@ -1,0 +1,374 @@
+<div class="notes-container">
+  <div class="notes-header">
+    <h2>Notes</h2>
+    <div class="actions">
+      <button class="add-action-btn" (click)="startNewNote()"><i class="fas fa-plus"></i><span>New Note</span></button>
+    </div>
+  </div>
+
+  <div class="filters">
+    <div class="filter-field">
+      <label>Search</label>
+      <input type="text" [(ngModel)]="filters.search" (input)="onFiltersChanged()" placeholder="Search title or content" />
+    </div>
+    <div class="filter-field">
+      <label>Category</label>
+      <select [(ngModel)]="filters.categoryId" (change)="onFiltersChanged()">
+        <option [ngValue]="null">All</option>
+        <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.icon ? c.icon + ' ' : '' }}{{ c.name }}</option>
+      </select>
+    </div>
+    <div class="filter-field">
+      <label>Created From</label>
+      <input type="date" [(ngModel)]="filters.createdFrom" (change)="onFiltersChanged()" />
+    </div>
+    <div class="filter-field">
+      <label>Created To</label>
+      <input type="date" [(ngModel)]="filters.createdTo" (change)="onFiltersChanged()" />
+    </div>
+    <div class="filter-field">
+      <label>Star</label>
+      <select [(ngModel)]="filters.important" (change)="onFiltersChanged()">
+        <option value="all">All</option>
+        <option value="starred">Starred</option>
+        <option value="non-starred">Unstarred</option>
+      </select>
+    </div>
+    <div class="filter-field">
+      <label>Sort</label>
+      <select [(ngModel)]="filters.sort" (change)="onFiltersChanged()">
+        <optgroup label="By Date Created">
+          <option value="createdOn_desc">Newest</option>
+          <option value="createdOn_asc">Oldest</option>
+        </optgroup>
+        <optgroup label="By Date Updated">
+          <option value="updatedOn_desc">Recently Updated</option>
+          <option value="updatedOn_asc">Least Recently Updated</option>
+        </optgroup>
+        <optgroup label="By ID">
+          <option value="id_desc">ID (Highest First)</option>
+          <option value="id_asc">ID (Lowest First)</option>
+        </optgroup>
+        <optgroup label="By Category">
+          <option value="categoryName_asc">Category A→Z</option>
+          <option value="categoryName_desc">Category Z→A</option>
+        </optgroup>
+        <optgroup label="By Title">
+          <option value="title_asc">Title A→Z</option>
+          <option value="title_desc">Title Z→A</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="filter-field filter-actions">
+      <label>&nbsp;</label>
+      <button class="btn reset-btn" (click)="resetFilters()" title="Reset all filters">
+        <i class="fas fa-redo"></i><span>Reset Filters</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="list">
+      <div class="list-header">
+        <span class="list-title">Notes List</span>
+        <span class="notes-count">{{ notes.length }} {{ notes.length === 1 ? 'note' : 'notes' }}</span>
+      </div>
+      <div class="list-items">
+        <div class="list-item" *ngFor="let note of notes" [class.active]="note.id === selectedNote?.id" (click)="selectNote(note)">
+          <div class="title-row">
+            <button 
+              class="star-icon" 
+              [class.important]="note.important"
+              (click)="toggleNoteImportant(note.id); $event.stopPropagation()"
+              [title]="note.important ? 'Mark as not important' : 'Mark as important'"
+            >
+              {{ note.important ? '★' : '☆' }}
+            </button>
+            <span class="title">{{ note.title || 'Untitled' }}</span>
+            <div class="badges-right">
+              <span class="category" *ngIf="note.categoryName">
+                <span *ngIf="getCategoryIcon(note.categoryId)" class="category-icon">{{ getCategoryIcon(note.categoryId) }}</span>
+                {{ note.categoryName }}
+              </span>
+              <span class="id-badge">#{{ note.id }}</span>
+            </div>
+          </div>
+          <div class="meta-row">
+            <span class="date">{{ note.createdOn | date:'MMM dd, yyyy HH:mm' }}</span>
+            <span class="updated" *ngIf="note.updatedOn">Updated {{ note.updatedOn | date:'MMM dd, yyyy HH:mm' }}</span>
+          </div>
+          <div class="preview">{{ note.content | slice:0:140 }}</div>
+        </div>
+        <div class="empty" *ngIf="notes.length === 0">No notes found</div>
+      </div>
+    </div>
+
+      <div class="editor" *ngIf="selectedNote">
+      <div class="editor-toolbar">
+        <button 
+          class="star-icon editor-star" 
+          [class.important]="selectedNote.important"
+          (click)="toggleSelectedNoteImportant()"
+          [title]="selectedNote.important ? 'Mark as not important' : 'Mark as important'"
+        >
+          {{ selectedNote.important ? '★' : '☆' }}
+        </button>
+        <input 
+          class="title-input" 
+          type="text" 
+          [(ngModel)]="selectedNote.title" 
+          (ngModelChange)="onTitleChange()" 
+          [disabled]="isNewNoteWithoutCategory()"
+          placeholder="Note title"
+        />
+        <select 
+          class="category-select" 
+          [(ngModel)]="selectedNote.categoryId" 
+          (ngModelChange)="onCategoryChange()"
+          [class.required]="isNewNoteWithoutCategory()"
+        >
+          <option [ngValue]="null">Select Category *</option>
+          <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.icon ? c.icon + ' ' : '' }}{{ c.name }}</option>
+        </select>
+        <div class="spacer"></div>
+        <button class="btn" (click)="decreaseIndent()" [disabled]="isNewNoteWithoutCategory()" title="Decrease indentation">↤</button>
+        <button class="btn" (click)="insertBullet()" [disabled]="isNewNoteWithoutCategory()" title="Insert bullet point">◉</button>
+        <button class="btn" (click)="increaseIndent()" [disabled]="isNewNoteWithoutCategory()" title="Increase indentation">↦</button>
+        <button class="btn" [class.active]="!isTextWrapped" (click)="toggleTextWrap()" [disabled]="isNewNoteWithoutCategory()" [title]="isTextWrapped ? 'Disable text wrapping' : 'Enable text wrapping'">↩︎</button>
+        <button class="btn" [class.active]="showSearchReplace" (click)="toggleSearchReplace()" [disabled]="isNewNoteWithoutCategory()" title="Search and Replace (Ctrl+F)"><i class="fas fa-search"></i></button>
+        <button class="btn" (click)="duplicateNote()" *ngIf="selectedNote.id && selectedNote.id > 0" title="Duplicate"><i class="fas fa-copy"></i></button>
+        <button class="btn warn" (click)="deleteSelectedNote()" *ngIf="selectedNote.id && selectedNote.id > 0" title="Delete"><i class="fas fa-trash"></i></button>
+        <button class="btn success" (click)="saveSelectedNote()" title="Save"><i class="fas fa-save"></i><span>{{ selectedNote.id && selectedNote.id > 0 ? 'Update' : 'Save' }}</span></button>
+      </div>
+      <div class="category-required-message" *ngIf="isNewNoteWithoutCategory()">
+        <i class="fas fa-info-circle"></i>
+        <span>Please select a category first before writing your note.</span>
+      </div>
+      
+      <!-- Search and Replace Panel -->
+      <div class="search-replace-panel" *ngIf="showSearchReplace">
+        <div class="search-replace-header">
+          <span class="search-label">SEARCH</span>
+        </div>
+        <div class="search-replace-content">
+          <div class="search-section">
+            <input 
+              type="text" 
+              class="search-input" 
+              [(ngModel)]="searchText" 
+              (input)="performSearch()"
+              (keydown.enter)="findNext()"
+              (keydown.escape)="closeSearchReplace()"
+              placeholder="Search"
+            />
+            <div class="search-options">
+              <button 
+                class="search-option-btn" 
+                [class.active]="searchCaseSensitive"
+                (click)="toggleCaseSensitive()"
+                title="Match case"
+              >
+                Aa
+              </button>
+              <button 
+                class="search-option-btn" 
+                [class.active]="searchWholeWord"
+                (click)="toggleWholeWord()"
+                title="Match whole word"
+              >
+                ab
+              </button>
+              <button 
+                class="search-option-btn" 
+                [class.active]="searchRegex"
+                (click)="toggleRegex()"
+                title="Use regular expression"
+              >
+                .*
+              </button>
+            </div>
+          </div>
+          <div class="replace-section">
+            <input 
+              type="text" 
+              class="replace-input" 
+              [(ngModel)]="replaceText" 
+              (keydown.enter)="replaceNext()"
+              (keydown.escape)="closeSearchReplace()"
+              placeholder="Replace"
+            />
+            <div class="replace-actions">
+              <button 
+                class="replace-btn" 
+                (click)="replaceAll()"
+                [disabled]="!searchText || searchMatches.length === 0"
+                title="Replace all"
+              >
+                AB
+              </button>
+              <button 
+                class="replace-btn replace-next-btn" 
+                (click)="replaceNext()"
+                [disabled]="!searchText || searchMatches.length === 0"
+                title="Replace Current"
+              >
+                <span class="replace-icon">ab</span>
+                <span class="replace-arrow">↓</span>
+              </button>
+            </div>
+          </div>
+          <div class="search-results" *ngIf="searchText">
+            <span class="match-count" *ngIf="searchMatches.length > 0">{{ currentMatchIndex + 1 }} of {{ searchMatches.length }}</span>
+            <span class="match-count" *ngIf="searchMatches.length === 0">No matches</span>
+            <div class="search-nav-buttons" *ngIf="searchMatches.length > 0">
+              <button class="nav-btn" (click)="findPrevious()" title="Previous match">
+                <i class="fas fa-chevron-up"></i>
+              </button>
+              <button class="nav-btn" (click)="findNext()" title="Next match">
+                <i class="fas fa-chevron-down"></i>
+              </button>
+            </div>
+            <button class="close-search-btn" (click)="closeSearchReplace()" title="Close">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="content-editor-wrapper">
+        <div class="line-numbers" #lineNumbers (scroll)="syncScrollFromLineNumbers()">
+          <div class="line-numbers-content">
+            <div *ngFor="let num of getLineNumbers()" class="line-number">{{ num }}</div>
+          </div>
+        </div>
+        <textarea 
+          #contentArea 
+          class="content-input" 
+          [class.unwrapped]="!isTextWrapped" 
+          [(ngModel)]="selectedNote.content" 
+          (ngModelChange)="onContentChange(); performSearch(); updateLineCount()" 
+          (scroll)="syncScroll()"
+          [disabled]="isNewNoteWithoutCategory()"
+          placeholder="Write your note here..."
+        ></textarea>
+      </div>
+
+      <!-- URLs/Docs Section - Compact & Collapsible -->
+      <div class="urls-section-compact" *ngIf="selectedNote && selectedNote.id && selectedNote.id > 0">
+        <div class="urls-header-compact" (click)="urlsSectionCollapsed = !urlsSectionCollapsed">
+          <div class="urls-header-left">
+            <i class="fas" [class.fa-chevron-down]="!urlsSectionCollapsed" [class.fa-chevron-right]="urlsSectionCollapsed"></i>
+            <span class="urls-title-compact">URLs/Docs</span>
+            <span class="urls-count-badge" *ngIf="noteUrls.length > 0">{{ noteUrls.length }}</span>
+          </div>
+          <div class="urls-header-right" (click)="$event.stopPropagation()">
+            <div class="add-url-wrapper">
+              <button 
+                class="btn btn-add-url-compact" 
+                (click)="toggleAddUrlDropdown()"
+                [disabled]="!selectedNote.categoryId"
+                title="Add URL">
+                <i class="fas fa-plus"></i>
+              </button>
+              <div 
+                class="add-url-dropdown" 
+                *ngIf="showAddUrlDropdown && selectedNote.categoryId" 
+                (click)="$event.stopPropagation()"
+                [style.top.px]="dropdownPosition?.top"
+                [style.right.px]="dropdownPosition?.right">
+                <div class="dropdown-header">Select URL to add</div>
+                <div class="dropdown-content" *ngIf="availableUrls.length > 0; else noUrlsTemplate">
+                  <div 
+                    class="url-option" 
+                    *ngFor="let url of availableUrls"
+                    (click)="selectedUrlId = url.url_id; addUrlToNote()">
+                    <span class="url-icon" *ngIf="url.category_icon">{{ url.category_icon }}</span>
+                    <span class="url-label">{{ url.label }}</span>
+                    <span class="url-url">{{ url.url }}</span>
+                  </div>
+                </div>
+                <ng-template #noUrlsTemplate>
+                  <div class="dropdown-empty">No available URLs for this category</div>
+                </ng-template>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Collapsed Preview: Show first 3 URLs in a single line -->
+        <div class="urls-preview-compact" *ngIf="urlsSectionCollapsed && noteUrls.length > 0">
+          <div class="urls-preview-grid">
+            <div 
+              class="url-preview-item" 
+              *ngFor="let urlItem of noteUrls.slice(0, 3)" 
+              (click)="openUrl(urlItem.url)"
+              [title]="urlItem.label + ' - ' + urlItem.url">
+              <span class="url-preview-icon" *ngIf="urlItem.category_icon">{{ urlItem.category_icon }}</span>
+              <span class="url-preview-label">{{ urlItem.label }}</span>
+              <!-- Credential Lock Icon -->
+              <span 
+                *ngIf="urlItem.credentials && urlItem.credentials.length > 0" 
+                class="credential-tag-note"
+                [title]="getCredentialTooltip(urlItem.credentials)"
+                (click)="$event.stopPropagation()"
+              >
+                <i class="fas fa-lock"></i>
+                <span class="credential-count-note">{{ urlItem.credentials.length }}</span>
+              </span>
+            </div>
+            <div 
+              class="url-preview-more" 
+              *ngIf="noteUrls.length > 3" 
+              (click)="urlsSectionCollapsed = false; $event.stopPropagation()"
+              [title]="'Click to expand and see all ' + noteUrls.length + ' URLs'">
+              +{{ noteUrls.length - 3 }} more
+            </div>
+          </div>
+        </div>
+        <!-- Expanded Content: Show all URLs in grid (3 per row) -->
+        <div class="urls-content-compact" *ngIf="!urlsSectionCollapsed">
+          <div class="urls-list-compact" *ngIf="noteUrls.length > 0; else noUrlsMessage">
+            <div class="url-item-compact" *ngFor="let urlItem of noteUrls" [title]="urlItem.url">
+              <div class="url-content-compact" (click)="openUrl(urlItem.url)">
+                <span class="url-category-icon-compact" *ngIf="urlItem.category_icon">{{ urlItem.category_icon }}</span>
+                <span class="url-label-compact">{{ urlItem.label }}</span>
+                <span class="url-link-compact" [title]="urlItem.url">{{ urlItem.url }}</span>
+                <!-- Credential Lock Icon -->
+                <span 
+                  *ngIf="urlItem.credentials && urlItem.credentials.length > 0" 
+                  class="credential-tag-note"
+                  [title]="getCredentialTooltip(urlItem.credentials)"
+                  (click)="$event.stopPropagation()"
+                >
+                  <i class="fas fa-lock"></i>
+                  <span class="credential-count-note">{{ urlItem.credentials.length }}</span>
+                </span>
+                <i class="fas fa-external-link-alt url-external-icon-compact"></i>
+              </div>
+              <button 
+                class="btn-remove-url-compact" 
+                (click)="removeUrlFromNote(urlItem.url_id); $event.stopPropagation()"
+                title="Remove URL">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+          <ng-template #noUrlsMessage>
+            <div class="urls-empty-compact">
+              <span>No URLs yet. Click <i class="fas fa-plus"></i> to add.</span>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+
+      <div class="timestamps">
+        <span>Created: {{ selectedNote.createdOn | date:'MMM dd, yyyy HH:mm' }}</span>
+        <span *ngIf="selectedNote.updatedOn">Updated: {{ selectedNote.updatedOn | date:'MMM dd, yyyy HH:mm' }}</span>
+      </div>
+    </div>
+
+    <div class="empty-editor" *ngIf="!selectedNote">
+      <p>Select a note or create a new one.</p>
+    </div>
+  </div>
+</div>
+

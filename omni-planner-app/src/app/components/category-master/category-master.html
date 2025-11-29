@@ -1,0 +1,135 @@
+<div class="category-master-container">
+  <!-- Search and Add Button Row -->
+  <div class="master-toolbar" *ngIf="tableConfig.searchable">
+    <div class="master-search-wrapper">
+      <input 
+        type="text" 
+        class="master-search-input" 
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearchChange()"
+        placeholder="Search categories..."
+      />
+      <button 
+        *ngIf="searchQuery" 
+        class="master-search-clear"
+        (click)="searchQuery = ''; onSearchChange()"
+        title="Clear search"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <button 
+      class="add-action-btn" 
+      (click)="openAddModal()"
+      aria-label="Add new category"
+      title="Create a new category"
+    >
+      <i class="fas fa-plus icon" [attr.aria-hidden]="true"></i>
+      <span class="label">Add Category</span>
+    </button>
+  </div>
+
+  <!-- Table View -->
+  <div class="table-view">
+    <app-data-table
+      [columns]="tableColumns"
+      [data]="getTableData()"
+      [config]="tableConfig"
+      [actions]="tableActions"
+      [loading]="false"
+      emptyMessage="No categories available"
+      searchPlaceholder="Search categories..."
+      [externalSearch]="searchQuery"
+      (rowClick)="onTableRowClick($event)"
+      (actionClick)="onTableActionClick($event)"
+      (booleanToggle)="onBooleanToggle($event)"
+      (sortChange)="onTableSortChange($event)"
+      (filterChange)="onTableFilterChange($event)"
+      (pageChange)="onTablePageChange($event)"
+    ></app-data-table>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal-overlay" *ngIf="showAddEditModal" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ isEditMode ? 'Edit Category' : 'Add New Category' }}</h3>
+        <button class="btn-icon" (click)="closeModal()" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="categoryName">Category Name <span class="required">*</span></label>
+          <input 
+            type="text" 
+            id="categoryName"
+            class="form-input" 
+            [class.error]="categoryError"
+            [(ngModel)]="formCategory.category"
+            (blur)="onCategoryBlur()"
+            (input)="onCategoryInput()"
+            placeholder="e.g., Development"
+            maxlength="100"
+          />
+          <div class="error-message" *ngIf="categoryError">{{ categoryError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="categoryIcon">Icon <span class="required">*</span></label>
+          <div class="icon-selector">
+            <div class="icon-preview">
+              <span class="preview-icon">{{ formCategory.icon || '🚀' }}</span>
+              <input 
+                type="text" 
+                id="categoryIcon"
+                class="form-input icon-input" 
+                [class.error]="iconError"
+                [(ngModel)]="formCategory.icon"
+                (blur)="validateIcon()"
+                (input)="onIconInput()"
+                placeholder="Enter emoji or icon"
+                maxlength="10"
+              />
+            </div>
+            <div class="icon-grid">
+              <button 
+                *ngFor="let icon of commonIcons"
+                class="icon-btn"
+                [class.selected]="formCategory.icon === icon"
+                (click)="selectIcon(icon)"
+                [title]="icon"
+              >
+                {{ icon }}
+              </button>
+            </div>
+          </div>
+          <div class="error-message" *ngIf="iconError">{{ iconError }}</div>
+        </div>
+
+        <div class="form-group form-group-checkbox">
+          <label for="categoryActive" class="form-label-inline">Active</label>
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              id="categoryActive"
+              [(ngModel)]="formCategory.is_active"
+              class="checkbox-input"
+            />
+            <span class="checkbox-toggle">
+              <span class="toggle-indicator"></span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="saveCategory()">
+          {{ isEditMode ? 'Update' : 'Create' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

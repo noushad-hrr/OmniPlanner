@@ -1,0 +1,6 @@
+[2025-07-07 11:02:57] ? Server started successfully
+[2025-07-07 11:03:07] ?? Server is shutting down
+[2025-07-07 11:03:07] ? Server has stopped
+[2025-07-07 15:54:20] ? Server started successfully
+[2025-07-07 17:42:56] ? Server started successfully
+[2025-07-07 17:46:19] ? Server started successfully

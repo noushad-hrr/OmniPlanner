@@ -1,0 +1,57 @@
+<div class="sidebar" [class.collapsed]="collapsed">
+  <!-- Header (Empty - removed OmniPlanner branding) -->
+  <div class="sidebar-header">
+  </div>
+
+  <!-- Navigation Items -->
+  <nav class="sidebar-nav">
+    <div class="nav-section">
+      <div class="nav-item" 
+           *ngFor="let item of items; trackBy: trackByItemId" 
+           [class.active]="isActive(item)"
+           [class.has-children]="item.children && item.children.length > 0"
+           [class.expanded]="isExpanded(item.id) && item.children && item.children.length > 0"
+           (mouseenter)="onMouseEnter(item, $event)"
+           (mouseleave)="onMouseLeave($event)">
+        <div class="nav-item-content" (click)="onItemClick(item, $event)">
+          <i class="nav-icon fas" [class]="'fa-' + item.icon"></i>
+          <span class="nav-label" *ngIf="!collapsed">{{ item.label }}</span>
+          <span class="nav-badge" *ngIf="item.badge && !collapsed">{{ item.badge }}</span>
+          <i class="nav-chevron fas fa-chevron-down" 
+             *ngIf="item.children && item.children.length > 0 && !collapsed"
+             [class.expanded]="isExpanded(item.id)"></i>
+        </div>
+        
+        <!-- Submenu (expanded sidebar) -->
+        <div class="submenu" *ngIf="item.children && item.children.length > 0 && !collapsed && isExpanded(item.id)">
+          <div class="submenu-item" 
+               *ngFor="let child of item.children; trackBy: trackByItemId"
+               [class.active]="isActive(child)"
+               (click)="onChildClick(child, $event)">
+            <i class="submenu-icon fas" [class]="'fa-' + child.icon"></i>
+            <span class="submenu-label">{{ child.label }}</span>
+            <span class="submenu-badge" *ngIf="child.badge">{{ child.badge }}</span>
+          </div>
+        </div>
+
+        <!-- Submenu Popover (collapsed sidebar) -->
+        <div class="submenu-popover" 
+             *ngIf="item.children && item.children.length > 0 && collapsed && isHovered(item.id)"
+             [style.top.px]="hoveredItemPosition?.top"
+             [style.left.px]="hoveredItemPosition?.left"
+             (mouseenter)="onPopoverMouseEnter()"
+             (mouseleave)="onPopoverMouseLeave($event)">
+          <div class="popover-header">{{ item.label }}</div>
+          <div class="popover-item" 
+               *ngFor="let child of item.children; trackBy: trackByItemId"
+               [class.active]="isActive(child)"
+               (click)="onChildClick(child, $event)">
+            <i class="popover-icon fas" [class]="'fa-' + child.icon"></i>
+            <span class="popover-label">{{ child.label }}</span>
+            <span class="popover-badge" *ngIf="child.badge">{{ child.badge }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+</div>
