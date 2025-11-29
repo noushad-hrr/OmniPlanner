@@ -327,8 +327,8 @@ export class TasksComponent implements OnInit, OnDestroy {
     filterable: true,
     resizable: true,
     pagination: true,
-    pageSize: 5, // Reduced page size to show fewer rows
-    pageSizeOptions: [5, 10, 25, 50],
+    pageSize: 8, // Reduced page size to show fewer rows
+    pageSizeOptions: [5, 8, 10, 25, 50],
     exportable: true,
     searchable: true,
     virtualScrolling: false,
