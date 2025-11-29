@@ -1,0 +1,98 @@
+// Custom Material Design Theme for OmniPlanner Dark Theme
+@use '@angular/material' as mat;
+@use 'variables' as *;
+
+// Apply dark theme by default
+@include mat.core();
+
+// Custom Material component overrides
+.mat-mdc-card {
+  background-color: var(--secondary-bg) !important;
+  border: 1px solid var(--border-primary) !important;
+  border-radius: $border-radius-lg !important;
+}
+
+.mat-mdc-button {
+  border-radius: $border-radius-md !important;
+  font-weight: $font-weight-medium !important;
+}
+
+.mat-mdc-raised-button {
+  box-shadow: $shadow-sm !important;
+  
+  &:hover {
+    box-shadow: $shadow-md !important;
+  }
+}
+
+.mat-mdc-form-field {
+  .mat-mdc-text-field-wrapper {
+    background-color: var(--tertiary-bg) !important;
+    border-radius: $border-radius-md !important;
+  }
+  
+  .mat-mdc-form-field-outline {
+    color: var(--border-primary) !important;
+  }
+  
+  &.mat-focused .mat-mdc-form-field-outline {
+    color: var(--primary-accent) !important;
+  }
+}
+
+.mat-mdc-table {
+  background-color: var(--secondary-bg) !important;
+  border-radius: $border-radius-lg !important;
+  overflow: hidden !important;
+  
+  .mat-mdc-header-row {
+    background-color: var(--tertiary-bg) !important;
+  }
+  
+  .mat-mdc-row {
+    &:hover {
+      background-color: var(--hover-bg) !important;
+    }
+  }
+}
+
+.mat-mdc-dialog-container {
+  background-color: var(--secondary-bg) !important;
+  border: 1px solid var(--border-primary) !important;
+  border-radius: $border-radius-lg !important;
+}
+
+.mat-mdc-snack-bar-container {
+  background-color: var(--tertiary-bg) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-primary) !important;
+  border-radius: $border-radius-md !important;
+}
+
+.mat-mdc-menu-panel {
+  background-color: var(--secondary-bg) !important;
+  border: 1px solid var(--border-primary) !important;
+  border-radius: $border-radius-md !important;
+  box-shadow: $shadow-lg !important;
+}
+
+.mat-mdc-tooltip {
+  background-color: var(--tertiary-bg) !important;
+  color: var(--text-primary) !important;
+  font-size: $font-size-xs !important;
+  border-radius: $border-radius-sm !important;
+}
+
+// Hide scrollbars for Material components
+.mat-mdc-dialog-content,
+.mat-mdc-menu-content,
+.mat-mdc-select-panel {
+  &::-webkit-scrollbar {
+    display: none; // Chrome, Safari, Edge
+    width: 0;
+    height: 0;
+  }
+  
+  -ms-overflow-style: none; // IE and Edge
+  scrollbar-width: none; // Firefox
+}

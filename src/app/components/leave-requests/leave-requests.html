@@ -1,0 +1,450 @@
+<div class="leave-requests-container">
+  <!-- Smart Analytics Dashboard -->
+  <div class="analytics-dashboard" *ngIf="activeTab === 'Analytics'">
+    <div class="analytics-header">
+      <h2>📊 Leave Analytics Dashboard</h2>
+      <p>AI-powered insights and trends</p>
+    </div>
+    
+    <div class="analytics-grid">
+      <div class="analytics-card">
+        <div class="card-icon">📈</div>
+        <div class="card-content">
+          <h3>{{ analytics.totalRequests }}</h3>
+          <p>Total Requests</p>
+        </div>
+      </div>
+      
+      <div class="analytics-card pending">
+        <div class="card-icon">⏳</div>
+        <div class="card-content">
+          <h3>{{ analytics.pendingRequests }}</h3>
+          <p>Pending Review</p>
+        </div>
+      </div>
+      
+      <div class="analytics-card approved">
+        <div class="card-icon">✅</div>
+        <div class="card-content">
+          <h3>{{ analytics.approvedRequests }}</h3>
+          <p>Approved</p>
+        </div>
+      </div>
+      
+      <div class="analytics-card declined">
+        <div class="card-icon">❌</div>
+        <div class="card-content">
+          <h3>{{ analytics.declinedRequests }}</h3>
+          <p>Declined</p>
+        </div>
+      </div>
+      
+      <div class="analytics-card">
+        <div class="card-icon">⚡</div>
+        <div class="card-content">
+          <h3>{{ analytics.averageProcessingTime }}</h3>
+          <p>Avg Processing Time</p>
+        </div>
+      </div>
+      
+      <div class="analytics-card">
+        <div class="card-icon">📅</div>
+        <div class="card-content">
+          <h3>{{ analytics.peakLeaveMonth }}</h3>
+          <p>Peak Leave Month</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="department-stats">
+      <h3>Department Breakdown</h3>
+      <div class="stats-list">
+        <div class="stat-item" *ngFor="let stat of analytics.departmentStats">
+          <div class="stat-info">
+            <span class="dept-name">{{ stat.name }}</span>
+            <span class="dept-count">{{ stat.count }} requests</span>
+          </div>
+          <div class="stat-bar">
+            <div class="stat-fill" [style.width.%]="(stat.count / analytics.totalRequests) * 100"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Leave Requests Interface -->
+  <div *ngIf="activeTab !== 'Analytics'">
+    <!-- Smart Top Navigation -->
+    <div class="smart-nav">
+      <!-- Tabs with Smart Indicators -->
+      <div class="tabs">
+        <button 
+          *ngFor="let tab of tabs" 
+          class="tab"
+          [class.active]="activeTab === tab"
+          (click)="onTabClick(tab)">
+          {{ tab }}
+          <span class="tab-badge" *ngIf="tab === 'Leave Requests' && analytics.pendingRequests > 0">
+            {{ analytics.pendingRequests }}
+          </span>
+        </button>
+      </div>
+
+      <!-- Smart Search and Controls -->
+      <div class="smart-controls">
+        <!-- Advanced Search -->
+        <div class="search-container">
+          <i class="fas fa-search search-icon"></i>
+          <input 
+            type="text" 
+            class="search-input" 
+            placeholder="Search employees, departments, or leave types..."
+            [(ngModel)]="searchQuery"
+            (input)="onSearch()">
+          <button class="search-clear" *ngIf="searchQuery" (click)="searchQuery = ''; onSearch()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <!-- Smart Filters Toggle -->
+        <button class="filter-btn" [class.active]="showFilters" (click)="toggleFilters()">
+          <i class="fas fa-filter"></i>
+          <span>Filters</span>
+          <span class="filter-count" *ngIf="filterOptions.status.length + filterOptions.leaveType.length + filterOptions.department.length + filterOptions.priority.length > 0">
+            {{ filterOptions.status.length + filterOptions.leaveType.length + filterOptions.department.length + filterOptions.priority.length }}
+          </span>
+        </button>
+
+        <!-- View Mode Toggle -->
+        <div class="view-toggle">
+          <button class="view-btn" [class.active]="viewMode === 'table'" (click)="viewMode = 'table'">
+            <i class="fas fa-table"></i>
+          </button>
+          <button class="view-btn" [class.active]="viewMode === 'cards'" (click)="viewMode = 'cards'">
+            <i class="fas fa-th-large"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advanced Filters Panel -->
+    <div class="filters-panel" [class.show]="showFilters">
+      <div class="filters-header">
+        <h3>Advanced Filters</h3>
+        <button class="clear-filters" (click)="clearFilters()">
+          <i class="fas fa-times"></i>
+          Clear All
+        </button>
+      </div>
+      
+      <div class="filters-grid">
+        <!-- Status Filter -->
+        <div class="filter-group">
+          <label>Status</label>
+          <div class="filter-options">
+            <label *ngFor="let status of getUniqueValues('status')" class="filter-option">
+              <input 
+                type="checkbox" 
+                [value]="status"
+                [checked]="filterOptions.status.includes(status)"
+                (change)="filterOptions.status.includes(status) ? filterOptions.status.splice(filterOptions.status.indexOf(status), 1) : filterOptions.status.push(status); filterRequests()">
+              <span class="filter-label" [ngClass]="getStatusClass(status)">{{ status }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Department Filter -->
+        <div class="filter-group">
+          <label>Department</label>
+          <div class="filter-options">
+            <label *ngFor="let dept of getUniqueValues('department')" class="filter-option">
+              <input 
+                type="checkbox" 
+                [value]="dept"
+                [checked]="filterOptions.department.includes(dept)"
+                (change)="filterOptions.department.includes(dept) ? filterOptions.department.splice(filterOptions.department.indexOf(dept), 1) : filterOptions.department.push(dept); filterRequests()">
+              <span class="filter-label">{{ dept }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Priority Filter -->
+        <div class="filter-group">
+          <label>Priority</label>
+          <div class="filter-options">
+            <label *ngFor="let priority of getUniqueValues('priority')" class="filter-option">
+              <input 
+                type="checkbox" 
+                [value]="priority"
+                [checked]="filterOptions.priority.includes(priority)"
+                (change)="filterOptions.priority.includes(priority) ? filterOptions.priority.splice(filterOptions.priority.indexOf(priority), 1) : filterOptions.priority.push(priority); filterRequests()">
+              <span class="filter-label" [ngClass]="getPriorityClass(priority)">{{ priority }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Leave Type Filter -->
+        <div class="filter-group">
+          <label>Leave Type</label>
+          <div class="filter-options">
+            <label *ngFor="let type of getUniqueValues('leaveType')" class="filter-option">
+              <input 
+                type="checkbox" 
+                [value]="type"
+                [checked]="filterOptions.leaveType.includes(type)"
+                (change)="filterOptions.leaveType.includes(type) ? filterOptions.leaveType.splice(filterOptions.leaveType.indexOf(type), 1) : filterOptions.leaveType.push(type); filterRequests()">
+              <span class="filter-label">{{ type }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bulk Actions Bar -->
+    <div class="bulk-actions" [class.show]="showBulkActions">
+      <div class="bulk-info">
+        <span class="selected-count">{{ selectedRows.size }} selected</span>
+      </div>
+      <div class="bulk-buttons">
+        <button class="bulk-btn approve" (click)="onBulkAction('Approve')">
+          <i class="fas fa-check"></i>
+          Approve All
+        </button>
+        <button class="bulk-btn decline" (click)="onBulkAction('Decline')">
+          <i class="fas fa-times"></i>
+          Decline All
+        </button>
+        <button class="bulk-btn clear" (click)="selectedRows.clear(); showBulkActions = false">
+          <i class="fas fa-times"></i>
+          Clear Selection
+        </button>
+      </div>
+    </div>
+
+    <!-- Smart Table View -->
+    <div class="table-container" *ngIf="viewMode === 'table'">
+      <table class="smart-table">
+        <thead>
+          <tr class="table-header">
+            <th class="checkbox-col">
+              <input 
+                type="checkbox" 
+                class="checkbox"
+                (change)="onSelectAll($event)"
+                [checked]="selectedRows.size === filteredRequests.length && filteredRequests.length > 0">
+            </th>
+            <th class="employee-col sortable" (click)="onSort('employee')">
+              Employee
+              <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'employee' && sortOrder === 'asc'" [class.fa-sort-down]="sortBy === 'employee' && sortOrder === 'desc'"></i>
+            </th>
+            <th class="leave-type-col">Leave Type</th>
+            <th class="dates-col">Dates Requested</th>
+            <th class="duration-col sortable" (click)="onSort('duration')">
+              Duration
+              <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'duration' && sortOrder === 'asc'" [class.fa-sort-down]="sortBy === 'duration' && sortOrder === 'desc'"></i>
+            </th>
+            <th class="priority-col sortable" (click)="onSort('priority')">
+              Priority
+              <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'priority' && sortOrder === 'asc'" [class.fa-sort-down]="sortBy === 'priority' && sortOrder === 'desc'"></i>
+            </th>
+            <th class="status-col sortable" (click)="onSort('status')">
+              Status
+              <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'status' && sortOrder === 'asc'" [class.fa-sort-down]="sortBy === 'status' && sortOrder === 'desc'"></i>
+            </th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr 
+            *ngFor="let request of filteredRequests; trackBy: trackByRequestId"
+            class="table-row"
+            [class.selected]="selectedRows.has(request.id)"
+            [class.high-priority]="request.priority === 'High'">
+            
+            <td class="checkbox-col">
+              <input 
+                type="checkbox" 
+                class="checkbox"
+                [checked]="selectedRows.has(request.id)"
+                (change)="onRowSelect(request.id, $event)">
+            </td>
+
+            <td class="employee-col">
+              <div class="employee-info">
+                <div 
+                  class="employee-avatar"
+                  [style.background-color]="getAvatarColor(request.employee.avatar)">
+                  {{ request.employee.avatar }}
+                </div>
+                <div class="employee-details">
+                  <span class="employee-name">{{ request.employee.name }}</span>
+                  <span class="employee-position">{{ request.employee.position }}</span>
+                  <span class="employee-department">{{ request.employee.department }}</span>
+                </div>
+              </div>
+            </td>
+
+            <td class="leave-type-col">
+              <span class="leave-type">{{ request.leaveType }}</span>
+            </td>
+
+            <td class="dates-col">
+              <div class="date-info">
+                <span class="dates">{{ request.startDate }} - {{ request.endDate }}</span>
+                <span class="submitted-date">Submitted: {{ request.submittedDate }}</span>
+              </div>
+            </td>
+
+            <td class="duration-col">
+              <span class="duration">{{ request.duration }} days</span>
+            </td>
+
+            <td class="priority-col">
+              <div class="priority-badge" [ngClass]="getPriorityClass(request.priority)">
+                <i class="fas" [class.fa-exclamation-triangle]="request.priority === 'High'" [class.fa-minus]="request.priority === 'Medium'" [class.fa-check]="request.priority === 'Low'"></i>
+                <span>{{ request.priority }}</span>
+              </div>
+            </td>
+
+            <td class="status-col">
+              <div class="status-badge" [ngClass]="getStatusClass(request.status)">
+                <div class="status-dot"></div>
+                <span class="status-text">{{ request.status }}</span>
+              </div>
+            </td>
+
+            <td class="actions-col">
+              <div class="actions-container">
+                <button 
+                  class="action-button"
+                  (click)="toggleActionMenu(request.id)">
+                  <i class="fas fa-ellipsis-v"></i>
+                </button>
+                
+                <div 
+                  class="action-menu"
+                  [class.show]="showActionMenu === request.id">
+                  <button 
+                    class="action-item approve"
+                    (click)="onAction('Approve', request.id)">
+                    <i class="fas fa-check action-icon"></i>
+                    <span>Approve</span>
+                  </button>
+                  <button 
+                    class="action-item decline"
+                    (click)="onAction('Decline', request.id)">
+                    <i class="fas fa-times action-icon"></i>
+                    <span>Decline</span>
+                  </button>
+                  <button 
+                    class="action-item message"
+                    (click)="onAction('Send Message', request.id)">
+                    <i class="fas fa-paper-plane action-icon"></i>
+                    <span>Send Message</span>
+                  </button>
+                  <button 
+                    class="action-item view"
+                    (click)="onAction('View Details', request.id)">
+                    <i class="fas fa-eye action-icon"></i>
+                    <span>View Details</span>
+                  </button>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Smart Cards View -->
+    <div class="cards-container" *ngIf="viewMode === 'cards'">
+      <div class="cards-grid">
+        <div 
+          *ngFor="let request of filteredRequests; trackBy: trackByRequestId"
+          class="request-card"
+          [class.selected]="selectedRows.has(request.id)"
+          [class.high-priority]="request.priority === 'High'">
+          
+          <div class="card-header">
+            <div class="card-checkbox">
+              <input 
+                type="checkbox" 
+                class="checkbox"
+                [checked]="selectedRows.has(request.id)"
+                (change)="onRowSelect(request.id, $event)">
+            </div>
+            
+            <div class="employee-info">
+              <div 
+                class="employee-avatar"
+                [style.background-color]="getAvatarColor(request.employee.avatar)">
+                {{ request.employee.avatar }}
+              </div>
+              <div class="employee-details">
+                <h4 class="employee-name">{{ request.employee.name }}</h4>
+                <p class="employee-position">{{ request.employee.position }}</p>
+                <span class="employee-department">{{ request.employee.department }}</span>
+              </div>
+            </div>
+            
+            <div class="card-actions">
+              <button 
+                class="action-button"
+                (click)="toggleActionMenu(request.id)">
+                <i class="fas fa-ellipsis-v"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="card-content">
+            <div class="request-info">
+              <div class="info-row">
+                <span class="label">Leave Type:</span>
+                <span class="value">{{ request.leaveType }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Duration:</span>
+                <span class="value">{{ request.duration }} days</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Dates:</span>
+                <span class="value">{{ request.startDate }} - {{ request.endDate }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Reason:</span>
+                <span class="value">{{ request.reason }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card-footer">
+            <div class="status-priority">
+              <div class="status-badge" [ngClass]="getStatusClass(request.status)">
+                <div class="status-dot"></div>
+                <span>{{ request.status }}</span>
+              </div>
+              <div class="priority-badge" [ngClass]="getPriorityClass(request.priority)">
+                <i class="fas" [class.fa-exclamation-triangle]="request.priority === 'High'" [class.fa-minus]="request.priority === 'Medium'" [class.fa-check]="request.priority === 'Low'"></i>
+                <span>{{ request.priority }}</span>
+              </div>
+            </div>
+            <div class="submitted-date">
+              Submitted: {{ request.submittedDate }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- No Results State -->
+    <div class="no-results" *ngIf="filteredRequests.length === 0">
+      <div class="no-results-icon">🔍</div>
+      <h3>No leave requests found</h3>
+      <p>Try adjusting your search criteria or filters</p>
+      <button class="clear-filters-btn" (click)="clearFilters()">
+        <i class="fas fa-refresh"></i>
+        Clear Filters
+      </button>
+    </div>
+  </div>
+</div>

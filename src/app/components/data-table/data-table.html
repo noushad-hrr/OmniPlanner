@@ -1,0 +1,813 @@
+<!-- Modern Smart Data Table -->
+<div class="smart-table-container">
+  <!-- Table Header with Controls -->
+  <div class="table-header" #headerRef *ngIf="getFilterKeys().length > 0">
+    <!-- Search and Filter Bar -->
+    <div class="table-controls">
+      <div class="search-section">
+        <div class="filter-badges" *ngIf="getFilterKeys().length > 0">
+          <span *ngFor="let filter of getFilterKeys()"
+                class="filter-badge">
+            {{ filter }}: {{ filters[filter] }}
+            <button (click)="onFilter(filter, '')" class="remove-filter">×</button>
+          </span>
+          <button (click)="clearFilters()" class="clear-all-filters">Clear All</button>
+        </div>
+      </div>
+
+      <div class="table-actions">
+        <!-- Export Options - Commented Out -->
+        <!-- <div class="export-dropdown" *ngIf="config.exportable">
+          <button class="export-btn">
+            📊 Export
+            <span class="dropdown-arrow">▼</span>
+          </button>
+          <div class="export-menu">
+            <button (click)="exportData('csv')" class="export-option">📄 CSV</button>
+            <button (click)="exportData('json')" class="export-option">📋 JSON</button>
+            <button (click)="exportData('excel')" class="export-option">📈 Excel</button>
+          </div>
+        </div> -->
+        <!-- View Options - Commented Out -->
+        <!-- <div class="view-options">
+          <button class="view-btn" [class.active]="!config.pagination">
+            📋 All
+          </button>
+          <button class="view-btn" [class.active]="config.pagination">
+            📄 Paginated
+          </button>
+        </div> -->
+      </div>
+    </div>
+
+    <!-- Results Summary removed from header - moved to footer -->
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="loading">
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+      <span>Loading...</span>
+    </div>
+  </div>
+
+  <!-- Table Container -->
+  <div class="table-wrapper" [class.resizing]="isResizing">
+    <table class="smart-table" #tableRef>
+      <!-- Table Header -->
+      <thead class="table-header-row" [class.sticky]="config.stickyHeader">
+        <tr>
+          <!-- Selection Column for checkbox and star -->
+          <th class="selection-column" *ngIf="config.selectable">
+            <div class="header-content">
+              <span class="column-title" title="Select"></span>
+            </div>
+          </th>
+
+          <!-- Data Columns -->
+          <th *ngFor="let column of getVisibleColumns(); trackBy: trackByColumn"
+              class="table-header-cell"
+              [class.sortable]="column.sortable"
+              [class.sticky]="column.sticky"
+              [style.width]="column.width"
+              [style.min-width]="column.minWidth"
+              [style.max-width]="column.maxWidth"
+              [style.text-align]="column.align || 'left'"
+              (click)="onSort(column)">
+            <div class="header-content">
+              <span class="column-title"
+                    [title]="column.tooltip || column.title">
+                {{ column.title }}
+              </span>
+
+              <!-- Sort Indicator -->
+              <span *ngIf="column.sortable"
+                    class="sort-indicator"
+                    [class.active]="sortColumn === column.key">
+                {{ getSortIcon(column) }}
+              </span>
+            </div>
+
+
+            <!-- Resize Handle -->
+            <div *ngIf="column.resizable && config.resizable"
+                 class="resize-handle"
+                 (mousedown)="onMouseDown($event, column)"></div>
+          </th>
+
+          <!-- Actions Column - Removed as requested -->
+        </tr>
+      </thead>
+
+      <!-- Table Body -->
+      <tbody class="table-body">
+        <!-- Empty State -->
+        <tr *ngIf="displayedData.length === 0 && !loading" class="empty-row">
+          <td [attr.colspan]="getVisibleColumns().length + (config.selectable ? 1 : 0) + (actions.length > 0 ? 1 : 0)">
+            <div class="empty-state">
+              <div class="empty-icon">📋</div>
+              <h3>{{ emptyMessage }}</h3>
+              <p *ngIf="getFilteredCount() !== getTotalCount()">
+                Try adjusting your search or filters
+              </p>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Data Rows -->
+        <tr *ngFor="let row of displayedData; trackBy: trackByRow; let i = index"
+            class="table-row"
+            [class.selected]="isRowSelected(row)"
+            [class.completed]="!row['level'] && row['completed']"
+            [class.even]="i % 2 === 0"
+            [class.odd]="i % 2 === 1"
+            [attr.data-task-id]="!row['level'] ? row['id'] : null"
+            [attr.data-subtask-id]="row['level'] ? row['id'] : null">
+          <!-- Selection Cell with checkbox and star -->
+          <td class="selection-cell" *ngIf="config.selectable">
+            <div class="selection-controls">
+              <label class="checkbox-wrapper">
+                <input type="checkbox"
+                       *ngIf="!row['level']"
+                       [checked]="row['completed'] || false"
+                       [disabled]="isMainTaskDisabled(row)"
+                       (change)="onMainTaskCheckboxChange(row, $event)"
+                       class="row-checkbox"
+                       [class.disabled]="isMainTaskDisabled(row)">
+                <span class="checkbox-custom" [class.disabled]="isMainTaskDisabled(row)"></span>
+              </label>
+              <!-- Star icon for main tasks only -->
+              <button *ngIf="!row['level']"
+                      class="star-icon"
+                      [class.important]="row['important']"
+                      (click)="onToggleImportant(row); $event.stopPropagation()"
+                      [title]="row['important'] ? 'Mark as not important' : 'Mark as important'">
+                {{ row['important'] ? '★' : '☆' }}
+              </button>
+            </div>
+          </td>
+
+          <!-- Data Cells -->
+          <td *ngFor="let column of getVisibleColumns(); trackBy: trackByColumn"
+              class="table-cell"
+              [class.sticky]="column.sticky"
+              [style.width]="column.width"
+              [style.min-width]="column.minWidth"
+              [style.max-width]="column.maxWidth"
+              [style.text-align]="column.align || 'left'">
+            <div class="cell-content">
+              <!-- Custom Template -->
+              <ng-container *ngIf="column.type && column.type !== 'text'; else defaultCell">
+                <ng-container [ngSwitch]="column.type">
+                  <!-- Priority Badge -->
+                  <span *ngSwitchCase="'priority'"
+                        class="priority-badge"
+                        [style.background-color]="getPriorityColor(row[column.key] || row['priorityLevel'])">
+                    <span *ngIf="getCellValue(row, column.key); else priorityND">
+                      {{ getCellValue(row, column.key) | titlecase }}
+                    </span>
+                    <ng-template #priorityND>
+                      <span class="nd-value" title="Not defined">ND</span>
+                    </ng-template>
+                  </span>
+
+                  <!-- Status Badge -->
+                  <span *ngSwitchCase="'status'"
+                        class="status-badge"
+                        [style.background-color]="getStatusColor(row[column.key])">
+                    <span *ngIf="getCellValue(row, column.key); else statusND">
+                      {{ (getCellValue(row, column.key) | titlecase) }}
+                    </span>
+                    <ng-template #statusND>
+                      <span class="nd-value" title="Not defined">ND</span>
+                    </ng-template>
+                  </span>
+
+                  <!-- Progress Bar (Hidden for main tasks, shown only for subtasks if needed) -->
+                  <div *ngSwitchCase="'progress'" class="progress-cell">
+                    <div *ngIf="row['level']" class="progress-bar">
+                      <div class="progress-fill"
+                           [style.width.%]="getProgressPercentage(getCellValue(row, column.key))"></div>
+                    </div>
+                    <span *ngIf="row['level']" class="progress-text">{{ getCellValue(row, column.key) }}%</span>
+                  </div>
+
+                  <!-- Date -->
+                  <span *ngSwitchCase="'date'" class="date-cell">
+                    <!-- For Tasks section: Always show taskOnDate, and add periodic task date tags if available -->
+                    <ng-container *ngIf="!isPeriodicTasks">
+                      <!-- Always show taskOnDate -->
+                      <div class="task-on-date">
+                        <ng-container *ngIf="getCellValue(row, column.key); else noDate">
+                          {{ getCellValue(row, column.key) | date:'EEE, MMM dd, yyyy' }}
+                        </ng-container>
+                        <ng-template #noDate>
+                          <span class="nd-value" title="Not defined">ND</span>
+                        </ng-template>
+                      </div>
+                      <!-- Show periodic task dates as tags if available (only for main tasks with periodic_task AND only in taskOnDate column, not createdAt) -->
+                      <div *ngIf="column.key === 'taskOnDate' && !row['level'] && row['periodicTask'] && row['periodicTask'].id && row['periodicTask'].startDate && row['periodicTask'].endDate"
+                           class="periodic-task-date-panel"
+                           [title]="'Periodic Task: ' + (row['periodicTask'].startDate | date:'EEE, MMM dd, yyyy') + ' - ' + (row['periodicTask'].endDate | date:'EEE, MMM dd, yyyy')">
+                        <div class="periodic-date-row">
+                          <span class="periodic-date-label">SD:</span>
+                          <span class="periodic-date-value">{{ row['periodicTask'].startDate | date:'EEE, MMM dd, yyyy' }}</span>
+                        </div>
+                        <div class="periodic-date-row">
+                          <span class="periodic-date-label">ED:</span>
+                          <span class="periodic-date-value">{{ row['periodicTask'].endDate | date:'EEE, MMM dd, yyyy' }}</span>
+                        </div>
+                      </div>
+                    </ng-container>
+                    <!-- For Periodic Tasks section: Show startDate and endDate -->
+                    <ng-container *ngIf="isPeriodicTasks">
+                      <ng-container *ngIf="getCellValue(row, column.key); else noDate">
+                        {{ getCellValue(row, column.key) | date:'EEE, MMM dd, yyyy' }}
+                      </ng-container>
+                      <ng-template #noDate>
+                        <span class="nd-value" title="Not defined">ND</span>
+                      </ng-template>
+                    </ng-container>
+                  </span>
+
+                  <!-- Boolean -->
+                  <span *ngSwitchCase="'boolean'" class="boolean-cell">
+                    <!-- Toggleable boolean column with toggle switch -->
+                    <div *ngIf="column.toggleable"
+                         class="toggle-switch-wrapper"
+                         [title]="getCellValue(row, column.key) ? 'Turn off' : 'Turn on'">
+                      <label class="modern-toggle-switch"
+                             [class.active]="getCellValue(row, column.key)"
+                             (click)="onBooleanToggle(column.key, row, $event)">
+                        <input type="checkbox"
+                               [checked]="getCellValue(row, column.key)"
+                               (click)="onBooleanToggle(column.key, row, $event)"
+                               readonly
+                               tabindex="-1">
+                        <span class="toggle-slider">
+                          <span class="toggle-indicator"></span>
+                        </span>
+                      </label>
+                    </div>
+                    <!-- Non-toggleable boolean column with indicator -->
+                    <span *ngIf="!column.toggleable"
+                          class="boolean-indicator"
+                          [class.true]="getCellValue(row, column.key)"
+                          [class.false]="!getCellValue(row, column.key)">
+                      {{ getCellValue(row, column.key) ? '✓' : '✗' }}
+                    </span>
+                  </span>
+
+                  <!-- Custom Category -->
+                  <ng-container *ngSwitchCase="'custom'">
+                    <!-- Color swatch for Status Master 'color' column -->
+                    <span *ngIf="column.key === 'color'" class="color-cell" [title]="getCellValue(row, column.key)">
+                      <span class="color-swatch" [style.background]="getCellValue(row, column.key)"></span>
+                    </span>
+
+                    <!-- Default custom (Category icon/text) -->
+                    <span *ngIf="column.key !== 'actions' && column.key !== 'color'" class="category-cell">
+                      <ng-container *ngIf="row[column.key] && row[column.key].name; else categoryND">
+                        <span class="category-icon">{{ getCategoryIcon(row[column.key]) }}</span>
+                        {{ getCellValue(row, column.key) }}
+                      </ng-container>
+                      <ng-template #categoryND>
+                        <span class="nd-value" title="Not defined">ND</span>
+                      </ng-template>
+                    </span>
+
+                    <!-- Actions Column -->
+                    <div *ngIf="column.key === 'actions'" class="actions-cell-wrapper">
+                      <div class="action-buttons">
+                        <ng-container *ngFor="let action of actions">
+                          <!-- Modern Toggle Switch for Active/Deactivate -->
+                          <div *ngIf="action.action === 'toggle-active'"
+                               class="toggle-switch-wrapper"
+                               [title]="row['is_active'] ? 'Deactivate' : 'Activate'">
+                            <label class="modern-toggle-switch" [class.active]="row['is_active']" (click)="onActionClick(action, row, $event)">
+                              <input type="checkbox"
+                                     [checked]="row['is_active']"
+                                     (click)="onActionClick(action, row, $event)"
+                                     readonly
+                                     tabindex="-1">
+                              <span class="toggle-slider">
+                                <span class="toggle-indicator"></span>
+                              </span>
+                            </label>
+                          </div>
+
+                          <!-- Regular Action Buttons -->
+                          <button *ngIf="action.action !== 'toggle-active'"
+                                  class="action-btn modern-icon-btn"
+                                  [class.edit-action]="action.action === 'edit'"
+                                  [class.delete-action]="action.action === 'delete'"
+                                  [title]="action.label"
+                                  (click)="onActionClick(action, row, $event)">
+                            <i *ngIf="action.icon && action.icon.startsWith('fa-')" [class]="'fas ' + action.icon"></i>
+                            <span *ngIf="action.icon && !action.icon.startsWith('fa-')">{{ action.icon }}</span>
+                          </button>
+                        </ng-container>
+                      </div>
+                    </div>
+                  </ng-container>
+
+                  <!-- URLs -->
+                  <div *ngSwitchCase="'urls'" class="urls-cell">
+                    <div *ngIf="getUrlsArray(getCellValue(row, column.key)).length > 0">
+                      <div *ngFor="let urlItem of getUrlsArray(getCellValue(row, column.key))" class="url-item">
+                        <a [href]="urlItem.url"
+                           target="_blank"
+                           class="url-link"
+                           [title]="urlItem.label">
+                          <span class="url-label-truncated">{{ urlItem.label }}</span>
+                        </a>
+                        <!-- Credential Lock Icon (similar to notes section) -->
+                        <span *ngIf="urlItem.credentials && urlItem.credentials.length > 0"
+                              class="credential-tag-note"
+                              [title]="getCredentialTooltip(urlItem.credentials)"
+                              (click)="$event.stopPropagation()">
+                          <i class="fas fa-lock"></i>
+                          <span class="credential-count-note">{{ urlItem.credentials.length }}</span>
+                        </span>
+                      </div>
+                    </div>
+                    <span *ngIf="getUrlsArray(getCellValue(row, column.key)).length === 0" class="no-docs">
+                      No docs
+                    </span>
+                  </div>
+
+                  <!-- Remarks -->
+                  <div *ngSwitchCase="'remarks'" class="remarks-cell">
+                    <ul *ngIf="getRemarksArray(getCellValue(row, column.key)).length > 0" class="remarks-list">
+                      <li *ngFor="let remark of getRemarksArray(getCellValue(row, column.key))" class="remark-item">
+                        {{ remark }}
+                      </li>
+                    </ul>
+                    <span *ngIf="getRemarksArray(getCellValue(row, column.key)).length === 0" class="no-remarks">
+                      No remarks
+                    </span>
+                  </div>
+
+                  <!-- Password (masked with show/hide toggle) -->
+                  <div *ngSwitchCase="'password'" class="password-cell">
+                    <div class="password-display">
+                      <span *ngIf="!isPasswordVisible(row, column.key)" class="password-masked">
+                        {{ maskPassword(getCellValue(row, column.key)) }}
+                      </span>
+                      <span *ngIf="isPasswordVisible(row, column.key)" class="password-visible">
+                        {{ getCellValue(row, column.key) || '-' }}
+                      </span>
+                      <button class="password-toggle-btn"
+                              (click)="togglePasswordVisibility(row, column.key); $event.stopPropagation()"
+                              [title]="isPasswordVisible(row, column.key) ? 'Hide password' : 'Show password'">
+                        <i class="fas" [class.fa-eye]="!isPasswordVisible(row, column.key)" [class.fa-eye-slash]="isPasswordVisible(row, column.key)"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Additional Fields (JSON formatted) -->
+                  <div *ngSwitchCase="'json'" class="json-cell">
+                    <div *ngIf="getCellValue(row, column.key) && getCellValue(row, column.key) !== '{}'">
+                      <div class="json-preview" [title]="formatAdditionalFields(getCellValue(row, column.key))">
+                        {{ formatAdditionalFieldsPreview(getCellValue(row, column.key)) }}
+                      </div>
+                    </div>
+                    <span *ngIf="!getCellValue(row, column.key) || getCellValue(row, column.key) === '{}'">-</span>
+                  </div>
+
+                  <!-- Credentials (Accessible To) -->
+                  <div *ngSwitchCase="'credentials'" class="credentials-cell">
+                    <div *ngIf="getCredentialsArray(getCellValue(row, column.key)).length > 0">
+                      <div class="credentials-list">
+                        <span *ngFor="let cred of getCredentialsArray(getCellValue(row, column.key)); let last = last"
+                              class="credential-badge"
+                              [title]="cred.provider + ' - ' + cred.credential_name + ' (' + cred.credential_id + ')'">
+                          {{ cred.provider }} - {{ cred.credential_name }}
+                        </span>
+                      </div>
+                    </div>
+                    <span *ngIf="getCredentialsArray(getCellValue(row, column.key)).length === 0" class="public-access">
+                      <i class="fas fa-globe"></i> Public
+                    </span>
+                  </div>
+
+                  <!-- Default -->
+                  <span *ngSwitchDefault class="default-cell">
+                    <span *ngIf="column.key === 'id'">#{{ getCellValue(row, column.key) || '-' }}</span>
+                    <span *ngIf="column.key !== 'id' && column.key !== 'priorityOrder' && column.key !== 'startTime' && column.key !== 'endTime' && column.key !== 'hours'">
+                      {{ getCellValue(row, column.key) || '-' }}
+                    </span>
+                    <!-- Priority Order - show ND if null/empty -->
+                    <span *ngIf="column.key === 'priorityOrder' && (getCellValue(row, column.key) == null || getCellValue(row, column.key) === '' || getCellValue(row, column.key) === 'null' || getCellValue(row, column.key) === 'nullh')"
+                          class="nd-value"
+                          title="Not defined">
+                      ND
+                    </span>
+                    <span *ngIf="column.key === 'priorityOrder' && getCellValue(row, column.key) != null && getCellValue(row, column.key) !== '' && getCellValue(row, column.key) !== 'null' && getCellValue(row, column.key) !== 'nullh'"
+                          [class.schedule-overlap]="row['hasOrderMismatch']">
+                      {{ getCellValue(row, column.key) }}
+                    </span>
+                    <!-- Start Time - show ND if null/empty or if both startTime and endTime are 00:00 -->
+                    <span *ngIf="column.key === 'startTime' && ((getCellValue(row, column.key) == null || getCellValue(row, column.key) === '' || getCellValue(row, column.key) === 'null' || getCellValue(row, column.key) === 'nullh') || (getCellValue(row, 'startTime') === '00:00' && getCellValue(row, 'endTime') === '00:00'))"
+                          class="nd-value"
+                          title="Not defined">
+                      ND
+                    </span>
+                    <span *ngIf="column.key === 'startTime' && getCellValue(row, column.key) != null && getCellValue(row, column.key) !== '' && getCellValue(row, column.key) !== 'null' && getCellValue(row, column.key) !== 'nullh' && !(getCellValue(row, 'startTime') === '00:00' && getCellValue(row, 'endTime') === '00:00')"
+                          [class.schedule-overlap]="row['hasScheduleOverlap']">
+                      {{ getCellValue(row, column.key) }}
+                    </span>
+                    <!-- End Time - show ND if null/empty or if both startTime and endTime are 00:00 -->
+                    <span *ngIf="column.key === 'endTime' && ((getCellValue(row, column.key) == null || getCellValue(row, column.key) === '' || getCellValue(row, column.key) === 'null' || getCellValue(row, column.key) === 'nullh') || (getCellValue(row, 'startTime') === '00:00' && getCellValue(row, 'endTime') === '00:00'))"
+                          class="nd-value"
+                          title="Not defined">
+                      ND
+                    </span>
+                    <span *ngIf="column.key === 'endTime' && getCellValue(row, column.key) != null && getCellValue(row, column.key) !== '' && getCellValue(row, column.key) !== 'null' && getCellValue(row, column.key) !== 'nullh' && !(getCellValue(row, 'startTime') === '00:00' && getCellValue(row, 'endTime') === '00:00')"
+                          [class.schedule-overlap]="row['hasScheduleOverlap']">
+                      {{ getCellValue(row, column.key) }}
+                    </span>
+                    <!-- Hours column with Hours Per Day for periodic tasks -->
+                    <span *ngIf="column.key === 'hours' && (getCellValue(row, column.key) == null || getCellValue(row, column.key) === '' || getCellValue(row, column.key) === 'null' || getCellValue(row, column.key) === 'nullh')"
+                          class="nd-value"
+                          title="Not defined">
+                      ND
+                    </span>
+                    <div *ngIf="column.key === 'hours' && getCellValue(row, column.key) != null && getCellValue(row, column.key) !== '' && getCellValue(row, column.key) !== 'null' && getCellValue(row, column.key) !== 'nullh'"
+                         class="hours-cell"
+                         [class.schedule-overlap]="row['hasHoursMismatch']">
+                      <span class="hours-main">{{ getHoursDisplay(row) }}</span>
+                      <span *ngIf="isPeriodicTasks && getHoursPerDay(row) != null"
+                            class="hours-per-day-badge"
+                            [title]="'Hours per day: ' + getHoursPerDay(row) + 'h'">
+                        {{ getHoursPerDay(row) }}h/day
+                      </span>
+                    </div>
+                  </span>
+                </ng-container>
+              </ng-container>
+
+              <!-- Default Cell Template -->
+              <ng-template #defaultCell>
+                <div class="default-cell"
+                     [class.task-cell]="column.key === 'title'">
+                  <!-- Priority Order - show ND if null/empty -->
+                  <span *ngIf="column.key === 'priorityOrder' && (getCellValue(row, column.key) == null || getCellValue(row, column.key) === '' || getCellValue(row, column.key) === 'null' || getCellValue(row, column.key) === 'nullh')"
+                        class="nd-value"
+                        title="Not defined">
+                    ND
+                  </span>
+                  <span *ngIf="column.key === 'priorityOrder' && getCellValue(row, column.key) != null && getCellValue(row, column.key) !== '' && getCellValue(row, column.key) !== 'null' && getCellValue(row, column.key) !== 'nullh'"
+                        [class.schedule-overlap]="row['hasOrderMismatch']">
+                    {{ getCellValue(row, column.key) }}
+                  </span>
+                  <!-- Start Time - show ND if null/empty or if both startTime and endTime are 00:00 -->
+                  <span *ngIf="column.key === 'startTime' && ((getCellValue(row, column.key) == null || getCellValue(row, column.key) === '' || getCellValue(row, column.key) === 'null' || getCellValue(row, column.key) === 'nullh') || (getCellValue(row, 'startTime') === '00:00' && getCellValue(row, 'endTime') === '00:00'))"
+                        class="nd-value"
+                        title="Not defined">
+                    ND
+                  </span>
+                  <span *ngIf="column.key === 'startTime' && getCellValue(row, column.key) != null && getCellValue(row, column.key) !== '' && getCellValue(row, column.key) !== 'null' && getCellValue(row, column.key) !== 'nullh' && !(getCellValue(row, 'startTime') === '00:00' && getCellValue(row, 'endTime') === '00:00')"
+                        [class.schedule-overlap]="row['hasScheduleOverlap']">
+                    {{ getCellValue(row, column.key) }}
+                  </span>
+                  <!-- End Time - show ND if null/empty or if both startTime and endTime are 00:00 -->
+                  <span *ngIf="column.key === 'endTime' && ((getCellValue(row, column.key) == null || getCellValue(row, column.key) === '' || getCellValue(row, column.key) === 'null' || getCellValue(row, column.key) === 'nullh') || (getCellValue(row, 'startTime') === '00:00' && getCellValue(row, 'endTime') === '00:00'))"
+                        class="nd-value"
+                        title="Not defined">
+                    ND
+                  </span>
+                  <span *ngIf="column.key === 'endTime' && getCellValue(row, column.key) != null && getCellValue(row, column.key) !== '' && getCellValue(row, column.key) !== 'null' && getCellValue(row, column.key) !== 'nullh' && !(getCellValue(row, 'startTime') === '00:00' && getCellValue(row, 'endTime') === '00:00')"
+                        [class.schedule-overlap]="row['hasScheduleOverlap']">
+                    {{ getCellValue(row, column.key) }}
+                  </span>
+                  <!-- Show - for other columns when null/empty -->
+                  <span *ngIf="!getCellValue(row, column.key) && column.key !== 'priorityOrder' && column.key !== 'startTime' && column.key !== 'endTime' && column.key !== 'hours'">-</span>
+                  <span *ngIf="getCellValue(row, column.key) && column.key === 'id'">{{ getCellValue(row, column.key) }}</span>
+                  <!-- Hours column with Hours Per Day for periodic tasks -->
+                  <span *ngIf="column.key === 'hours' && (getCellValue(row, column.key) == null || getCellValue(row, column.key) === '' || getCellValue(row, column.key) === 'null' || getCellValue(row, column.key) === 'nullh')"
+                        class="nd-value"
+                        title="Not defined">
+                    ND
+                  </span>
+                  <div *ngIf="column.key === 'hours' && getCellValue(row, column.key) != null && getCellValue(row, column.key) !== '' && getCellValue(row, column.key) !== 'null' && getCellValue(row, column.key) !== 'nullh'"
+                       class="hours-cell"
+                       [class.schedule-overlap]="row['hasHoursMismatch']">
+                    <span class="hours-main">{{ getHoursDisplay(row) }}</span>
+                    <span *ngIf="isPeriodicTasks && getHoursPerDay(row) != null"
+                          class="hours-per-day-badge"
+                          [title]="'Hours per day: ' + getHoursPerDay(row) + 'h'">
+                      {{ getHoursPerDay(row) }}h/day
+                    </span>
+                  </div>
+                  <ng-container *ngIf="getCellValue(row, column.key) && column.key !== 'id' && column.key !== 'priorityOrder' && column.key !== 'startTime' && column.key !== 'endTime' && column.key !== 'hours'">
+                    <!-- Main Task Title with Actions -->
+                    <div class="task-title-container">
+                      <div class="task-title-row">
+                        <!-- Expand/Collapse Button for Main Task -->
+                        <button *ngIf="column.key === 'title' && getCellValue(row, 'subtasks') && getCellValue(row, 'subtasks').length > 0"
+                                class="expand-btn"
+                                [class.expanded]="row['isExpanded']"
+                                (click)="onToggleTaskExpansion(row); $event.stopPropagation()"
+                                title="{{ row['isExpanded'] ? 'Collapse' : 'Expand' }} subtasks">
+                          <i class="fas" [class.fa-chevron-down]="row['isExpanded']" [class.fa-chevron-right]="!row['isExpanded']"></i>
+                        </button>
+
+                        <div class="task-title"
+                             [class.clickable]="column.key === 'title'"
+                             (click)="column.key === 'title' ? onTaskClick(row) : null">
+                          {{ getCellValue(row, column.key) }}
+                        </div>
+
+                        <span *ngIf="column.key === 'title' && getCellValue(row, 'subtasks') && getCellValue(row, 'subtasks').length > 0"
+                              class="task-count"
+                              [title]="getLevel1SubtaskTooltip(getCellValue(row, 'subtasks'))">
+                          {{ getLevel1SubtaskCount(getCellValue(row, 'subtasks')) }}
+                        </span>
+
+                        <!-- Periodic Task Button (Tasks section only, if task has periodicTask) -->
+                        <button *ngIf="column.key === 'title' && !isPeriodicTasks && row['periodicTask'] && row['periodicTask'].id"
+                                class="periodic-task-btn"
+                                [title]="'Move to periodic task: ' + row['periodicTask'].id"
+                                (click)="onNavigateToPeriodicTask(row['periodicTask'].id); $event.stopPropagation()">
+                          <span class="periodic-icon-wrapper">
+                            <span class="periodic-icon">⟲</span>
+                          </span>
+                          <span class="periodic-content">
+                            <span class="periodic-label">Periodic</span>
+                            <span class="periodic-id">{{ row['periodicTask'].id }}</span>
+                          </span>
+                        </button>
+
+                        <!-- Main Task Actions - Inline -->
+                        <div class="task-actions" *ngIf="column.key === 'title'" (click)="$event.stopPropagation()">
+                          <button *ngIf="isPeriodicTasks || (!row['periodicTask'] || !row['periodicTask'].id)"
+                                  class="action-btn"
+                                  [class.disabled]="isTaskCompleted(row)"
+                                  [disabled]="isTaskCompleted(row)"
+                                  (click)="!isTaskCompleted(row) && onAddSubtask(row); $event.stopPropagation()"
+                                  [title]="getAddButtonTooltip(row)">
+                            <i class="fas fa-plus"></i>
+                          </button>
+                          <button class="action-btn"
+                                  [class.disabled]="isTaskCompleted(row)"
+                                  [disabled]="isTaskCompleted(row)"
+                                  (click)="!isTaskCompleted(row) && onEditTask(row); $event.stopPropagation()"
+                                  [title]="getEditButtonTooltip(row)">
+                            <i class="fas fa-edit"></i>
+                          </button>
+                          <button class="action-btn" (click)="onViewTask(row); $event.stopPropagation()" title="View Main Task">
+                            <i class="fas fa-eye"></i>
+                          </button>
+                          <button class="action-btn" (click)="onDeleteTask(row); $event.stopPropagation()" title="Delete Main Task">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Progress Bar Below Actions (Main Tasks Only - Only if task has subtasks) -->
+                      <div class="task-progress-row" *ngIf="column.key === 'title' && !row['level'] && getCellValue(row, 'progress') != null && getCellValue(row, 'subtasks') && getCellValue(row, 'subtasks').length > 0">
+                        <div class="progress-bar-inline">
+                          <div class="progress-fill-inline"
+                               [style.width.%]="getCellValue(row, 'progress')"></div>
+                        </div>
+                        <span class="progress-text-inline">{{ getCellValue(row, 'progress') }}%</span>
+                      </div>
+
+                      <!-- Remarks and Description Row Below Task Title -->
+                      <div class="task-meta-row" *ngIf="column.key === 'title' && !row['level'] && (hasRemarks(row) || hasDescription(row))">
+                        <!-- Remarks Indicator -->
+                        <button *ngIf="hasRemarks(row)"
+                                class="remarks-indicator"
+                                [title]="'Has ' + getRemarksCount(row) + ' remark' + (getRemarksCount(row) > 1 ? 's' : '') + ' please check'"
+                                (click)="onRemarksClick(row, $event); $event.stopPropagation()">
+                          <span class="remarks-label">Remarks</span>
+                          <span class="remarks-badge" *ngIf="getRemarksCount(row) > 0">{{ getRemarksCount(row) }}</span>
+                        </button>
+
+                        <!-- Description Indicator -->
+                        <div *ngIf="hasDescription(row)"
+                             class="description-indicator"
+                             [title]="'Description: ' + getDescriptionText(row)">
+                          <span class="description-label">Description</span>
+                          <span class="description-text">{{ getDescriptionText(row) }}</span>
+                        </div>
+
+                        <!-- Remarks Tooltip/Popover - Only on click -->
+                        <div *ngIf="hasRemarks(row) && showRemarksTooltip === row['id']"
+                             class="remarks-tooltip"
+                             (click)="$event.stopPropagation()">
+                          <div class="remarks-tooltip-header">
+                            <span class="remarks-tooltip-title">Remarks</span>
+                            <button class="remarks-tooltip-close" (click)="showRemarksTooltip = null; $event.stopPropagation()">×</button>
+                          </div>
+                          <div class="remarks-tooltip-content">
+                            <ul class="remarks-tooltip-list">
+                              <li *ngFor="let remark of getRemarksArray(row['remarks'])" class="remarks-tooltip-item">
+                                {{ remark }}
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- All Subtasks (including nested ones) in single cell -->
+                    <div *ngIf="column.key === 'title' && getCellValue(row, 'subtasks') && getCellValue(row, 'subtasks').length > 0 && row['isExpanded']"
+                         class="subtasks-container">
+                      <div class="subtask-item" *ngFor="let subtask of getAllSubtasks(getCellValue(row, 'subtasks'))">
+                        <div class="subtask-checkbox">
+                          <input type="checkbox"
+                                 [checked]="subtask.completed || false"
+                                 [disabled]="isSubtaskDisabled(subtask)"
+                                 (change)="onSubtaskCheckboxChange(row.id, subtask, $event)"
+                                 class="subtask-checkbox-input"
+                                 [class.disabled]="isSubtaskDisabled(subtask)">
+                        </div>
+                        <div class="subtask-content"
+                             [class.level-1]="subtask.level === 1"
+                             [class.level-2]="subtask.level === 2"
+                             (click)="onSubtaskClick(row.id, subtask)">
+                          <div class="subtask-title-row">
+                            <!-- Left Side: Expand Button and Title -->
+                            <div class="subtask-left-group">
+                              <!-- Expand/Collapse Button for Level 1 Subtasks -->
+                              <button *ngIf="subtask.level === 1 && hasNestedSubtasks(subtask)"
+                                      class="expand-btn subtask-expand-btn"
+                                      [class.expanded]="subtask.isExpanded"
+                                      (click)="onToggleSubtaskExpansion(row, subtask); $event.stopPropagation()"
+                                      title="{{ subtask.isExpanded ? 'Collapse' : 'Expand' }} nested subtasks">
+                                <i class="fas" [class.fa-chevron-down]="subtask.isExpanded" [class.fa-chevron-right]="!subtask.isExpanded"></i>
+                              </button>
+
+                              <span class="subtask-title">
+                                {{ subtask.title }}
+                              </span>
+                            </div>
+
+                            <!-- Right Side: Count and Action Buttons -->
+                            <div class="subtask-right-group">
+                              <!-- Count on the right for Level 1 subtasks -->
+                              <span *ngIf="subtask.level === 1 && hasNestedSubtasks(subtask)"
+                                    class="subtask-count"
+                                    [title]="getLevel2SubtaskTooltip(subtask)">
+                                {{ getLevel2SubtaskCount(subtask) }}
+                              </span>
+
+                              <!-- Context-specific Action Buttons -->
+                              <div class="subtask-actions" (click)="$event.stopPropagation()">
+                                <!-- Level 1 Child Task Actions -->
+                                <ng-container *ngIf="subtask.level === 1">
+                                  <button class="action-btn"
+                                          [class.disabled]="isSubtaskCompleted(subtask)"
+                                          [disabled]="isSubtaskCompleted(subtask)"
+                                          (click)="!isSubtaskCompleted(subtask) && onAddNestedSubtask(row, subtask); $event.stopPropagation()"
+                                          [title]="getAddButtonTooltip(subtask, true)">
+                                    <i class="fas fa-plus"></i>
+                                  </button>
+                                  <button class="action-btn"
+                                          [class.disabled]="isSubtaskCompleted(subtask)"
+                                          [disabled]="isSubtaskCompleted(subtask)"
+                                          (click)="!isSubtaskCompleted(subtask) && onEditSubtask(row, subtask); $event.stopPropagation()"
+                                          [title]="getEditButtonTooltip(subtask, true, 1)">
+                                    <i class="fas fa-edit"></i>
+                                  </button>
+                                  <button class="action-btn" (click)="onViewSubtask(row, subtask); $event.stopPropagation()" title="View Level 1 Child Task">
+                                    <i class="fas fa-eye"></i>
+                                  </button>
+                                  <button class="action-btn" (click)="onDeleteSubtask(row, subtask); $event.stopPropagation()" title="Delete Level 1 Child Task">
+                                    <i class="fas fa-trash"></i>
+                                  </button>
+                                </ng-container>
+
+                                <!-- Level 2 Child Task Actions -->
+                                <ng-container *ngIf="subtask.level === 2">
+                                  <button class="action-btn"
+                                          [class.disabled]="isSubtaskCompleted(subtask)"
+                                          [disabled]="isSubtaskCompleted(subtask)"
+                                          (click)="!isSubtaskCompleted(subtask) && onEditSubtask(row, subtask); $event.stopPropagation()"
+                                          [title]="getEditButtonTooltip(subtask, true, 2)">
+                                    <i class="fas fa-edit"></i>
+                                  </button>
+                                  <button class="action-btn" (click)="onViewSubtask(row, subtask); $event.stopPropagation()" title="View Level 2 Child Task">
+                                    <i class="fas fa-eye"></i>
+                                  </button>
+                                  <button class="action-btn" (click)="onDeleteSubtask(row, subtask); $event.stopPropagation()" title="Delete Level 2 Child Task">
+                                    <i class="fas fa-trash"></i>
+                                  </button>
+                                </ng-container>
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- Subtask Meta Information: Status, Priority, Hours, Description, Dates (Periodic Tasks Only) -->
+                          <div class="subtask-meta-row" *ngIf="subtask.status || subtask.priority || subtask.estimatedHours || (subtask.description && subtask.description.trim()) || (isPeriodicTasks && (subtask.startDate || subtask.endDate))">
+                            <!-- Status Indicator -->
+                            <span *ngIf="subtask.status"
+                                  class="subtask-status-indicator"
+                                  [style.background-color]="getStatusColor(subtask.status)"
+                                  [title]="'Status: ' + (subtask.status.name | titlecase)">
+                              {{ (subtask.status.name | titlecase) }}
+                            </span>
+
+                            <!-- Priority Indicator -->
+                            <span *ngIf="subtask.priority"
+                                  class="subtask-priority-indicator"
+                                  [style.background-color]="getPriorityColor(subtask.priority)"
+                                  [title]="'Priority: ' + (subtask.priority.name | titlecase)">
+                              {{ (subtask.priority.name | titlecase) }}
+                            </span>
+
+                            <!-- Estimated Hours Indicator -->
+                            <span *ngIf="subtask.estimatedHours != null && subtask.estimatedHours > 0"
+                                  class="subtask-hours-indicator"
+                                  title="Estimated Hours: {{ subtask.estimatedHours }}h">
+                              {{ subtask.estimatedHours }}h
+                            </span>
+
+                            <!-- Start Date Indicator (Periodic Tasks Only) -->
+                            <span *ngIf="isPeriodicTasks && subtask.startDate"
+                                  class="subtask-date-indicator subtask-start-date"
+                                  [title]="'Start Date: ' + formatSubtaskDate(subtask.startDate)">
+                              SD: {{ formatSubtaskDate(subtask.startDate) }}
+                            </span>
+
+                            <!-- End Date Indicator (Periodic Tasks Only) -->
+                            <span *ngIf="isPeriodicTasks && subtask.endDate"
+                                  class="subtask-date-indicator subtask-end-date"
+                                  [title]="'End Date: ' + formatSubtaskDate(subtask.endDate)">
+                              ED: {{ formatSubtaskDate(subtask.endDate) }}
+                            </span>
+
+                            <!-- Description Indicator -->
+                            <div *ngIf="subtask.description && subtask.description.trim()"
+                                 class="subtask-description-indicator"
+                                 [title]="'Description: ' + subtask.description">
+                              <span class="subtask-description-label">Description</span>
+                              <span class="subtask-description-text">{{ subtask.description }}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </ng-container>
+                </div>
+              </ng-template>
+            </div>
+          </td>
+
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination-wrapper">
+    <div class="pagination-info">
+      <span class="page-info">
+        Showing {{ displayedData.length }} of {{ getFilteredCount() }} results
+      </span>
+
+      <div class="page-size-selector" *ngIf="config.pagination">
+        <label>Show:</label>
+        <select [ngModel]="pageSize"
+                (ngModelChange)="onPageSizeChange($event)"
+                class="page-size-select">
+          <option *ngFor="let size of config.pageSizeOptions" [value]="size">
+            {{ size }}
+          </option>
+        </select>
+        <span>per page</span>
+      </div>
+    </div>
+
+    <div class="pagination-controls" *ngIf="config.pagination && totalPages > 1">
+      <!-- Previous Button -->
+      <button class="pagination-btn"
+              [class.disabled]="currentPage === 1"
+              (click)="onPageChange(currentPage - 1)"
+              [disabled]="currentPage === 1">
+        ← Previous
+      </button>
+
+      <!-- Page Numbers -->
+      <div class="page-numbers">
+        <button *ngFor="let page of getPageNumbers()"
+                class="page-number"
+                [class.active]="page === currentPage"
+                (click)="onPageChange(page)">
+          {{ page }}
+        </button>
+      </div>
+
+      <!-- Next Button -->
+      <button class="pagination-btn"
+              [class.disabled]="currentPage === totalPages"
+              (click)="onPageChange(currentPage + 1)"
+              [disabled]="currentPage === totalPages">
+        Next →
+      </button>
+    </div>
+  </div>
+</div>
+

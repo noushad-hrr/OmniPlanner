@@ -1,0 +1,182 @@
+<div class="category-master-container">
+  <!-- Search and Add Button Row -->
+  <div class="master-toolbar" *ngIf="tableConfig.searchable">
+    <div class="toolbar-left">
+      <div class="master-search-wrapper">
+        <input 
+          type="text" 
+          class="master-search-input" 
+          [(ngModel)]="searchQuery"
+          (ngModelChange)="onSearchChange()"
+          placeholder="Search URLs..."
+        />
+        <button 
+          *ngIf="searchQuery" 
+          class="master-search-clear"
+          (click)="searchQuery = ''; onSearchChange()"
+          title="Clear search"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+    <div class="toolbar-right">
+      <select 
+        class="category-filter-select form-select" 
+        [(ngModel)]="selectedCategoryId" 
+        (ngModelChange)="onCategoryFilterChange()"
+      >
+        <option [ngValue]="null">All Categories</option>
+        <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.icon ? c.icon + ' ' : '' }}{{ c.category }}</option>
+      </select>
+      <button 
+        class="add-action-btn" 
+        (click)="openAddModal()"
+        aria-label="Add new URL or document"
+        title="Create a new URL or document"
+      >
+        <i class="fas fa-plus icon" [attr.aria-hidden]="true"></i>
+        <span class="label">Add URL/DOC</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="table-view">
+    <app-data-table
+      [columns]="tableColumns"
+      [data]="getTableData()"
+      [config]="tableConfig"
+      [actions]="tableActions"
+      (booleanToggle)="onBooleanToggle($event)"
+      [loading]="false"
+      emptyMessage="No URLs available"
+      searchPlaceholder="Search URLs..."
+      [externalSearch]="searchQuery"
+      (actionClick)="onTableActionClick($event)"
+    ></app-data-table>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showAddEditModal" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ isEditMode ? 'Edit URL/DOC' : 'Add New URL/DOC' }}</h3>
+        <button class="btn-icon" (click)="closeModal()" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="docLabel">Label <span class="required">*</span></label>
+          <input 
+            type="text" 
+            id="docLabel"
+            class="form-input" 
+            [class.error]="labelError"
+            [(ngModel)]="formDoc.label"
+            (blur)="onLabelBlur()"
+            (input)="onLabelInput()"
+            placeholder="e.g., JWT Documentation"
+            maxlength="200"
+          />
+          <div class="error-message" *ngIf="labelError">{{ labelError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="docCategory">Category <span class="required">*</span></label>
+          <select 
+            id="docCategory"
+            class="form-input" 
+            [class.error]="categoryError"
+            [(ngModel)]="formDoc.category_id"
+            (blur)="validateCategory()"
+            (ngModelChange)="onCategoryChange()"
+          >
+            <option [ngValue]="null">Select Category</option>
+            <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.icon ? c.icon + ' ' : '' }}{{ c.category }}</option>
+          </select>
+          <div class="error-message" *ngIf="categoryError">{{ categoryError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="docUrl">URL <span class="required">*</span></label>
+          <input 
+            type="text" 
+            id="docUrl"
+            class="form-input" 
+            [class.error]="urlError"
+            [(ngModel)]="formDoc.url"
+            (blur)="onUrlBlur()"
+            (input)="onUrlInput()"
+            placeholder="https://example.com"
+          />
+          <div class="error-message" *ngIf="urlError">{{ urlError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="docCredentials">Accessible To (Credentials)</label>
+          <div class="credentials-select-container">
+            <div class="credentials-select-header">
+              <label class="credential-checkbox-label">
+                <input 
+                  type="checkbox" 
+                  class="credential-checkbox"
+                  [(ngModel)]="isAllSelected"
+                  (change)="onAllToggle()"
+                />
+                <span class="credential-checkbox-text">
+                  <i class="fas fa-globe"></i> All (Public Access)
+                </span>
+              </label>
+            </div>
+            <div class="credentials-select-list">
+              <label 
+                *ngFor="let cred of credentials" 
+                class="credential-checkbox-label"
+              >
+                <input 
+                  type="checkbox" 
+                  class="credential-checkbox"
+                  [checked]="isCredentialSelected(cred.id)"
+                  (change)="onCredentialToggle(cred.id)"
+                />
+                <span class="credential-checkbox-text">
+                  <span class="credential-provider">{{ cred.provider }}</span>
+                  <span class="credential-name">- {{ cred.credential_name }}</span>
+                  <span class="credential-id">({{ cred.credential_id }})</span>
+                </span>
+              </label>
+            </div>
+          </div>
+          <div class="form-hint" style="margin-top: 8px; font-size: 12px; color: #9aa0a6;">
+            Select "All" for public access, or choose specific credentials for restricted access.
+          </div>
+        </div>
+
+        <div class="form-group form-group-checkbox">
+          <label for="docActive" class="form-label-inline">Active</label>
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              id="docActive"
+              [(ngModel)]="formDoc.is_active"
+              class="checkbox-input"
+            />
+            <span class="checkbox-toggle">
+              <span class="toggle-indicator"></span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="saveDoc()">
+          {{ isEditMode ? 'Update' : 'Create' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
