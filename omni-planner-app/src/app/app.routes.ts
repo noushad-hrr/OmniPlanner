@@ -19,6 +19,12 @@ export const routes: Routes = [
     data: { permission: 'tasks.view' }
   },
   {
+    path: 'tasks2',
+    loadComponent: () => import('./components/tasks2/tasks2').then(m => m.Tasks2Component),
+    canActivate: [AuthGuard, PermissionGuard],
+    data: { permission: 'tasks2.view' }
+  },
+  {
     path: 'budget',
     loadComponent: () => import('./components/budget/budget').then(m => m.BudgetComponent),
     canActivate: [AuthGuard, PermissionGuard],

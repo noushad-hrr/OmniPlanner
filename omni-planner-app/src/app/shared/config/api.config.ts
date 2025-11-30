@@ -32,6 +32,24 @@ export const API_CONFIG = {
     deleteLevel2Subtask: (id: number) => `${environment.apiUrl}/Task/DeleteLevel2Subtask/level2/${id}`
   },
 
+  // Task2 endpoints (isolated replica of tasks)
+  tasks2: {
+    getAll: `${environment.apiUrl}/Task2/GetAllTasks2`,
+    addMainTask: `${environment.apiUrl}/Task2/AddMainTask2`,
+    updateMainTask: `${environment.apiUrl}/Task2/UpdateMainTask2`,
+    updateTaskImportant: (id: number) => `${environment.apiUrl}/Task2/UpdateTask2Important/important/${id}`,
+    updateTaskCompleted: (id: number) => `${environment.apiUrl}/Task2/UpdateTask2Completed/completed/${id}`,
+    updateLevel1SubtaskCompleted: (id: number) => `${environment.apiUrl}/Task2/UpdateLevel1Subtask2Completed/level1/completed/${id}`,
+    updateLevel2SubtaskCompleted: (id: number) => `${environment.apiUrl}/Task2/UpdateLevel2Subtask2Completed/level2/completed/${id}`,
+    deleteMainTask: (id: number) => `${environment.apiUrl}/Task2/DeleteMainTask2/${id}`,
+    addLevel1Subtask: `${environment.apiUrl}/Task2/AddLevel1Subtask2`,
+    updateLevel1Subtask: `${environment.apiUrl}/Task2/UpdateLevel1Subtask2`,
+    deleteLevel1Subtask: (id: number) => `${environment.apiUrl}/Task2/DeleteLevel1Subtask2/level1/${id}`,
+    addLevel2Subtask: `${environment.apiUrl}/Task2/AddLevel2Subtask2`,
+    updateLevel2Subtask: `${environment.apiUrl}/Task2/UpdateLevel2Subtask2`,
+    deleteLevel2Subtask: (id: number) => `${environment.apiUrl}/Task2/DeleteLevel2Subtask2/level2/${id}`
+  },
+
   // Periodic Task endpoints
   periodicTasks: {
     getAll: `${environment.apiUrl}/PeriodicTask/GetAllPeriodicTasks`,

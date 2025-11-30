@@ -18,6 +18,9 @@ export class BudgetComponent implements OnInit, OnDestroy {
   currentMonthData: BudgetMonthlyData | null = null;
   summaries: BudgetSummary[] = [];
 
+  allMonthsData: BudgetMonthlyData[] = [];
+  isLoadingAllData = false;
+
   // UI State
   showAddCreditModal = false;
   showEditCreditModal = false;
@@ -27,6 +30,8 @@ export class BudgetComponent implements OnInit, OnDestroy {
 
   selectedCredit: BudgetCredit | null = null;
   selectedDebit: BudgetDebit | null = null;
+
+  // current_month: string = '';
 
   // Form data
   newCredit: Partial<BudgetCredit> = {
@@ -53,6 +58,7 @@ export class BudgetComponent implements OnInit, OnDestroy {
   monthErrorMessage = '';
 
   private destroy$ = new Subject<void>();
+  // current_month: string | undefined;
 
   constructor(
     private budgetService: BudgetService,
@@ -68,6 +74,8 @@ export class BudgetComponent implements OnInit, OnDestroy {
         if (months.length > 0 && !this.selectedMonth) {
           this.selectMonth(months[0]);
         }
+        // Load detailed data for all months to calculate global "Current" totals
+        this.loadAllMonthsData();
       });
 
     // Load summaries
@@ -87,6 +95,38 @@ export class BudgetComponent implements OnInit, OnDestroy {
       });
   }
 
+  loadAllMonthsData(): void {
+    if (this.months.length === 0) return;
+
+    this.isLoadingAllData = true;
+    this.allMonthsData = [];
+
+    // Fetch data for each month
+    // Note: In a real app, we should have a bulk API endpoint. 
+    // Here we fetch sequentially or in parallel.
+    let loadedCount = 0;
+
+    this.months.forEach(month => {
+      this.budgetService.getMonthData(month.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(data => {
+          this.allMonthsData.push(data);
+          loadedCount++;
+
+          if (loadedCount === this.months.length) {
+            this.isLoadingAllData = false;
+            // Sort by date to ensure cumulative calculations are correct
+            this.allMonthsData.sort((a, b) => {
+              if (a.month.yearNumber !== b.month.yearNumber) {
+                return a.month.yearNumber - b.month.yearNumber;
+              }
+              return a.month.monthNumber - b.month.monthNumber;
+            });
+          }
+        });
+    });
+  }
+
   selectMonth(month: BudgetMonth | null): void {
     if (!month) return;
     this.selectedMonth = month;
@@ -94,6 +134,14 @@ export class BudgetComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(data => {
         this.currentMonthData = data;
+        // Update this month in allMonthsData if it exists
+        const index = this.allMonthsData.findIndex(m => m.month.id === month.id);
+        if (index !== -1) {
+          this.allMonthsData[index] = data;
+        } else {
+          this.allMonthsData.push(data);
+        }
+
         // Auto-update last month balance if needed
         this.ensureLastMonthBalance();
       });
@@ -103,6 +151,7 @@ export class BudgetComponent implements OnInit, OnDestroy {
     const target = event.target as HTMLSelectElement;
     const monthId = parseInt(target.value, 10);
     const month = this.months.find(m => m.id === monthId);
+    // this.current_month = month?.monthYear;
     if (month) {
       this.selectMonth(month);
     }
@@ -149,30 +198,128 @@ export class BudgetComponent implements OnInit, OnDestroy {
     return this.currentMonthData?.debits || [];
   }
 
-  getMonthlyCredit(): number {
+  // --- New Summary Calculations ---
+
+  // Monthly - Current (Realized)
+  getMonthlyCurrentCredit(): number {
+    if (!this.currentMonthData) return 0;
+    return this.currentMonthData.credits
+      .filter(c => c.isCredited)
+      .reduce((sum, c) => sum + c.amountActual, 0);
+  }
+
+  getMonthlyCurrentDebit(): number {
+    if (!this.currentMonthData) return 0;
+    return this.currentMonthData.debits
+      .filter(d => d.isDebited)
+      .reduce((sum, d) => sum + d.amountActual, 0);
+  }
+
+  getMonthlyCurrentBalance(): number {
+    return this.getMonthlyCurrentCredit() - this.getMonthlyCurrentDebit();
+  }
+
+  // Monthly - Projected (Planned)
+  getMonthlyProjectedCredit(): number {
     if (!this.currentMonthData) return 0;
     return this.currentMonthData.credits.reduce((sum, c) => sum + c.amountActual, 0);
   }
 
-  getMonthlyDebit(): number {
+  getMonthlyProjectedDebit(): number {
     if (!this.currentMonthData) return 0;
     return this.currentMonthData.debits.reduce((sum, d) => sum + d.amountActual, 0);
   }
 
-  getFinalBalance(): number {
-    return this.getMonthlyCredit() - this.getMonthlyDebit();
+  getMonthlyProjectedBalance(): number {
+    return this.getMonthlyProjectedCredit() - this.getMonthlyProjectedDebit();
   }
 
-  getTotalMonthlyCredit(): number {
-    return this.summaries.reduce((sum, s) => sum + s.monthlyCredit, 0);
+  // Balance till this month (Cumulative)
+  getCumulativeCurrentBalance(): number {
+    if (!this.selectedMonth || this.allMonthsData.length === 0) return 0;
+
+    // Filter months up to current selected month
+    const relevantMonths = this.allMonthsData.filter(d => {
+      if (d.month.yearNumber < this.selectedMonth!.yearNumber) return true;
+      if (d.month.yearNumber === this.selectedMonth!.yearNumber &&
+        d.month.monthNumber <= this.selectedMonth!.monthNumber) return true;
+      return false;
+    });
+
+    let totalCredit = 0;
+    let totalDebit = 0;
+
+    relevantMonths.forEach(data => {
+      totalCredit += data.credits.filter(c => c.isCredited).reduce((sum, c) => sum + c.amountActual, 0);
+      totalDebit += data.debits.filter(d => d.isDebited).reduce((sum, d) => sum + d.amountActual, 0);
+    });
+
+    return totalCredit - totalDebit;
   }
 
-  getTotalMonthlyDebit(): number {
-    return this.summaries.reduce((sum, s) => sum + s.monthlyDebit, 0);
+  getCumulativeProjectedBalance(): number {
+    if (!this.selectedMonth || this.allMonthsData.length === 0) return 0;
+
+    // Filter months up to current selected month
+    const relevantMonths = this.allMonthsData.filter(d => {
+      if (d.month.yearNumber < this.selectedMonth!.yearNumber) return true;
+      if (d.month.yearNumber === this.selectedMonth!.yearNumber &&
+        d.month.monthNumber <= this.selectedMonth!.monthNumber) return true;
+      return false;
+    });
+
+    let totalCredit = 0;
+    let totalDebit = 0;
+
+    relevantMonths.forEach(data => {
+      totalCredit += data.credits.reduce((sum, c) => sum + c.amountActual, 0);
+      totalDebit += data.debits.reduce((sum, d) => sum + d.amountActual, 0);
+    });
+
+    return totalCredit - totalDebit;
   }
 
-  getTotalFinalBalance(): number {
-    return this.summaries.reduce((sum, s) => sum + s.finalBalance, 0);
+  // Total (All Months) - Current
+  getTotalCurrentCredit(): number {
+    if (this.allMonthsData.length === 0) return 0;
+    return this.allMonthsData.reduce((total, data) => {
+      return total + data.credits.filter(c => c.isCredited).reduce((sum, c) => sum + c.amountActual, 0);
+    }, 0);
+  }
+
+  getTotalCurrentDebit(): number {
+    if (this.allMonthsData.length === 0) return 0;
+    return this.allMonthsData.reduce((total, data) => {
+      return total + data.debits.filter(d => d.isDebited).reduce((sum, d) => sum + d.amountActual, 0);
+    }, 0);
+  }
+
+  getTotalCurrentBalance(): number {
+    return this.getTotalCurrentCredit() - this.getTotalCurrentDebit();
+  }
+
+  // Total (All Months) - Projected
+  getTotalProjectedCredit(): number {
+    // Use summaries if available for better performance, or fallback to allMonthsData
+    if (this.summaries.length > 0) {
+      return this.summaries.reduce((sum, s) => sum + s.monthlyCredit, 0);
+    }
+    return this.allMonthsData.reduce((total, data) => {
+      return total + data.credits.reduce((sum, c) => sum + c.amountActual, 0);
+    }, 0);
+  }
+
+  getTotalProjectedDebit(): number {
+    if (this.summaries.length > 0) {
+      return this.summaries.reduce((sum, s) => sum + s.monthlyDebit, 0);
+    }
+    return this.allMonthsData.reduce((total, data) => {
+      return total + data.debits.reduce((sum, d) => sum + d.amountActual, 0);
+    }, 0);
+  }
+
+  getTotalProjectedBalance(): number {
+    return this.getTotalProjectedCredit() - this.getTotalProjectedDebit();
   }
 
   // Credit operations
@@ -206,6 +353,7 @@ export class BudgetComponent implements OnInit, OnDestroy {
         this.closeCreditModal();
         this.refreshCurrentMonth();
         this.loadSummaries();
+        this.loadAllMonthsData(); // Reload for global totals
       });
   }
 
@@ -225,6 +373,7 @@ export class BudgetComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.refreshCurrentMonth();
         this.loadSummaries();
+        this.loadAllMonthsData(); // Reload for global totals
       });
   }
 
@@ -271,6 +420,7 @@ export class BudgetComponent implements OnInit, OnDestroy {
         this.closeDebitModal();
         this.refreshCurrentMonth();
         this.loadSummaries();
+        this.loadAllMonthsData(); // Reload for global totals
       });
   }
 
@@ -290,6 +440,7 @@ export class BudgetComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.refreshCurrentMonth();
         this.loadSummaries();
+        this.loadAllMonthsData(); // Reload for global totals
       });
   }
 
@@ -311,6 +462,7 @@ export class BudgetComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         // Status updated successfully
+        this.loadAllMonthsData(); // Reload for global totals
       });
   }
 
@@ -319,6 +471,7 @@ export class BudgetComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         // Status updated successfully
+        this.loadAllMonthsData(); // Reload for global totals
       });
   }
 

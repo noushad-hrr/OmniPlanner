@@ -42,6 +42,8 @@ builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 builder.Services.AddScoped<IPaymentHistoryRepository, PaymentHistoryRepository>();
 builder.Services.AddScoped<ITasksRepository>(sp => 
     new TasksRepository(sp.GetRequiredService<DapperContext>(), sp.GetRequiredService<IHttpContextAccessor>()));
+builder.Services.AddScoped<ITask2Repository>(sp => 
+    new Task2Repository(sp.GetRequiredService<DapperContext>(), sp.GetRequiredService<IHttpContextAccessor>()));
 builder.Services.AddScoped<IPeriodicTasksRepository, PeriodicTasksRepository>();
 builder.Services.AddScoped<IBudgetRepository, BudgetRepository>();
 builder.Services.AddScoped<ISettingsRepository, SettingsRepository>();

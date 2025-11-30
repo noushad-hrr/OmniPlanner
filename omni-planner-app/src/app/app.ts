@@ -47,20 +47,20 @@ export class AppComponent implements OnInit {
   showUserDropdown = false; // User profile dropdown state
   dropdownTop = 70; // Dropdown top position (header height + margin)
   dropdownRight = 24; // Dropdown right position
-  
+
   // User info from auth service
   currentUser: any = null;
   userDisplayName = 'Guest User';
   userRole = 'Guest';
-  
+
   showNotificationsDropdown = false; // Notifications dropdown state
   notificationsDropdownTop = 70; // Notifications dropdown top position
   notificationsDropdownRight = 24; // Notifications dropdown right position
-  
+
   showSearch = false; // Search dropdown state
   searchQuery = ''; // Search query
   searchResults: SearchResult[] = []; // Search results
-  
+
   notifications: Notification[] = [
     {
       id: 1,
@@ -103,11 +103,11 @@ export class AppComponent implements OnInit {
       actionUrl: '/tasks'
     }
   ];
-  
+
   get unreadCount(): number {
     return this.notifications.filter(n => !n.read).length;
   }
-  
+
   sidebarItems: SidebarItem[] = [
     {
       id: 'tasks',
@@ -115,6 +115,13 @@ export class AppComponent implements OnInit {
       icon: 'tasks',
       route: '/tasks',
       permission: 'tasks.view'
+    },
+    {
+      id: 'tasks2',
+      label: 'Periodic Tasks',
+      icon: 'tasks',
+      route: '/tasks2',
+      permission: 'tasks2.view'  // Temporarily commented for testing
     },
     {
       id: 'budget',
@@ -172,7 +179,7 @@ export class AppComponent implements OnInit {
   private updateFilteredSidebarItems(): void {
     // Get current permissions as sorted string for comparison
     const currentPermissions = this.authService.getPermissions().sort().join(',');
-    
+
     // Only update if permissions have actually changed
     if (currentPermissions !== this._lastPermissionsString) {
       this._lastPermissionsString = currentPermissions;
@@ -184,14 +191,14 @@ export class AppComponent implements OnInit {
   // IMPORTANT: Preserves object references when possible to prevent sidebar state reset
   private calculateFilteredItems(): SidebarItem[] {
     const result: SidebarItem[] = [];
-    
+
     for (const item of this.sidebarItems) {
       // Check if parent item has permission requirement
       if (item.permission) {
         const hasPermission = Array.isArray(item.permission)
           ? item.permission.some(p => this.authService.hasPermission(p))
           : this.authService.hasPermission(item.permission);
-        
+
         if (!hasPermission) {
           continue; // Skip this item
         }
@@ -217,8 +224,8 @@ export class AppComponent implements OnInit {
         }
 
         // Preserve original item reference if no filtering happened
-        if (filteredChildren.length === item.children.length && 
-            filteredChildren.every((child, idx) => child === item.children![idx])) {
+        if (filteredChildren.length === item.children.length &&
+          filteredChildren.every((child, idx) => child === item.children![idx])) {
           // No filtering happened, use original item
           result.push(item);
         } else {
@@ -233,7 +240,7 @@ export class AppComponent implements OnInit {
         result.push(item);
       }
     }
-    
+
     return result;
   }
 
@@ -241,17 +248,17 @@ export class AppComponent implements OnInit {
     private themeService: ThemeService,
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     // Check authentication state
     this.checkAuthentication();
-    
+
     // Initialize filtered items after auth check
     // Set initial permissions string to trigger first calculation
     this._lastPermissionsString = '';
     this.updateFilteredSidebarItems();
-    
+
     // Subscribe to auth state changes
     this.authService.currentUser$.subscribe(user => {
       console.log('Auth state changed - User:', user);
@@ -270,11 +277,11 @@ export class AppComponent implements OnInit {
         this.userRole = 'Guest';
         this.isAuthenticated = false;
       }
-      
+
       // Update filtered items when auth/permissions change
       this.updateFilteredSidebarItems();
     });
-    
+
     // Subscribe to router events to update current view
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
@@ -288,23 +295,23 @@ export class AppComponent implements OnInit {
           this.currentView = url.substring(1) || 'tasks';
         }
       });
-    
+
     // Initialize theme service
     this.themeService.watchSystemTheme();
-    
+
     // Load icon preference from localStorage
     const storedIcon = localStorage.getItem('omni-planner-icon');
     if (storedIcon) {
       this.selectedIcon = storedIcon;
     }
-    
+
     // Listen for icon changes from Settings
     window.addEventListener('icon-changed', ((event: CustomEvent) => {
       if (event.detail && event.detail.icon) {
         this.selectedIcon = event.detail.icon;
       }
     }) as EventListener);
-    
+
     // Keyboard shortcut for search (Ctrl+K or Cmd+K)
     document.addEventListener('keydown', (event) => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
@@ -316,7 +323,7 @@ export class AppComponent implements OnInit {
         this.closeSearch();
       }
     });
-    
+
     // Close dropdown when clicking outside
     document.addEventListener('click', (event) => {
       const target = event.target as HTMLElement;
@@ -330,7 +337,7 @@ export class AppComponent implements OnInit {
         this.closeSearch();
       }
     });
-    
+
     // Recalculate dropdown position on window resize
     window.addEventListener('resize', () => {
       if (this.showUserDropdown) {
@@ -397,7 +404,7 @@ export class AppComponent implements OnInit {
         const dropdownWidth = 220; // Minimum dropdown width
         const screenPadding = 16; // Minimum padding from screen edge
         const rightPosition = window.innerWidth - rect.right;
-        
+
         // Ensure dropdown doesn't go off-screen
         if (rightPosition + dropdownWidth > window.innerWidth - screenPadding) {
           this.dropdownRight = screenPadding;
@@ -412,7 +419,7 @@ export class AppComponent implements OnInit {
     this.isAuthenticated = this.authService.isAuthenticated();
     console.log('App init - Is authenticated:', this.isAuthenticated);
     console.log('App init - Token exists:', this.authService.getToken() ? 'Yes' : 'No');
-    
+
     if (this.isAuthenticated) {
       // Load current user info from stored auth first (faster)
       const storedAuth = this.authService.getStoredAuth();
@@ -423,7 +430,7 @@ export class AppComponent implements OnInit {
           this.userRole = storedAuth.roles[0];
         }
       }
-      
+
       // Then verify with backend (only if authenticated)
       this.authService.getCurrentUser().subscribe({
         next: (auth) => {
@@ -463,14 +470,14 @@ export class AppComponent implements OnInit {
   onLogout(): void {
     console.log('Logout initiated');
     this.showUserDropdown = false;
-    
+
     // Clear local state immediately (don't wait for backend)
     this.authService.clearAuthLocal();
     this.isAuthenticated = false;
     this.currentUser = null;
     this.userDisplayName = 'Guest User';
     this.userRole = 'Guest';
-    
+
     // Navigate to login immediately
     this.router.navigate(['/login']).then(() => {
       // Optionally call backend logout (but don't wait for it)
@@ -513,7 +520,7 @@ export class AppComponent implements OnInit {
         const dropdownWidth = 500; // Dropdown width
         const screenPadding = 16; // Minimum padding from screen edge
         const rightPosition = window.innerWidth - rect.right;
-        
+
         // Ensure dropdown doesn't go off-screen
         if (rightPosition + dropdownWidth > window.innerWidth - screenPadding) {
           this.notificationsDropdownRight = screenPadding;
@@ -709,13 +716,13 @@ export class AppComponent implements OnInit {
     if (this.currentView === 'timer') {
       return 'Timer & Stopwatch';
     }
-    
+
     // First, check main menu items
     const mainItem = this.sidebarItems.find(item => item.id === this.currentView);
     if (mainItem) {
       return mainItem.label;
     }
-    
+
     // If not found in main items, check submenu items
     for (const item of this.sidebarItems) {
       if (item.children) {
@@ -733,7 +740,7 @@ export class AppComponent implements OnInit {
         }
       }
     }
-    
+
     // Default fallback
     return this.title;
   }

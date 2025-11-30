@@ -98,6 +98,55 @@
   overflow: auto;
 }
 
+// Summary Section
+.summary-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-card {
+    background: #93c5fd; // Light blue background as per design
+    border-radius: 8px;
+    overflow: hidden;
+    color: #1e293b; // Dark text for contrast on light background
+    border: 1px solid #60a5fa;
+
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+
+      th,
+      td {
+        padding: 8px 12px;
+        border: 1px solid #1e293b; // Dark borders
+        text-align: center;
+      }
+
+      th {
+        font-weight: 600;
+        background: #93c5fd; // Same as card background
+      }
+
+      td:first-child {
+        text-align: left;
+        font-weight: 500;
+      }
+
+      .balance-row td,
+      .cumulative-row td {
+        border-top: 2px solid #1e293b; // Thicker border for balance rows
+      }
+    }
+  }
+}
+
 // Budget Grid Layout
 .budget-grid {
   display: grid;
@@ -231,406 +280,218 @@
       padding: $spacing-md;
       text-align: left;
       font-weight: 600;
-      font-size: $font-size-sm;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-    }
-  }
-
-  tbody {
-    tr {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      transition: background-color $transition-fast;
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.05);
-      }
-
-      td {
-        padding: $spacing-md;
-
-        &.action-buttons {
-          display: flex;
-          gap: $spacing-sm;
-        }
-      }
-
-      &.empty-row {
-        text-align: center;
-        color: var(--text-muted);
-        font-style: italic;
-
-        td {
-          padding: $spacing-xl;
-        }
-      }
-    }
-  }
-}
-
-.credits-table {
-  thead th {
-    background: rgba(16, 185, 129, 0.1);
-    color: #10b981;
-  }
-}
-
-.debits-table {
-  thead th {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-  }
-}
-
-// Buttons
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: #2c2f36;
-  color: #e6e6e6;
-  border: 1px solid #3a3f47;
-  border-radius: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-
-  i {
-    font-size: 14px;
-  }
-
-  &.btn-primary {
-    background: #3b82f6;
-    border-color: #3b82f6;
-    color: white;
-
-    &:hover {
-      background: #2563eb;
-      border-color: #2563eb;
-    }
-  }
-
-  &.btn-success {
-    background: #16a34a;
-    border-color: #16a34a;
-    color: white;
-
-    &:hover {
-      background: #15803d;
-      border-color: #15803d;
-    }
-  }
-
-  &.btn-danger {
-    background: #dc2626;
-    border-color: #dc2626;
-    color: white;
-
-    &:hover {
-      background: #b91c1c;
-      border-color: #b91c1c;
-    }
-  }
-
-  &.btn-secondary {
-    background: #2c2f36;
-    color: #e6e6e6;
-    border: 1px solid #3a3f47;
-
-    &:hover {
-      background: #3a3f47;
-      border-color: #4a4f57;
-    }
-  }
-
-  &.btn-small {
-    padding: 6px 10px;
-    font-size: 12px;
-  }
-}
-
-.btn-icon {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: $spacing-xs;
-  border-radius: 4px;
-  transition: all $transition-fast;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
-  }
-
-  &.btn-edit {
-    &:hover {
-      color: var(--primary-accent);
-    }
-  }
-
-  &.btn-delete {
-    &:hover {
+      background: rgba(239, 68, 68, 0.1);
       color: #ef4444;
     }
   }
-}
 
-// Status Checkbox Styling
-.status-cell {
-  padding: $spacing-md !important;
-}
-
-.status-checkbox-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  user-select: none;
-
-  .status-checkbox {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 18px;
-    height: 18px;
-    border: 2px solid #3a3f47;
-    border-radius: 4px;
-    background: #1f2228;
+  // Buttons
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #2c2f36;
+    color: #e6e6e6;
+    border: 1px solid #3a3f47;
+    border-radius: 8px;
+    padding: 8px 12px;
     cursor: pointer;
-    position: relative;
+    font-size: 14px;
+    font-weight: 500;
     transition: all 0.2s ease;
-    flex-shrink: 0;
 
-    &:hover {
-      border-color: #4a5568;
-      background: #2a2f36;
+    i {
+      font-size: 14px;
     }
 
-    &:checked {
-      background: #16a34a;
-      border-color: #16a34a;
-
-      &::after {
-        content: '✓';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: white;
-        font-size: 12px;
-        font-weight: bold;
-      }
-    }
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    &.btn-primary {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      color: white;
 
       &:hover {
-        border-color: #3a3f47;
-        background: #1f2228;
+        background: #2563eb;
+        border-color: #2563eb;
       }
     }
 
-    // Credit-specific styling
-    &.credit-status {
+    &.btn-success {
+      background: #16a34a;
+      border-color: #16a34a;
+      color: white;
+
+      &:hover {
+        background: #15803d;
+        border-color: #15803d;
+      }
+    }
+
+    &.btn-danger {
+      background: #dc2626;
+      border-color: #dc2626;
+      color: white;
+
+      &:hover {
+        background: #b91c1c;
+        border-color: #b91c1c;
+      }
+    }
+
+    &.btn-secondary {
+      background: #2c2f36;
+      color: #e6e6e6;
+      border: 1px solid #3a3f47;
+
+      &:hover {
+        background: #3a3f47;
+        border-color: #4a4f57;
+      }
+    }
+
+    &.btn-small {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+  }
+
+  .btn-icon {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: $spacing-xs;
+    border-radius: 4px;
+    transition: all $transition-fast;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-primary);
+    }
+
+    &.btn-edit {
+      &:hover {
+        color: var(--primary-accent);
+      }
+    }
+
+    &.btn-delete {
+      &:hover {
+        color: #ef4444;
+      }
+    }
+  }
+
+  // Status Checkbox Styling
+  .status-cell {
+    padding: $spacing-md !important;
+  }
+
+  .status-checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+
+    .status-checkbox {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid #3a3f47;
+      border-radius: 4px;
+      background: #1f2228;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+
+      &:hover {
+        border-color: #4a5568;
+        background: #2a2f36;
+      }
+
       &:checked {
         background: #16a34a;
         border-color: #16a34a;
+
+        &::after {
+          content: '✓';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          color: white;
+          font-size: 12px;
+          font-weight: bold;
+        }
       }
 
-      &:not(:checked) {
-        border-color: rgba(16, 185, 129, 0.3);
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+
+        &:hover {
+          border-color: #3a3f47;
+          background: #1f2228;
+        }
       }
 
-      &:hover:not(:disabled):not(:checked) {
-        border-color: rgba(16, 185, 129, 0.5);
-        background: rgba(16, 185, 129, 0.05);
+      // Credit-specific styling
+      &.credit-status {
+        &:checked {
+          background: #16a34a;
+          border-color: #16a34a;
+        }
+
+        &:not(:checked) {
+          border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        &:hover:not(:disabled):not(:checked) {
+          border-color: rgba(16, 185, 129, 0.5);
+          background: rgba(16, 185, 129, 0.05);
+        }
+      }
+
+      // Debit-specific styling
+      &.debit-status {
+        &:checked {
+          background: #dc2626;
+          border-color: #dc2626;
+        }
+
+        &:not(:checked) {
+          border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        &:hover:not(:disabled):not(:checked) {
+          border-color: rgba(239, 68, 68, 0.5);
+          background: rgba(239, 68, 68, 0.05);
+        }
       }
     }
 
-    // Debit-specific styling
-    &.debit-status {
-      &:checked {
-        background: #dc2626;
-        border-color: #dc2626;
-      }
-
-      &:not(:checked) {
-        border-color: rgba(239, 68, 68, 0.3);
-      }
-
-      &:hover:not(:disabled):not(:checked) {
-        border-color: rgba(239, 68, 68, 0.5);
-        background: rgba(239, 68, 68, 0.05);
-      }
-    }
-  }
-
-  .checkbox-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: #9aa0a6;
-    white-space: nowrap;
-  }
-
-  // Update label color based on checkbox state
-  input.status-checkbox:checked+.checkbox-label {
-    color: #e6e6e6;
-    font-weight: 600;
-  }
-
-  input.credit-status:checked+.checkbox-label {
-    color: #10b981;
-  }
-
-  input.debit-status:checked+.checkbox-label {
-    color: #ef4444;
-  }
-}
-
-// Summary Section (Grey Headers, Yellow Balance)
-.summary-section {
-  margin-bottom: 8px;
-  padding: 8px;
-  background: #14171c;
-  border: 1px solid #2a2f36;
-  border-radius: 8px;
-  flex-shrink: 0;
-}
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.summary-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px;
-  background: #1f2228;
-  border: 1px solid #3a3f47;
-  border-radius: 6px;
-
-  .summary-label {
-    font-size: 10px;
-    color: #9aa0a6;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-  }
-
-  .summary-value {
-    font-size: 16px;
-    font-weight: 700;
-    color: #e6e6e6;
-  }
-
-  &.balance-item {
-    background: rgba(234, 179, 8, 0.15);
-    border: 1px solid rgba(234, 179, 8, 0.3);
-
-    .summary-label {
-      color: #fbbf24;
+    .checkbox-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #9aa0a6;
+      white-space: nowrap;
     }
 
-    .summary-value {
-      color: #fbbf24;
+    // Update label color based on checkbox state
+    input.status-checkbox:checked+.checkbox-label {
+      color: #e6e6e6;
+      font-weight: 600;
+    }
+
+    input.credit-status:checked+.checkbox-label {
+      color: #10b981;
     }
   }
 }
-
-// Total Section (Cyan)
-.total-section {
-  padding: $spacing-lg;
-  background: rgba(6, 182, 212, 0.1);
-  border: 2px solid rgba(6, 182, 212, 0.3);
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(6, 182, 212, 0.2);
-}
-
-.total-grid {
-  display: grid;
-  grid-template-columns: 120px repeat(3, 1fr);
-  gap: $spacing-lg;
-  align-items: center;
-
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
-    gap: $spacing-md;
-  }
-}
-
-.total-label {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #06b6d4;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.total-item {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-xs;
-  padding: $spacing-md;
-  background: rgba(6, 182, 212, 0.1);
-  border-radius: 8px;
-
-  .total-value-label {
-    font-size: $font-size-xs;
-    color: #67e8f9;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .total-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #06b6d4;
-  }
-}
-
-// Empty State
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: $spacing-3xl;
-  text-align: center;
-  color: var(--text-muted);
-
-  i {
-    font-size: 4rem;
-    margin-bottom: $spacing-lg;
-    color: var(--text-disabled);
-  }
-
-  p {
-    font-size: $font-size-lg;
-    margin-bottom: $spacing-xl;
-  }
-}
-
-// Modal Styles
-// Modal styles are now imported from common styles/_modal.scss
-// Using budget design for all modals globally
-
-// Budget-specific form control styling (already in global styles, but keeping for reference)
-// All modals now use the same design as budget add/edit popups
