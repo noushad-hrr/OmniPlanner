@@ -5,10 +5,7 @@
       Budget Management
     </h2>
     <div class="budget-controls">
-      <select 
-        class="month-selector" 
-        [value]="selectedMonth?.id || ''"
-        (change)="onMonthChange($event)">
+      <select class="month-selector" [value]="selectedMonth?.id || ''" (change)="onMonthChange($event)">
         <option value="" disabled>Select Month</option>
         <option *ngFor="let month of months" [value]="month.id">
           {{ month.monthYear }}
@@ -31,7 +28,7 @@
             <i class="fas fa-plus"></i> Add Credit
           </button>
         </div>
-        
+
         <div class="table-container">
           <table class="budget-table credits-table">
             <thead>
@@ -51,10 +48,7 @@
                   <button class="btn-icon btn-edit" (click)="openEditCreditModal(credit)" title="Edit">
                     <i class="fas fa-edit"></i>
                   </button>
-                  <button 
-                    class="btn-icon btn-delete" 
-                    (click)="deleteCredit(credit)"
-                    *ngIf="!credit.isLastMonthBalance"
+                  <button class="btn-icon btn-delete" (click)="deleteCredit(credit)" *ngIf="!credit.isLastMonthBalance"
                     title="Delete">
                     <i class="fas fa-trash"></i>
                   </button>
@@ -76,7 +70,7 @@
             <i class="fas fa-plus"></i> Add Debit
           </button>
         </div>
-        
+
         <div class="table-container">
           <table class="budget-table debits-table">
             <thead>
@@ -170,35 +164,20 @@
     <div class="modal-body">
       <div class="form-group">
         <label>Source</label>
-        <input 
-          type="text" 
-          [(ngModel)]="newCredit.source" 
-          placeholder="e.g., Salary, Bonus, etc."
-          class="form-control"
+        <input type="text" [(ngModel)]="newCredit.source" placeholder="e.g., Salary, Bonus, etc." class="form-control"
           [disabled]="!!newCredit.isLastMonthBalance">
       </div>
       <div class="form-group">
         <label>Amount (Estimated)</label>
-        <input 
-          type="number" 
-          [(ngModel)]="newCredit.amountEstimated" 
-          placeholder="0"
-          class="form-control">
+        <input type="number" [(ngModel)]="newCredit.amountEstimated" placeholder="0" class="form-control">
       </div>
       <div class="form-group">
         <label>Amount (Actual)</label>
-        <input 
-          type="number" 
-          [(ngModel)]="newCredit.amountActual" 
-          placeholder="0"
-          class="form-control">
+        <input type="number" [(ngModel)]="newCredit.amountActual" placeholder="0" class="form-control">
       </div>
       <div class="form-group">
         <label>
-          <input 
-            type="checkbox" 
-            [(ngModel)]="newCredit.isLastMonthBalance"
-            [disabled]="!!showEditCreditModal">
+          <input type="checkbox" [(ngModel)]="newCredit.isLastMonthBalance" [disabled]="!!showEditCreditModal">
           Last Month Balance
         </label>
       </div>
@@ -222,27 +201,16 @@
     <div class="modal-body">
       <div class="form-group">
         <label>Target</label>
-        <input 
-          type="text" 
-          [(ngModel)]="newDebit.target" 
-          placeholder="e.g., Home, Daily Expenses, etc."
+        <input type="text" [(ngModel)]="newDebit.target" placeholder="e.g., Home, Daily Expenses, etc."
           class="form-control">
       </div>
       <div class="form-group">
         <label>Amount (Estimated)</label>
-        <input 
-          type="number" 
-          [(ngModel)]="newDebit.amountEstimated" 
-          placeholder="0"
-          class="form-control">
+        <input type="number" [(ngModel)]="newDebit.amountEstimated" placeholder="0" class="form-control">
       </div>
       <div class="form-group">
         <label>Amount (Actual)</label>
-        <input 
-          type="number" 
-          [(ngModel)]="newDebit.amountActual" 
-          placeholder="0"
-          class="form-control">
+        <input type="number" [(ngModel)]="newDebit.amountActual" placeholder="0" class="form-control">
       </div>
     </div>
     <div class="modal-footer">
@@ -263,28 +231,33 @@
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label>Month Year (e.g., "Oct 2025")</label>
-        <input 
-          type="text" 
-          [(ngModel)]="newMonth.monthYear" 
-          placeholder="Oct 2025"
-          class="form-control">
-      </div>
-      <div class="form-group">
-        <label>Month Number (1-12)</label>
-        <input 
-          type="number" 
-          [(ngModel)]="newMonth.monthNumber" 
-          min="1"
-          max="12"
-          class="form-control">
+        <label>Month</label>
+        <select [(ngModel)]="newMonth.monthNumber" (ngModelChange)="onMonthNumberChange()" class="form-control">
+          <option value="1">January</option>
+          <option value="2">February</option>
+          <option value="3">March</option>
+          <option value="4">April</option>
+          <option value="5">May</option>
+          <option value="6">June</option>
+          <option value="7">July</option>
+          <option value="8">August</option>
+          <option value="9">September</option>
+          <option value="10">October</option>
+          <option value="11">November</option>
+          <option value="12">December</option>
+        </select>
       </div>
       <div class="form-group">
         <label>Year</label>
-        <input 
-          type="number" 
-          [(ngModel)]="newMonth.yearNumber" 
-          class="form-control">
+        <input type="number" [(ngModel)]="newMonth.yearNumber" (ngModelChange)="onYearNumberChange()" min="2020"
+          max="2100" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Month Label (Auto-generated)</label>
+        <input type="text" [value]="newMonth.monthYear" placeholder="Jan 2025" class="form-control" readonly disabled>
+      </div>
+      <div class="error-message" *ngIf="monthErrorMessage" style="color: #ef4444; margin-top: 10px; font-size: 14px;">
+        <i class="fas fa-exclamation-circle"></i> {{ monthErrorMessage }}
       </div>
     </div>
     <div class="modal-footer">
@@ -293,4 +266,3 @@
     </div>
   </div>
 </div>
-

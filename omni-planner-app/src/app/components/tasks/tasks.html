@@ -785,7 +785,8 @@
           <div class="form-group">
             <label for="periodicTaskTitle">Title <span class="required">*</span></label>
             <input type="text" id="periodicTaskTitle" [(ngModel)]="newPeriodicTask.title"
-              placeholder="Enter task title..." class="form-input" maxlength="500">
+              placeholder="Enter task title..." class="form-input" [class.error]="periodicTaskTitleError" maxlength="500">
+            <div class="error-message" *ngIf="periodicTaskTitleError">{{ periodicTaskTitleError }}</div>
           </div>
 
           <div class="form-group">
@@ -902,12 +903,8 @@
           <div class="form-row">
             <div class="form-group">
               <label for="periodicStartDate">Start Date <span class="required">*</span></label>
-              <input type="date" id="periodicStartDate" [(ngModel)]="newPeriodicTask.startDate" class="form-input">
-            </div>
-
-            <div class="form-group">
-              <label for="periodicEndDate">End Date</label>
-              <input type="date" id="periodicEndDate" [(ngModel)]="newPeriodicTask.endDate" class="form-input">
+              <input type="date" id="periodicStartDate" [(ngModel)]="newPeriodicTask.startDate" class="form-input" [class.error]="periodicTaskStartDateError">
+              <div class="error-message" *ngIf="periodicTaskStartDateError">{{ periodicTaskStartDateError }}</div>
             </div>
           </div>
 
@@ -932,13 +929,20 @@
               <label for="periodicEndTime">End Time</label>
               <input type="time" id="periodicEndTime" [(ngModel)]="newPeriodicTask.endTime" class="form-input">
             </div>
+
+            <div class="form-group">
+              <label for="periodicEstimatedHours">Estimated Hours</label>
+              <input type="number" id="periodicEstimatedHours" [(ngModel)]="newPeriodicTask.estimatedHours" placeholder="0"
+                class="form-input" min="0" step="0.1">
+            </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label for="recurrenceEndDate">End Date</label>
+              <label for="recurrenceEndDate">End Date <span class="required">*</span></label>
               <input type="date" id="recurrenceEndDate" [(ngModel)]="newPeriodicTask.recurrence_end_date"
-                [disabled]="newPeriodicTask.recurrence_end_type === 'after_occurrences'" class="form-input">
+                [disabled]="newPeriodicTask.recurrence_end_type === 'after_occurrences'" class="form-input" [class.error]="periodicTaskEndDateError">
+              <div class="error-message" *ngIf="periodicTaskEndDateError && newPeriodicTask.recurrence_end_type === 'on_date'">{{ periodicTaskEndDateError }}</div>
             </div>
 
             <div *ngIf="newPeriodicTask.recurrence_end_type === 'after_occurrences'" class="form-group">
@@ -957,35 +961,38 @@
 
           <div class="form-row">
             <div class="form-group">
-              <label for="periodicPriority">Priority</label>
-              <select id="periodicPriority" [(ngModel)]="newPeriodicTask.priorityLevel" class="form-input">
+              <label for="periodicPriority">Priority <span class="required">*</span></label>
+              <select id="periodicPriority" [(ngModel)]="newPeriodicTask.priorityLevel" [compareWith]="compareObjects" class="form-input" [class.error]="periodicTaskPriorityError">
                 <option [ngValue]="null">Select Priority</option>
                 <option *ngFor="let priority of priorities"
                   [ngValue]="{ name: priority.priority, color: priority.color }">
                   {{ priority.priority }}
                 </option>
               </select>
+              <div class="error-message" *ngIf="periodicTaskPriorityError">{{ periodicTaskPriorityError }}</div>
             </div>
 
             <div class="form-group">
-              <label for="periodicStatus">Status</label>
-              <select id="periodicStatus" [(ngModel)]="newPeriodicTask.status" class="form-input">
+              <label for="periodicStatus">Status <span class="required">*</span></label>
+              <select id="periodicStatus" [(ngModel)]="newPeriodicTask.status" class="form-input" [class.error]="periodicTaskStatusError">
                 <option [ngValue]="null">Select Status</option>
                 <option *ngFor="let status of statuses" [ngValue]="{ name: status.status, color: status.color }">
                   {{ status.status }}
                 </option>
               </select>
+              <div class="error-message" *ngIf="periodicTaskStatusError">{{ periodicTaskStatusError }}</div>
             </div>
 
             <div class="form-group">
-              <label for="periodicCategory">Category</label>
-              <select id="periodicCategory" [(ngModel)]="newPeriodicTask.category" class="form-input">
+              <label for="periodicCategory">Category <span class="required">*</span></label>
+              <select id="periodicCategory" [(ngModel)]="newPeriodicTask.category" class="form-input" [class.error]="periodicTaskCategoryError">
                 <option [ngValue]="null">Select Category</option>
                 <option *ngFor="let category of categoryMasters"
                   [ngValue]="{ name: category.category, icon: category.icon }">
                   {{ category.category }}
                 </option>
               </select>
+              <div class="error-message" *ngIf="periodicTaskCategoryError">{{ periodicTaskCategoryError }}</div>
             </div>
           </div>
 
@@ -1046,6 +1053,190 @@
     </div>
   </div>
 
+  <!-- View Periodic Task Modal -->
+  <div class="modal-overlay" *ngIf="showViewPeriodicTaskModal" (click)="closeViewPeriodicTaskModal()">
+    <div class="modal-content task-view-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header view-header">
+        <div class="view-header-left">
+          <h2 class="view-title">
+            <span class="view-task-id" *ngIf="selectedPeriodicTask?.id">#{{ selectedPeriodicTask?.id }}</span>
+            <span *ngIf="selectedPeriodicTask?.important" class="important-star-view">★</span>
+            {{ selectedPeriodicTask?.title }}
+          </h2>
+        </div>
+        <button class="btn-icon" (click)="closeViewPeriodicTaskModal()" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body view-body" *ngIf="selectedPeriodicTask">
+        <!-- First Row: Category, Status, Priority -->
+        <div class="view-top-row">
+          <div class="view-info-compact">
+            <span class="view-info-icon" *ngIf="selectedPeriodicTask.category">{{ selectedPeriodicTask.category?.icon }}</span>
+            <div class="view-info-text">
+              <span class="view-info-label">Category</span>
+              <span class="view-info-value">
+                <span *ngIf="selectedPeriodicTask.category">{{ selectedPeriodicTask.category?.name }}</span>
+                <span *ngIf="!selectedPeriodicTask.category">ND</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="view-info-compact">
+            <span class="view-info-dot" *ngIf="selectedPeriodicTask.status"
+              [style.background-color]="getStatusColor(selectedPeriodicTask.status)"></span>
+            <div class="view-info-text">
+              <span class="view-info-label">Status</span>
+              <span class="view-info-value">
+                <span *ngIf="selectedPeriodicTask.status">{{ selectedPeriodicTask.status?.name | titlecase }}</span>
+                <span *ngIf="!selectedPeriodicTask.status">ND</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="view-info-compact">
+            <span class="view-info-dot" *ngIf="selectedPeriodicTask.priorityLevel"
+              [style.background-color]="getPriorityColor(selectedPeriodicTask.priorityLevel)"></span>
+            <div class="view-info-text">
+              <span class="view-info-label">Priority</span>
+              <span class="view-info-value">
+                <span *ngIf="selectedPeriodicTask.priorityLevel">{{ selectedPeriodicTask.priorityLevel?.name | titlecase }}</span>
+                <span *ngIf="!selectedPeriodicTask.priorityLevel">ND</span>
+                <span *ngIf="selectedPeriodicTask?.important" class="important-star-view" style="margin-left: 5px;">★</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Second Row: Dates, Times, Hours -->
+        <div class="view-second-row">
+          <div class="view-info-compact">
+            <i class="fas fa-calendar view-info-icon"></i>
+            <div class="view-info-text">
+              <span class="view-info-label">Start Date</span>
+              <span class="view-info-value">
+                <span *ngIf="selectedPeriodicTask?.startDate">{{ selectedPeriodicTask.startDate | date:'MMM dd, yyyy' }}</span>
+                <span *ngIf="!selectedPeriodicTask?.startDate">ND</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="view-info-compact">
+            <i class="fas fa-calendar view-info-icon"></i>
+            <div class="view-info-text">
+              <span class="view-info-label">End Date</span>
+              <span class="view-info-value">
+                <span *ngIf="selectedPeriodicTask?.recurrence_end_date">{{ selectedPeriodicTask.recurrence_end_date | date:'MMM dd, yyyy' }}</span>
+                <span *ngIf="!selectedPeriodicTask?.recurrence_end_date">ND</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="view-info-compact">
+            <i class="fas fa-clock view-info-icon"></i>
+            <div class="view-info-text">
+              <span class="view-info-label">Time</span>
+              <span class="view-info-value">
+                <span *ngIf="selectedPeriodicTask?.startTime && selectedPeriodicTask?.endTime">
+                  {{ selectedPeriodicTask.startTime }} - {{ selectedPeriodicTask.endTime }}
+                </span>
+                <span *ngIf="!selectedPeriodicTask?.startTime || !selectedPeriodicTask?.endTime">ND</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="view-info-compact">
+            <i class="fas fa-hourglass-half view-info-icon"></i>
+            <div class="view-info-text">
+              <span class="view-info-label">Estimated Hours</span>
+              <span class="view-info-value">
+                <span *ngIf="(selectedPeriodicTask?.estimatedHours ?? 0) > 0">{{ selectedPeriodicTask?.estimatedHours }}h</span>
+                <span *ngIf="(selectedPeriodicTask?.estimatedHours ?? 0) === 0">ND</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recurrence Information -->
+        <div class="view-content-item">
+          <div class="view-content-header">
+            <i class="fas fa-repeat"></i>
+            <span>Recurrence Pattern</span>
+          </div>
+          <div class="view-content-body">
+            <div class="recurrence-info">
+              <span><strong>Pattern:</strong> {{ selectedPeriodicTask?.recurrence_pattern | titlecase }}</span>
+              <span><strong>Interval:</strong> Every {{ selectedPeriodicTask?.recurrence_interval }} {{ getIntervalLabel() }}</span>
+              <span *ngIf="selectedPeriodicTask?.recurrence_pattern === 'weekly' && selectedPeriodicTask?.recurrence_days">
+                <strong>Days:</strong> 
+                <span *ngFor="let day of getSelectedDaysLabel(selectedPeriodicTask.recurrence_days); let last = last">
+                  {{ day }}<span *ngIf="!last">, </span>
+                </span>
+              </span>
+              <span *ngIf="selectedPeriodicTask?.recurrence_end_type">
+                <strong>Ends:</strong> 
+                <span *ngIf="selectedPeriodicTask.recurrence_end_type === 'on_date'">On {{ selectedPeriodicTask.recurrence_end_date | date:'MMM dd, yyyy' }}</span>
+                <span *ngIf="selectedPeriodicTask.recurrence_end_type === 'after_occurrences'">After {{ selectedPeriodicTask.recurrence_occurrences }} occurrences</span>
+                <span *ngIf="selectedPeriodicTask.recurrence_end_type === 'never'">Never</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description Section -->
+        <div class="view-content-item" *ngIf="hasDescription(selectedPeriodicTask)">
+          <div class="view-content-header">
+            <i class="fas fa-align-left"></i>
+            <span>Description</span>
+          </div>
+          <div class="view-content-body">
+            {{ selectedPeriodicTask?.description }}
+          </div>
+        </div>
+
+        <!-- Remarks Section -->
+        <div class="view-content-item" *ngIf="hasRemarks(selectedPeriodicTask)">
+          <div class="view-content-header">
+            <i class="fas fa-sticky-note"></i>
+            <span>Remarks</span>
+          </div>
+          <div class="view-content-body">
+            {{ selectedPeriodicTask?.remarks }}
+          </div>
+        </div>
+
+        <!-- URLs Section -->
+        <div class="view-content-item" *ngIf="selectedPeriodicTask?.urls && selectedPeriodicTask.urls.length > 0">
+          <div class="view-content-header">
+            <i class="fas fa-link"></i>
+            <span>URLs/Documents ({{ selectedPeriodicTask.urls.length }})</span>
+          </div>
+          <div class="view-content-body">
+            <div *ngFor="let url of selectedPeriodicTask.urls" class="url-display">
+              <a [href]="url.url" target="_blank" rel="noopener noreferrer" class="url-link">
+                {{ url.label || url.url }}
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metadata Footer -->
+        <div class="view-metadata-compact">
+          <span *ngIf="selectedPeriodicTask?.createdAt"><i class="fas fa-plus-circle"></i> Created: {{ selectedPeriodicTask.createdAt | date:'MMM dd, yyyy HH:mm' }}</span>
+          <span *ngIf="selectedPeriodicTask?.updatedAt"><i class="fas fa-edit"></i> Updated: {{ selectedPeriodicTask.updatedAt | date:'MMM dd, yyyy HH:mm' }}</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeViewPeriodicTaskModal()">Close</button>
+        <button class="btn btn-primary" (click)="openEditPeriodicTaskFromView()">
+          <i class="fas fa-edit"></i>
+          Edit Periodic Task
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Edit Task Modal -->
   <div class="modal-overlay" *ngIf="showEditTaskModal" (click)="showEditTaskModal = false">
