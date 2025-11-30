@@ -34,7 +34,7 @@
   flex-shrink: 0;
   margin-bottom: 0;
   padding-bottom: 0;
-  
+
   .budget-title {
     margin: 0;
     font-size: 18px;
@@ -43,18 +43,18 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    
+
     i {
       color: #10b981;
       font-size: 16px;
     }
   }
-  
+
   .budget-controls {
     display: flex;
     gap: 8px;
     align-items: center;
-    
+
     .month-selector {
       background: #1f2228;
       color: #e6e6e6;
@@ -64,11 +64,11 @@
       font-size: 14px;
       cursor: pointer;
       transition: all 0.2s ease;
-      
+
       &:hover {
         border-color: #4a5568;
       }
-      
+
       &:focus {
         outline: none;
         border-color: #4a5568;
@@ -80,7 +80,7 @@
 
 .month-header {
   margin-bottom: 8px;
-  
+
   .month-title {
     font-size: 14px;
     font-weight: 600;
@@ -106,7 +106,7 @@
   margin-bottom: 8px;
   flex: 1;
   min-height: 0;
-  
+
   @media (max-width: 1200px) {
     grid-template-columns: 1fr;
   }
@@ -123,7 +123,7 @@
   min-height: 0;
   max-height: 100%;
   overflow: hidden;
-  
+
   .section-header {
     display: flex;
     justify-content: space-between;
@@ -132,7 +132,7 @@
     padding-bottom: 6px;
     border-bottom: 1px solid #23272f;
     flex-shrink: 0;
-    
+
     h4 {
       margin: 0;
       font-size: 14px;
@@ -160,7 +160,7 @@
   min-height: 0;
   max-height: 100%;
   overflow: hidden;
-  
+
   .section-header {
     display: flex;
     justify-content: space-between;
@@ -169,7 +169,7 @@
     padding-bottom: 6px;
     border-bottom: 1px solid #23272f;
     flex-shrink: 0;
-    
+
     h4 {
       margin: 0;
       font-size: 14px;
@@ -194,28 +194,28 @@
   min-height: 0;
   scrollbar-width: thin;
   scrollbar-color: #3a3f47 #1a1d24;
-  
+
   // Webkit scrollbar styling (Chrome, Safari, Edge)
   &::-webkit-scrollbar {
     width: 12px;
     height: 12px;
   }
-  
+
   &::-webkit-scrollbar-track {
     background: #1a1d24;
     border-radius: 6px;
   }
-  
+
   &::-webkit-scrollbar-thumb {
     background: #3a3f47;
     border-radius: 6px;
     border: 2px solid #1a1d24;
-    
+
     &:hover {
       background: #4a4f57;
     }
   }
-  
+
   &::-webkit-scrollbar-corner {
     background: #1a1d24;
   }
@@ -225,7 +225,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: $font-size-sm;
-  
+
   thead {
     th {
       padding: $spacing-md;
@@ -237,30 +237,30 @@
       border-bottom: 2px solid rgba(255, 255, 255, 0.1);
     }
   }
-  
+
   tbody {
     tr {
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
       transition: background-color $transition-fast;
-      
+
       &:hover {
         background: rgba(255, 255, 255, 0.05);
       }
-      
+
       td {
         padding: $spacing-md;
-        
+
         &.action-buttons {
           display: flex;
           gap: $spacing-sm;
         }
       }
-      
+
       &.empty-row {
         text-align: center;
         color: var(--text-muted);
         font-style: italic;
-        
+
         td {
           padding: $spacing-xl;
         }
@@ -297,55 +297,55 @@
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s ease;
-  
+
   i {
     font-size: 14px;
   }
-  
+
   &.btn-primary {
     background: #3b82f6;
     border-color: #3b82f6;
     color: white;
-    
+
     &:hover {
       background: #2563eb;
       border-color: #2563eb;
     }
   }
-  
+
   &.btn-success {
     background: #16a34a;
     border-color: #16a34a;
     color: white;
-    
+
     &:hover {
       background: #15803d;
       border-color: #15803d;
     }
   }
-  
+
   &.btn-danger {
     background: #dc2626;
     border-color: #dc2626;
     color: white;
-    
+
     &:hover {
       background: #b91c1c;
       border-color: #b91c1c;
     }
   }
-  
+
   &.btn-secondary {
     background: #2c2f36;
     color: #e6e6e6;
     border: 1px solid #3a3f47;
-    
+
     &:hover {
       background: #3a3f47;
       border-color: #4a4f57;
     }
   }
-  
+
   &.btn-small {
     padding: 6px 10px;
     font-size: 12px;
@@ -365,22 +365,135 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.1);
     color: var(--text-primary);
   }
-  
+
   &.btn-edit {
     &:hover {
       color: var(--primary-accent);
     }
   }
-  
+
   &.btn-delete {
     &:hover {
       color: #ef4444;
     }
+  }
+}
+
+// Status Checkbox Styling
+.status-cell {
+  padding: $spacing-md !important;
+}
+
+.status-checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+
+  .status-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #3a3f47;
+    border-radius: 4px;
+    background: #1f2228;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+
+    &:hover {
+      border-color: #4a5568;
+      background: #2a2f36;
+    }
+
+    &:checked {
+      background: #16a34a;
+      border-color: #16a34a;
+
+      &::after {
+        content: '✓';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+      }
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+
+      &:hover {
+        border-color: #3a3f47;
+        background: #1f2228;
+      }
+    }
+
+    // Credit-specific styling
+    &.credit-status {
+      &:checked {
+        background: #16a34a;
+        border-color: #16a34a;
+      }
+
+      &:not(:checked) {
+        border-color: rgba(16, 185, 129, 0.3);
+      }
+
+      &:hover:not(:disabled):not(:checked) {
+        border-color: rgba(16, 185, 129, 0.5);
+        background: rgba(16, 185, 129, 0.05);
+      }
+    }
+
+    // Debit-specific styling
+    &.debit-status {
+      &:checked {
+        background: #dc2626;
+        border-color: #dc2626;
+      }
+
+      &:not(:checked) {
+        border-color: rgba(239, 68, 68, 0.3);
+      }
+
+      &:hover:not(:disabled):not(:checked) {
+        border-color: rgba(239, 68, 68, 0.5);
+        background: rgba(239, 68, 68, 0.05);
+      }
+    }
+  }
+
+  .checkbox-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #9aa0a6;
+    white-space: nowrap;
+  }
+
+  // Update label color based on checkbox state
+  input.status-checkbox:checked+.checkbox-label {
+    color: #e6e6e6;
+    font-weight: 600;
+  }
+
+  input.credit-status:checked+.checkbox-label {
+    color: #10b981;
+  }
+
+  input.debit-status:checked+.checkbox-label {
+    color: #ef4444;
   }
 }
 
@@ -398,7 +511,7 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  
+
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
   }
@@ -412,7 +525,7 @@
   background: #1f2228;
   border: 1px solid #3a3f47;
   border-radius: 6px;
-  
+
   .summary-label {
     font-size: 10px;
     color: #9aa0a6;
@@ -420,21 +533,21 @@
     text-transform: uppercase;
     letter-spacing: 0.3px;
   }
-  
+
   .summary-value {
     font-size: 16px;
     font-weight: 700;
     color: #e6e6e6;
   }
-  
+
   &.balance-item {
     background: rgba(234, 179, 8, 0.15);
     border: 1px solid rgba(234, 179, 8, 0.3);
-    
+
     .summary-label {
       color: #fbbf24;
     }
-    
+
     .summary-value {
       color: #fbbf24;
     }
@@ -455,7 +568,7 @@
   grid-template-columns: 120px repeat(3, 1fr);
   gap: $spacing-lg;
   align-items: center;
-  
+
   @media (max-width: 1024px) {
     grid-template-columns: 1fr;
     gap: $spacing-md;
@@ -477,7 +590,7 @@
   padding: $spacing-md;
   background: rgba(6, 182, 212, 0.1);
   border-radius: 8px;
-  
+
   .total-value-label {
     font-size: $font-size-xs;
     color: #67e8f9;
@@ -485,7 +598,7 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
-  
+
   .total-value {
     font-size: 1.5rem;
     font-weight: 700;
@@ -502,13 +615,13 @@
   padding: $spacing-3xl;
   text-align: center;
   color: var(--text-muted);
-  
+
   i {
     font-size: 4rem;
     margin-bottom: $spacing-lg;
     color: var(--text-disabled);
   }
-  
+
   p {
     font-size: $font-size-lg;
     margin-bottom: $spacing-xl;
@@ -521,4 +634,3 @@
 
 // Budget-specific form control styling (already in global styles, but keeping for reference)
 // All modals now use the same design as budget add/edit popups
-

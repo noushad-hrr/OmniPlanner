@@ -1,0 +1,46 @@
+CREDITS TABLE - Add after line 41 (after "Amount (Actual)" header):
+                <th>Is Credited</th>
+
+CREDITS TABLE - Add after line 49 (after amountActual cell):
+                <td class="checkbox-cell">
+                  <input 
+                    type="checkbox" 
+                    [(ngModel)]="credit.isCredited"
+                    (change)="updateCreditStatus(credit)"
+                    class="status-checkbox">
+                </td>
+
+CREDITS TABLE - Update line 64 colspan from 4 to 5:
+                <td colspan="5">No credits added yet</td>
+
+DEBITS TABLE - Add after line 84 (after "Amount (Actual)" header):
+                <th>Is Debited</th>
+
+DEBITS TABLE - Add after line 92 (after amountActual cell):
+                <td class="checkbox-cell">
+                  <input 
+                    type="checkbox" 
+                    [(ngModel)]="debit.isDebited"
+                    (change)="updateDebitStatus(debit)"
+                    class="status-checkbox">
+                </td>
+
+DEBITS TABLE - Update line 107 colspan from 4 to 5:
+                <td colspan="5">No debits added yet</td>
+
+COMPONENT METHODS TO ADD (budget.ts):
+  updateCreditStatus(credit: BudgetCredit): void {
+    this.budgetService.updateCredit(credit.id, credit)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        // Status updated successfully
+      });
+  }
+
+  updateDebitStatus(debit: BudgetDebit): void {
+    this.budgetService.updateDebit(debit.id, debit)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        // Status updated successfully
+      });
+  }

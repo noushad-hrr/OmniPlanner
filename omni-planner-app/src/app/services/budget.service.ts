@@ -12,6 +12,7 @@ export interface BudgetCredit {
   amountEstimated: number;
   amountActual: number;
   isLastMonthBalance: boolean;
+  isCredited: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -22,6 +23,7 @@ export interface BudgetDebit {
   target: string;
   amountEstimated: number;
   amountActual: number;
+  isDebited: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -143,7 +145,8 @@ export class BudgetService {
       source: credit.source,
       amountEstimated: credit.amountEstimated || 0,
       amountActual: credit.amountActual || 0,
-      isLastMonthBalance: credit.isLastMonthBalance || false
+      isLastMonthBalance: credit.isLastMonthBalance || false,
+      isCredited: credit.isCredited || false
     }).pipe(
       map(response => this.normalizeCredit(response.data || response))
     );
@@ -154,7 +157,8 @@ export class BudgetService {
       source: credit.source,
       amountEstimated: credit.amountEstimated,
       amountActual: credit.amountActual,
-      isLastMonthBalance: credit.isLastMonthBalance
+      isLastMonthBalance: credit.isLastMonthBalance,
+      isCredited: credit.isCredited
     }).pipe(
       map(response => this.normalizeCredit(response.data || response))
     );
@@ -170,7 +174,8 @@ export class BudgetService {
       monthId: debit.monthId,
       target: debit.target,
       amountEstimated: debit.amountEstimated || 0,
-      amountActual: debit.amountActual || 0
+      amountActual: debit.amountActual || 0,
+      isDebited: debit.isDebited || false
     }).pipe(
       map(response => this.normalizeDebit(response.data || response))
     );
@@ -180,7 +185,8 @@ export class BudgetService {
     return this.http.put<any>(`${this.baseUrl}/UpdateDebit/${id}`, {
       target: debit.target,
       amountEstimated: debit.amountEstimated,
-      amountActual: debit.amountActual
+      amountActual: debit.amountActual,
+      isDebited: debit.isDebited
     }).pipe(
       map(response => this.normalizeDebit(response.data || response))
     );
@@ -218,6 +224,7 @@ export class BudgetService {
       amountEstimated: parseFloat(credit.amountEstimated || credit.amount_estimated || 0),
       amountActual: parseFloat(credit.amountActual || credit.amount_actual || 0),
       isLastMonthBalance: credit.isLastMonthBalance || credit.is_last_month_balance || false,
+      isCredited: credit.isCredited || credit.is_credited || false,
       createdAt: credit.createdAt ? new Date(credit.createdAt) : new Date(),
       updatedAt: credit.updatedAt ? new Date(credit.updatedAt) : new Date()
     };
@@ -230,6 +237,7 @@ export class BudgetService {
       target: debit.target || '',
       amountEstimated: parseFloat(debit.amountEstimated || debit.amount_estimated || 0),
       amountActual: parseFloat(debit.amountActual || debit.amount_actual || 0),
+      isDebited: debit.isDebited || debit.is_debited || false,
       createdAt: debit.createdAt ? new Date(debit.createdAt) : new Date(),
       updatedAt: debit.updatedAt ? new Date(debit.updatedAt) : new Date()
     };
@@ -267,17 +275,17 @@ export class BudgetService {
 
   private getSampleMonthData(monthId: number): BudgetMonthlyData {
     const sampleCredits: BudgetCredit[] = [
-      { id: 1, monthId: 1, source: 'Salary', amountEstimated: 20000, amountActual: 20000, isLastMonthBalance: false },
-      { id: 2, monthId: 1, source: 'Dad', amountEstimated: 5000, amountActual: 6000, isLastMonthBalance: false },
-      { id: 3, monthId: 1, source: 'Printer Payment', amountEstimated: 2000, amountActual: 1500, isLastMonthBalance: false },
-      { id: 4, monthId: 1, source: 'Last month balance', amountEstimated: 0, amountActual: 0, isLastMonthBalance: true }
+      { id: 1, monthId: 1, source: 'Salary', amountEstimated: 20000, amountActual: 20000, isLastMonthBalance: false, isCredited: true },
+      { id: 2, monthId: 1, source: 'Dad', amountEstimated: 5000, amountActual: 6000, isLastMonthBalance: false, isCredited: true },
+      { id: 3, monthId: 1, source: 'Printer Payment', amountEstimated: 2000, amountActual: 1500, isLastMonthBalance: false, isCredited: false },
+      { id: 4, monthId: 1, source: 'Last month balance', amountEstimated: 0, amountActual: 0, isLastMonthBalance: true, isCredited: true }
     ];
 
     const sampleDebits: BudgetDebit[] = [
-      { id: 1, monthId: 1, target: 'Salary sent to Home', amountEstimated: 18000, amountActual: 17500 },
-      { id: 2, monthId: 1, target: 'My daily spents', amountEstimated: 2000, amountActual: 3200 },
-      { id: 3, monthId: 1, target: 'Paid to friend', amountEstimated: 1000, amountActual: 1000 },
-      { id: 4, monthId: 1, target: 'EMI', amountEstimated: 900, amountActual: 900 }
+      { id: 1, monthId: 1, target: 'Salary sent to Home', amountEstimated: 18000, amountActual: 17500, isDebited: true },
+      { id: 2, monthId: 1, target: 'My daily spents', amountEstimated: 2000, amountActual: 3200, isDebited: true },
+      { id: 3, monthId: 1, target: 'Paid to friend', amountEstimated: 1000, amountActual: 1000, isDebited: false },
+      { id: 4, monthId: 1, target: 'EMI', amountEstimated: 900, amountActual: 900, isDebited: true }
     ];
 
     const monthlyCredit = sampleCredits.reduce((sum, c) => sum + c.amountActual, 0);

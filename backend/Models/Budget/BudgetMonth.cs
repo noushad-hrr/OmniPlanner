@@ -18,6 +18,7 @@ namespace OmniPlanner_API.Models.Budget
         public decimal amount_estimated { get; set; }
         public decimal amount_actual { get; set; }
         public bool is_last_month_balance { get; set; }
+        public bool is_credited { get; set; }
         public DateTime created_at { get; set; }
         public DateTime updated_at { get; set; }
     }
@@ -29,6 +30,7 @@ namespace OmniPlanner_API.Models.Budget
         public string target { get; set; }
         public decimal amount_estimated { get; set; }
         public decimal amount_actual { get; set; }
+        public bool is_debited { get; set; }
         public DateTime created_at { get; set; }
         public DateTime updated_at { get; set; }
     }
@@ -65,6 +67,7 @@ namespace OmniPlanner_API.Models.Budget
         public decimal amountEstimated { get; set; }
         public decimal amountActual { get; set; }
         public bool isLastMonthBalance { get; set; }
+        public bool isCredited { get; set; }
     }
 
     public class UpdateCreditRequest
@@ -73,6 +76,7 @@ namespace OmniPlanner_API.Models.Budget
         public decimal amountEstimated { get; set; }
         public decimal amountActual { get; set; }
         public bool isLastMonthBalance { get; set; }
+        public bool isCredited { get; set; }
     }
 
     public class CreateDebitRequest
@@ -81,6 +85,7 @@ namespace OmniPlanner_API.Models.Budget
         public string target { get; set; }
         public decimal amountEstimated { get; set; }
         public decimal amountActual { get; set; }
+        public bool isDebited { get; set; }
     }
 
     public class UpdateDebitRequest
@@ -88,6 +93,7 @@ namespace OmniPlanner_API.Models.Budget
         public string target { get; set; }
         public decimal amountEstimated { get; set; }
         public decimal amountActual { get; set; }
+        public bool isDebited { get; set; }
     }
 }
 

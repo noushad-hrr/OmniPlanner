@@ -36,6 +36,7 @@
                 <th>Source</th>
                 <th>Amount (Estimated)</th>
                 <th>Amount (Actual)</th>
+                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -44,6 +45,14 @@
                 <td>{{ credit.source }}</td>
                 <td>{{ formatCurrency(credit.amountEstimated) }}</td>
                 <td>{{ formatCurrency(credit.amountActual) }}</td>
+                <td class="status-cell">
+                  <label class="status-checkbox-wrapper">
+                    <input type="checkbox" class="status-checkbox credit-status" [(ngModel)]="credit.isCredited"
+                      (change)="updateCreditStatus(credit)" [disabled]="credit.isLastMonthBalance"
+                      title="{{ credit.isCredited ? 'Credited' : 'Not Credited' }}">
+                    <span class="checkbox-label">{{ credit.isCredited ? 'Credited' : 'Pending' }}</span>
+                  </label>
+                </td>
                 <td class="action-buttons">
                   <button class="btn-icon btn-edit" (click)="openEditCreditModal(credit)" title="Edit">
                     <i class="fas fa-edit"></i>
@@ -55,7 +64,7 @@
                 </td>
               </tr>
               <tr *ngIf="getCredits().length === 0" class="empty-row">
-                <td colspan="4">No credits added yet</td>
+                <td colspan="5">No credits added yet</td>
               </tr>
             </tbody>
           </table>
@@ -78,6 +87,7 @@
                 <th>Target</th>
                 <th>Amount (Estimated)</th>
                 <th>Amount (Actual)</th>
+                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -86,6 +96,13 @@
                 <td>{{ debit.target }}</td>
                 <td>{{ formatCurrency(debit.amountEstimated) }}</td>
                 <td>{{ formatCurrency(debit.amountActual) }}</td>
+                <td class="status-cell">
+                  <label class="status-checkbox-wrapper">
+                    <input type="checkbox" class="status-checkbox debit-status" [(ngModel)]="debit.isDebited"
+                      (change)="updateDebitStatus(debit)" title="{{ debit.isDebited ? 'Debited' : 'Not Debited' }}">
+                    <span class="checkbox-label">{{ debit.isDebited ? 'Debited' : 'Pending' }}</span>
+                  </label>
+                </td>
                 <td class="action-buttons">
                   <button class="btn-icon btn-edit" (click)="openEditDebitModal(debit)" title="Edit">
                     <i class="fas fa-edit"></i>
@@ -96,7 +113,7 @@
                 </td>
               </tr>
               <tr *ngIf="getDebits().length === 0" class="empty-row">
-                <td colspan="4">No debits added yet</td>
+                <td colspan="5">No debits added yet</td>
               </tr>
             </tbody>
           </table>

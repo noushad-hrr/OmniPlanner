@@ -33,13 +33,15 @@ export class BudgetComponent implements OnInit, OnDestroy {
     source: '',
     amountEstimated: 0,
     amountActual: 0,
-    isLastMonthBalance: false
+    isLastMonthBalance: false,
+    isCredited: false
   };
 
   newDebit: Partial<BudgetDebit> = {
     target: '',
     amountEstimated: 0,
-    amountActual: 0
+    amountActual: 0,
+    isDebited: false
   };
 
   newMonth = {
@@ -234,7 +236,8 @@ export class BudgetComponent implements OnInit, OnDestroy {
       source: '',
       amountEstimated: 0,
       amountActual: 0,
-      isLastMonthBalance: false
+      isLastMonthBalance: false,
+      isCredited: false
     };
   }
 
@@ -297,8 +300,26 @@ export class BudgetComponent implements OnInit, OnDestroy {
     this.newDebit = {
       target: '',
       amountEstimated: 0,
-      amountActual: 0
+      amountActual: 0,
+      isDebited: false
     };
+  }
+
+  // Status update methods
+  updateCreditStatus(credit: BudgetCredit): void {
+    this.budgetService.updateCredit(credit.id, credit)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        // Status updated successfully
+      });
+  }
+
+  updateDebitStatus(debit: BudgetDebit): void {
+    this.budgetService.updateDebit(debit.id, debit)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        // Status updated successfully
+      });
   }
 
   // Month operations
