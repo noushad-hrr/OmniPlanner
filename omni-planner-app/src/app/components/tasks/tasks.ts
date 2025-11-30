@@ -385,6 +385,9 @@ export class TasksComponent implements OnInit, OnDestroy {
   selectedUrlId: number | null = null;
   loadingUrls: boolean = false;
 
+  // Periodic Task URL management properties
+  showAddPeriodicTaskUrlDropdown: boolean = false;
+
   // Subtask form properties
   newSubtask: Partial<Subtask> & { remarks?: string; urls?: { label: string; url: string }[]; important?: boolean; category?: { name: string; icon: string } } = {
     title: '',
@@ -1082,7 +1085,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       recurrence_week_of_month: 1,
       recurrence_day_of_week: 1,
       recurrence_month: 1,
-      recurrence_end_type: 'never',
+      recurrence_end_type: 'on_date',
       recurrence_end_date: null,
       recurrence_occurrences: null,
       priorityLevel: defaultPriority ? { name: defaultPriority.priority as any, color: defaultPriority.color } : null,
@@ -1090,7 +1093,8 @@ export class TasksComponent implements OnInit, OnDestroy {
       category: null,
       estimatedHours: null,
       remarks: '',
-      important: false
+      important: false,
+      urls: []
     };
   }
 
@@ -1098,12 +1102,60 @@ export class TasksComponent implements OnInit, OnDestroy {
     this.showAddPeriodicTaskModal = false;
     this.showEditPeriodicTaskModal = false;
     this.newPeriodicTask = {};
+    this.showAddPeriodicTaskUrlDropdown = false;
+    this.availableUrls = [];
   }
 
   savePeriodicTask(): void {
-    // Validate
+    // Validate title
     if (!this.newPeriodicTask.title || !this.newPeriodicTask.title.trim()) {
       this.toaster.error('Title is required');
+      return;
+    }
+
+    // Validate category
+    if (!this.newPeriodicTask.category || !this.newPeriodicTask.category.name) {
+      this.toaster.error('Category is required');
+      return;
+    }
+
+    // Validate recurrence_end_type is selected
+    if (!this.newPeriodicTask.recurrence_end_type) {
+      this.toaster.error('Ends type is required');
+      return;
+    }
+
+    // Validate end date based on recurrence_end_type
+    if (this.newPeriodicTask.recurrence_end_type === 'on_date') {
+      if (!this.newPeriodicTask.recurrence_end_date) {
+        this.toaster.error('End date is required when "On Date" is selected');
+        return;
+      }
+    } else if (this.newPeriodicTask.recurrence_end_type === 'after_occurrences') {
+      if (!this.newPeriodicTask.recurrence_occurrences || this.newPeriodicTask.recurrence_occurrences < 1) {
+        this.toaster.error('Number of occurrences is required and must be at least 1');
+        return;
+      }
+    }
+
+    // Validate recurrence pattern specific fields
+    if (this.newPeriodicTask.recurrence_pattern === 'weekly') {
+      if (!this.newPeriodicTask.recurrence_days || this.newPeriodicTask.recurrence_days.length === 0) {
+        this.toaster.error('Please select at least one day for weekly recurrence');
+        return;
+      }
+    } else if (this.newPeriodicTask.recurrence_pattern === 'monthly') {
+      if (this.monthlyRepeatType === 'day') {
+        if (!this.newPeriodicTask.recurrence_month_day || this.newPeriodicTask.recurrence_month_day < 1 || this.newPeriodicTask.recurrence_month_day > 31) {
+          this.toaster.error('Please enter a valid day of month (1-31)');
+          return;
+        }
+      }
+    }
+
+    // Validate recurrence interval
+    if (!this.newPeriodicTask.recurrence_interval || this.newPeriodicTask.recurrence_interval < 1) {
+      this.toaster.error('Recurrence interval must be at least 1');
       return;
     }
 
@@ -1112,14 +1164,22 @@ export class TasksComponent implements OnInit, OnDestroy {
     const priorityId = this.priorities.find(p => p.priority === this.newPeriodicTask.priorityLevel?.name)?.id || null;
     const statusId = this.statuses.find(s => s.status === this.newPeriodicTask.status?.name)?.id || null;
 
+    // Helper function to format dates as ISO strings
+    const formatDateToString = (date: any): string | null => {
+      if (!date) return null;
+      if (typeof date === 'string') return date;
+      if (date instanceof Date) return date.toISOString().split('T')[0];
+      return null;
+    };
+
     const taskData = {
       title: this.newPeriodicTask.title,
       description: this.newPeriodicTask.description || null,
       priority_level_id: priorityId,
       status_id: statusId,
       category_id: categoryId,
-      startDate: this.newPeriodicTask.startDate,
-      endDate: this.newPeriodicTask.endDate,
+      startDate: formatDateToString(this.newPeriodicTask.startDate),
+      endDate: formatDateToString(this.newPeriodicTask.endDate),
       startTime: this.newPeriodicTask.startTime,
       endTime: this.newPeriodicTask.endTime,
       recurrence_pattern: this.newPeriodicTask.recurrence_pattern,
@@ -1130,12 +1190,13 @@ export class TasksComponent implements OnInit, OnDestroy {
       recurrence_day_of_week: this.newPeriodicTask.recurrence_day_of_week,
       recurrence_month: this.newPeriodicTask.recurrence_month,
       recurrence_end_type: this.newPeriodicTask.recurrence_end_type,
-      recurrence_end_date: this.newPeriodicTask.recurrence_end_date,
+      recurrence_end_date: formatDateToString(this.newPeriodicTask.recurrence_end_date),
       recurrence_occurrences: this.newPeriodicTask.recurrence_occurrences,
       estimatedHours: this.newPeriodicTask.estimatedHours,
       priorityOrder: null,
       remarks: this.newPeriodicTask.remarks,
-      important: this.newPeriodicTask.important
+      important: this.newPeriodicTask.important,
+      url_ids: (this.newPeriodicTask.urls || []).map((u: any) => u.url_id).filter((id: any) => id != null)
     };
 
     if (this.newPeriodicTask.id) {
@@ -1199,13 +1260,126 @@ export class TasksComponent implements OnInit, OnDestroy {
     }
   }
 
-  onRecurrencePatternChange(): void {
+    onRecurrencePatternChange(): void {
     // Reset pattern-specific fields when pattern changes
     this.newPeriodicTask.recurrence_days = [];
     this.newPeriodicTask.recurrence_month_day = 1;
     this.newPeriodicTask.recurrence_week_of_month = 1;
     this.newPeriodicTask.recurrence_day_of_week = 1;
     this.newPeriodicTask.recurrence_month = 1;
+    this.calculateEndDate();
+  }
+
+  calculateEndDate(): void {
+    if (this.newPeriodicTask.recurrence_end_type !== 'after_occurrences' || !this.newPeriodicTask.recurrence_occurrences) {
+      return;
+    }
+
+    const startDate = new Date(this.newPeriodicTask.startDate);
+    if (isNaN(startDate.getTime())) {
+      return;
+    }
+
+    const occurrences = this.newPeriodicTask.recurrence_occurrences - 1;
+    const pattern = this.newPeriodicTask.recurrence_pattern;
+    const interval = this.newPeriodicTask.recurrence_interval || 1;
+    let endDate = new Date(startDate);
+
+    if (pattern === 'daily') {
+      endDate.setDate(endDate.getDate() + (occurrences * interval));
+    } else if (pattern === 'weekly') {
+      endDate.setDate(endDate.getDate() + (occurrences * interval * 7));
+    } else if (pattern === 'monthly') {
+      endDate.setMonth(endDate.getMonth() + (occurrences * interval));
+    } else if (pattern === 'yearly') {
+      endDate.setFullYear(endDate.getFullYear() + (occurrences * interval));
+    }
+
+    const year = endDate.getFullYear();
+    const month = String(endDate.getMonth() + 1).padStart(2, '0');
+    const day = String(endDate.getDate()).padStart(2, '0');
+    this.newPeriodicTask.recurrence_end_date = `${year}-${month}-${day}`;
+  }
+
+  onRecurrenceOccurrencesChange(): void {
+    this.calculateEndDate();
+  }
+
+  onRecurrenceEndTypeChange(): void {
+    if (this.newPeriodicTask.recurrence_end_type === 'after_occurrences') {
+      this.calculateEndDate();
+    }
+  }
+
+  // Periodic Task URL Management
+  togglePeriodicAddUrlDropdown(): void {
+    if (!this.newPeriodicTask.category) {
+      return;
+    }
+    this.showAddUrlDropdown = !this.showAddUrlDropdown;
+    if (this.showAddUrlDropdown && this.availableUrls.length === 0) {
+      this.loadAvailablePeriodicUrls();
+    }
+  }
+
+  async loadAvailablePeriodicUrls(): Promise<void> {
+    if (!this.newPeriodicTask.category) {
+      this.availableUrls = [];
+      return;
+    }
+
+    const categoryMaster = this.categoryMasters.find(c => c.category === this.newPeriodicTask.category?.name);
+    if (!categoryMaster) {
+      this.availableUrls = [];
+      return;
+    }
+
+    try {
+      this.loadingUrls = true;
+      const urls = await this.notesService.getAvailableUrls(categoryMaster.id);
+      const existingUrls = (this.newPeriodicTask.urls || []).map((u: any) => `${u.label}|${u.url}`);
+      this.availableUrls = urls.filter((u: any) => !existingUrls.includes(`${u.label}|${u.url}`));
+    } catch (err: any) {
+      console.warn('Failed to load available URLs:', err);
+      this.availableUrls = [];
+    } finally {
+      this.loadingUrls = false;
+    }
+  }
+
+  addPeriodicUrlFromMaster(): void {
+    if (!this.selectedUrlId) {
+      return;
+    }
+
+    const selectedUrl = this.availableUrls.find((u: any) => u.url_id === this.selectedUrlId);
+    if (!selectedUrl) {
+      return;
+    }
+
+    if (!this.newPeriodicTask.urls) {
+      this.newPeriodicTask.urls = [];
+    }
+
+    this.newPeriodicTask.urls.push({
+      label: selectedUrl.label,
+      url: selectedUrl.url,
+      url_id: selectedUrl.url_id
+    });
+
+    this.availableUrls = this.availableUrls.filter((u: any) => u.url_id !== this.selectedUrlId);
+    this.selectedUrlId = null;
+    this.showAddUrlDropdown = false;
+  }
+
+  removePeriodicUrl(index: number): void {
+    if (this.newPeriodicTask.urls) {
+      this.newPeriodicTask.urls.splice(index, 1);
+      // Reload available URLs
+      if (this.newPeriodicTask.category) {
+        this.loadAvailablePeriodicUrls();
+      }
+    }
   }
 
   onAddTaskClickedFromFilter(viewMode: string): void {
@@ -1517,6 +1691,73 @@ export class TasksComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Periodic Task URL Management Methods
+  async loadAvailableUrlsForPeriodicTask(): Promise<void> {
+    if (!this.newPeriodicTask.category) {
+      this.availableUrls = [];
+      return;
+    }
+
+    const categoryMaster = this.categoryMasters.find(c => c.category === this.newPeriodicTask.category?.name);
+    if (!categoryMaster) {
+      this.availableUrls = [];
+      return;
+    }
+
+    try {
+      this.loadingUrls = true;
+      const urls = await this.notesService.getAvailableUrls(categoryMaster.id);
+      const existingUrls = (this.newPeriodicTask.urls || []).map((u: any) => `${u.label}|${u.url}`);
+      this.availableUrls = urls.filter((u: any) => !existingUrls.includes(`${u.label}|${u.url}`));
+    } catch (err: any) {
+      console.warn('Failed to load available URLs:', err);
+      this.availableUrls = [];
+    } finally {
+      this.loadingUrls = false;
+    }
+  }
+
+  toggleAddPeriodicTaskUrlDropdown(): void {
+    if (!this.newPeriodicTask.category) {
+      return;
+    }
+    this.showAddPeriodicTaskUrlDropdown = !this.showAddPeriodicTaskUrlDropdown;
+    if (this.showAddPeriodicTaskUrlDropdown && this.availableUrls.length === 0) {
+      this.loadAvailableUrlsForPeriodicTask();
+    }
+  }
+
+  addUrlFromMasterToPeriodicTask(): void {
+    if (!this.selectedUrlId) {
+      return;
+    }
+
+    const selectedUrl = this.availableUrls.find((u: any) => u.url_id === this.selectedUrlId);
+    if (!selectedUrl) {
+      return;
+    }
+
+    if (!this.newPeriodicTask.urls) {
+      this.newPeriodicTask.urls = [];
+    }
+    (this.newPeriodicTask.urls as any[]).push({
+      label: selectedUrl.label,
+      url: selectedUrl.url,
+      url_id: selectedUrl.url_id
+    });
+
+    this.availableUrls = this.availableUrls.filter((u: any) => u.url_id !== this.selectedUrlId);
+    this.selectedUrlId = null;
+    this.showAddPeriodicTaskUrlDropdown = false;
+  }
+
+  removePeriodicTaskUrl(index: number): void {
+    if (this.newPeriodicTask.urls) {
+      this.newPeriodicTask.urls.splice(index, 1);
+      this.loadAvailableUrlsForPeriodicTask();
+    }
+  }
+
   // Subtask Management Methods
   addSubtaskDirect(taskId: number, subtask: Partial<Subtask>, parentSubtaskId?: number): void {
     (this.getService() as any).addSubtask(taskId, subtask as any, parentSubtaskId);
@@ -1769,24 +2010,45 @@ export class TasksComponent implements OnInit, OnDestroy {
 
   editSubtaskModal(subtaskId: number): void {
     if (!this.selectedSubtask) return;
+    if (!this.selectedTask) return;
 
     const nestedSubtask = this.selectedSubtask.subtasks?.find(s => s.id === subtaskId);
     if (nestedSubtask) {
       const newTitle = prompt('Edit nested subtask title:', nestedSubtask.title);
       if (newTitle && newTitle.trim()) {
-        nestedSubtask.title = newTitle.trim();
-        nestedSubtask.updatedAt = new Date();
-        this.selectedSubtask.updatedAt = new Date();
-        if (this.selectedSubtaskParent) {
-          this.selectedSubtaskParent.updatedAt = new Date();
+        const title = newTitle.trim();
+        const result = this.getService().updateSubtask(this.selectedTask.id, subtaskId, { title });
+        
+        if (result && typeof result === 'object' && 'subscribe' in result) {
+          (result as any).subscribe({
+            next: (updatedSubtask: any) => {
+              this.toaster.success('Nested subtask updated successfully');
+              nestedSubtask.title = title;
+              nestedSubtask.updatedAt = new Date();
+              this.selectedSubtask!.updatedAt = new Date();
+              if (this.viewMode === 'periodic-tasks') {
+                this.periodicTaskService.refreshTasks();
+              } else {
+                this.taskService.refreshTasks();
+              }
+            },
+            error: (err: any) => {
+              this.toaster.error('Failed to update nested subtask');
+            }
+          });
+        } else {
+          this.toaster.success('Nested subtask updated successfully');
+          nestedSubtask.title = title;
+          nestedSubtask.updatedAt = new Date();
+          this.selectedSubtask!.updatedAt = new Date();
         }
-        this.filterTasks();
       }
     }
   }
 
   async deleteSubtaskModal(subtaskId: number): Promise<void> {
     if (!this.selectedSubtask || !this.selectedSubtask.subtasks) return;
+    if (!this.selectedTask) return;
 
     const nestedSubtask = this.selectedSubtask.subtasks.find(s => s.id === subtaskId);
     const subtaskTitle = nestedSubtask?.title || 'this nested subtask';
@@ -1800,12 +2062,33 @@ export class TasksComponent implements OnInit, OnDestroy {
     });
 
     if (confirmed) {
-      this.selectedSubtask.subtasks = this.selectedSubtask.subtasks.filter(s => s.id !== subtaskId);
-      this.selectedSubtask.updatedAt = new Date();
-      if (this.selectedSubtaskParent) {
-        this.selectedSubtaskParent.updatedAt = new Date();
+      const result = this.getService().deleteSubtask(this.selectedTask.id, subtaskId);
+      
+      if (result && typeof result === 'object' && 'subscribe' in result) {
+        (result as any).subscribe({
+          next: () => {
+            this.toaster.success('Nested subtask deleted successfully');
+            if (this.selectedSubtask && this.selectedSubtask.subtasks) {
+              this.selectedSubtask.subtasks = this.selectedSubtask.subtasks.filter(s => s.id !== subtaskId);
+              this.selectedSubtask.updatedAt = new Date();
+            }
+            if (this.viewMode === 'periodic-tasks') {
+              this.periodicTaskService.refreshTasks();
+            } else {
+              this.taskService.refreshTasks();
+            }
+          },
+          error: (err: any) => {
+            this.toaster.error('Failed to delete nested subtask');
+          }
+        });
+      } else {
+        this.toaster.success('Nested subtask deleted successfully');
+        if (this.selectedSubtask && this.selectedSubtask.subtasks) {
+          this.selectedSubtask.subtasks = this.selectedSubtask.subtasks.filter(s => s.id !== subtaskId);
+          this.selectedSubtask.updatedAt = new Date();
+        }
       }
-      this.filterTasks();
     }
   }
 
@@ -2686,6 +2969,33 @@ export class TasksComponent implements OnInit, OnDestroy {
       completed: this.selectedLevel2Subtask.completed ?? false
     };
 
+    if (this.viewMode === 'periodic-tasks') {
+      const periodicSubtaskData: any = {
+        title: this.selectedLevel2Subtask.title,
+        description: this.selectedLevel2Subtask.description || null,
+        startTime: this.selectedLevel2Subtask.startTime || '09:00',
+        endTime: this.selectedLevel2Subtask.endTime || '17:00',
+        estimatedHours: estimatedHours || null,
+        priorityOrder: this.selectedLevel2Subtask.priorityOrder ?? null,
+        completed: this.selectedLevel2Subtask.completed || false
+      };
+
+      this.periodicTaskService.updateSubtask(this.parentTaskForLevel1Subtask.id, this.selectedLevel2Subtask.id, periodicSubtaskData).subscribe({
+        next: (response: any) => {
+          this.toaster.success('Periodic level 2 subtask updated successfully');
+          this.showEditLevel2SubtaskModal = false;
+          this.selectedLevel2Subtask = null;
+          this.parentTaskForLevel1Subtask = null;
+          this.parentLevel1SubtaskForLevel2 = null;
+          this.periodicTaskService.refreshTasks();
+        },
+        error: (error: any) => {
+          this.toaster.error('Failed to update periodic level 2 subtask');
+        }
+      });
+      return;
+    }
+
     this.taskService.updateLevel2Subtask(subtaskData).subscribe({
       next: (response: any) => {
         if (response.success) {
@@ -2807,6 +3117,34 @@ export class TasksComponent implements OnInit, OnDestroy {
       important: this.newSubtask.important ?? false,
       completed: this.newSubtask.completed ?? false
     };
+
+    if (this.viewMode === 'periodic-tasks') {
+      // For periodic tasks
+      const subtaskData: any = {
+        title: this.newSubtask.title,
+        description: this.newSubtask.description || null,
+        startTime: this.newSubtask.startTime || '09:00',
+        endTime: this.newSubtask.endTime || '17:00',
+        estimatedHours: estimatedHours || null,
+        priorityOrder: this.newSubtask.priorityOrder ?? null,
+        completed: this.newSubtask.completed || false
+      };
+
+      this.periodicTaskService.addSubtask(this.parentTaskForLevel1Subtask.id, subtaskData, this.parentLevel1SubtaskForLevel2.id).subscribe({
+        next: (response: any) => {
+          this.toaster.success('Periodic level 2 subtask added successfully');
+          this.resetNewSubtask();
+          this.showAddLevel2SubtaskModal = false;
+          this.parentTaskForLevel1Subtask = null;
+          this.parentLevel1SubtaskForLevel2 = null;
+          this.periodicTaskService.refreshTasks();
+        },
+        error: (error: any) => {
+          this.toaster.error('Failed to add periodic level 2 subtask');
+        }
+      });
+      return;
+    }
 
     this.taskService.addLevel2Subtask(subtaskData).subscribe({
       next: (response: any) => {
@@ -2971,6 +3309,7 @@ export class TasksComponent implements OnInit, OnDestroy {
         estimatedHours: periodicTask.estimatedHours,
         remarks: periodicTask.remarks,
         important: periodicTask.important,
+        urls: periodicTask.urls || [],
         recurrence_pattern: periodicTask.recurrence_pattern || 'daily',
         recurrence_interval: periodicTask.recurrence_interval || 1,
         recurrence_days: periodicTask.recurrence_days || null,

@@ -780,7 +780,7 @@
       <div class="modal-body">
         <!-- Basic Information -->
         <div class="form-section">
-          <h4 class="section-title">Basic Information</h4>
+          <!-- <h4 class="section-title">Basic Information</h4> -->
 
           <div class="form-group">
             <label for="periodicTaskTitle">Title <span class="required">*</span></label>
@@ -794,36 +794,6 @@
               placeholder="Enter task description..." class="form-input" rows="3"></textarea>
           </div>
         </div>
-
-        <!-- Date & Time -->
-        <div class="form-section">
-          <h4 class="section-title">Date & Time</h4>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="periodicStartDate">Start Date <span class="required">*</span></label>
-              <input type="date" id="periodicStartDate" [(ngModel)]="newPeriodicTask.startDate" class="form-input">
-            </div>
-
-            <div class="form-group">
-              <label for="periodicEndDate">End Date</label>
-              <input type="date" id="periodicEndDate" [(ngModel)]="newPeriodicTask.endDate" class="form-input">
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="periodicStartTime">Start Time</label>
-              <input type="time" id="periodicStartTime" [(ngModel)]="newPeriodicTask.startTime" class="form-input">
-            </div>
-
-            <div class="form-group">
-              <label for="periodicEndTime">End Time</label>
-              <input type="time" id="periodicEndTime" [(ngModel)]="newPeriodicTask.endTime" class="form-input">
-            </div>
-          </div>
-        </div>
-
         <!-- Recurrence Pattern -->
         <div class="form-section">
           <h4 class="section-title">Recurrence Pattern</h4>
@@ -921,28 +891,65 @@
             </select>
           </div>
 
-          <!-- End Condition -->
-          <div class="form-group">
-            <label for="recurrenceEndType">Ends</label>
-            <select id="recurrenceEndType" [(ngModel)]="newPeriodicTask.recurrence_end_type" class="form-input">
-              <option value="never">Never</option>
-              <option value="on_date">On Date</option>
-              <option value="after_occurrences">After Occurrences</option>
-            </select>
-          </div>
 
-          <div *ngIf="newPeriodicTask.recurrence_end_type === 'on_date'" class="form-group">
-            <label for="recurrenceEndDate">End Date</label>
-            <input type="date" id="recurrenceEndDate" [(ngModel)]="newPeriodicTask.recurrence_end_date"
-              class="form-input">
-          </div>
-
-          <div *ngIf="newPeriodicTask.recurrence_end_type === 'after_occurrences'" class="form-group">
-            <label for="recurrenceOccurrences">Occurrences</label>
-            <input type="number" id="recurrenceOccurrences" [(ngModel)]="newPeriodicTask.recurrence_occurrences" min="1"
-              class="form-input" style="width: 150px;">
-          </div>
         </div>
+
+        
+        <!-- Date & Time -->
+        <div class="form-section">
+          <h4 class="section-title">Date & Time</h4>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="periodicStartDate">Start Date <span class="required">*</span></label>
+              <input type="date" id="periodicStartDate" [(ngModel)]="newPeriodicTask.startDate" class="form-input">
+            </div>
+
+            <div class="form-group">
+              <label for="periodicEndDate">End Date</label>
+              <input type="date" id="periodicEndDate" [(ngModel)]="newPeriodicTask.endDate" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="recurrenceEndType">Recurrence Ends <span class="required">*</span></label>
+              <select id="recurrenceEndType" [(ngModel)]="newPeriodicTask.recurrence_end_type" (change)="onRecurrenceEndTypeChange()" class="form-input">
+                <option value="">Select End Type</option>
+                <option value="on_date">On Date</option>
+                <option value="after_occurrences">After Occurrences</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="periodicStartTime">Start Time</label>
+              <input type="time" id="periodicStartTime" [(ngModel)]="newPeriodicTask.startTime" class="form-input">
+            </div>
+
+            <div class="form-group">
+              <label for="periodicEndTime">End Time</label>
+              <input type="time" id="periodicEndTime" [(ngModel)]="newPeriodicTask.endTime" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="recurrenceEndDate">End Date</label>
+              <input type="date" id="recurrenceEndDate" [(ngModel)]="newPeriodicTask.recurrence_end_date"
+                [disabled]="newPeriodicTask.recurrence_end_type === 'after_occurrences'" class="form-input">
+            </div>
+
+            <div *ngIf="newPeriodicTask.recurrence_end_type === 'after_occurrences'" class="form-group">
+              <label for="recurrenceOccurrences">Occurrences</label>
+              <input type="number" id="recurrenceOccurrences" [(ngModel)]="newPeriodicTask.recurrence_occurrences" min="1"
+                (change)="onRecurrenceOccurrencesChange()" class="form-input" style="width: 150px;">
+            </div>
+          </div>
+
+        </div>
+
 
         <!-- Task Details -->
         <div class="form-section">
@@ -982,23 +989,48 @@
             </div>
           </div>
 
-          <div class="form-group">
-            <label for="periodicEstimatedHours">Estimated Hours</label>
-            <input type="number" id="periodicEstimatedHours" [(ngModel)]="newPeriodicTask.estimatedHours" min="0"
-              step="0.5" class="form-input" style="width: 150px;">
-          </div>
+          <!-- div class="form-group">
+            <span>Mark as Important</span>
+            <input type="checkbox" [(ngModel)]="newPeriodicTask.important">
+          </div -->
+        </div>
 
-          <div class="form-group">
-            <label for="periodicRemarks">Remarks</label>
-            <textarea id="periodicRemarks" [(ngModel)]="newPeriodicTask.remarks" placeholder="Additional notes..."
-              class="form-input" rows="3"></textarea>
-          </div>
-
-          <div class="form-group">
-            <label class="checkbox-label">
-              <input type="checkbox" [(ngModel)]="newPeriodicTask.important">
-              <span>Mark as Important</span>
-            </label>
+        <!-- URLs Section -->
+        <div class="form-group">
+          <label>URLs/Documents</label>
+          <div class="urls-container">
+            <div class="urls-list">
+              <div *ngFor="let url of newPeriodicTask.urls; let i = index" class="url-row">
+                <span class="url-label-display">{{ url.label }}</span>
+                <span class="url-value-display">{{ url.url }}</span>
+                <button class="btn-icon btn-remove-url" (click)="removePeriodicTaskUrl(i); loadAvailableUrlsForPeriodicTask()" title="Remove URL">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+            <div class="add-url-wrapper">
+              <button type="button" class="btn btn-secondary btn-sm" (click)="toggleAddPeriodicTaskUrlDropdown()"
+                [disabled]="!newPeriodicTask.category" title="Add URL from master">
+                <i class="fas fa-plus"></i> Add URL
+              </button>
+              <div class="add-url-dropdown" *ngIf="showAddPeriodicTaskUrlDropdown && newPeriodicTask.category"
+                (click)="$event.stopPropagation()">
+                <div class="dropdown-header">Select URL to add</div>
+                <div class="dropdown-content" *ngIf="availableUrls.length > 0; else noUrlsTemplate">
+                  <div class="url-option" *ngFor="let url of availableUrls"
+                    (click)="selectedUrlId = url.url_id; addUrlFromMasterToPeriodicTask()">
+                    <span class="url-icon" *ngIf="url.category_icon">{{ url.category_icon }}</span>
+                    <span class="url-label">{{ url.label }}</span>
+                    <span class="url-url">{{ url.url }}</span>
+                  </div>
+                </div>
+                <ng-template #noUrlsTemplate>
+                  <div class="dropdown-empty">
+                    {{ loadingUrls ? 'Loading URLs...' : 'No available URLs for this category' }}
+                  </div>
+                </ng-template>
+              </div>
+            </div>
           </div>
         </div>
       </div>

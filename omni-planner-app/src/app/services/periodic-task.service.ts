@@ -182,7 +182,7 @@ export class PeriodicTaskService {
       remarks: taskData.remarks || null,
       important: taskData.important || false,
       active: true,
-      url_ids: []
+      url_ids: taskData.url_ids || []
     };
 
     return this.http.post<any>(API_CONFIG.periodicTasks.add, requestBody)
@@ -231,7 +231,7 @@ export class PeriodicTaskService {
       remarks: updates.remarks ?? task.remarks,
       important: updates.important ?? task.important,
       active: true,
-      url_ids: []
+      url_ids: updates.url_ids || []
     };
 
     return this.http.put<any>(API_CONFIG.periodicTasks.update, requestBody)
