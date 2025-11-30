@@ -25,7 +25,7 @@
     </div>
 
     <!-- View Mode Controls -->
-    <div class="view-mode-controls segmented">
+    <div class="view-mode-controls segmented" *ngIf="!PeriodicTaskMenu">
       <button class="view-btn" [class.active]="viewMode === 'list'" (click)="onViewModeChange('list')"
         title="By date/day tasks">
         <i class="fas fa-list-ul chip-icon"></i>
@@ -88,7 +88,7 @@
         [class.attention]="showAttention" (click)="onAddTaskClick()" [disabled]="isAddingTask" aria-label="Add new task"
         title="Create a new task">
         <i class="fas fa-plus icon" [attr.aria-hidden]="true"></i>
-        <span class="label">{{ viewMode === 'periodic-tasks' ? 'Add Periodic Task' : 'Add Task' }}</span>
+        <span class="label">{{ viewMode === 'periodic-tasks' ? 'Add Periodic Task' : addTaskLabel }}</span>
       </button>
     </div>
   </div>

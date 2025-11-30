@@ -7,9 +7,9 @@
   <!-- Task Filters Component -->
   <app-task-filters [filterOptions]="filterOptions" [initialFilters]="currentFilters"
     [isStatsPanelCollapsed]="isStatsPanelCollapsed" [controlBarTheme]="controlBarTheme"
-    (filtersChanged)="onFiltersChanged($event)" (filtersCleared)="onFiltersCleared()"
-    (viewModeChanged)="onViewModeChanged($event)" (addTaskClicked)="onAddTaskClickedFromFilter($event)"
-    (statsPanelToggled)="toggleStatsPanel()"></app-task-filters>
+    [addTaskLabel]="'Add Periodic Task'" [PeriodicTaskMenu]="true" (filtersChanged)="onFiltersChanged($event)"
+    (filtersCleared)="onFiltersCleared()" (viewModeChanged)="onViewModeChanged($event)"
+    (addTaskClicked)="onAddTaskClickedFromFilter($event)" (statsPanelToggled)="toggleStatsPanel()"></app-task-filters>
 
   <!-- Stats Overview -->
   <div class="stats-overview-container" [class.collapsed]="isStatsPanelCollapsed">

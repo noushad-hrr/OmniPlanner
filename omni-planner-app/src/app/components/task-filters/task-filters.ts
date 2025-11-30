@@ -43,6 +43,8 @@ export class TaskFiltersComponent implements OnInit, AfterViewInit {
   @Input() initialFilters: Partial<FilterState> = {};
   @Input() isStatsPanelCollapsed: boolean = false;
   @Input() controlBarTheme: string = 'dark'; // Control bar theme: 'standard', 'dark', 'chrome-windows11'
+  @Input() addTaskLabel: string = 'Add Task';
+  @Input() PeriodicTaskMenu: boolean = false;
 
   @Output() filtersChanged = new EventEmitter<FilterState>();
   @Output() filtersCleared = new EventEmitter<void>();
