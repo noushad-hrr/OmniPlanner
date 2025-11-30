@@ -120,43 +120,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Monthly Summary Section -->
-    <div class="summary-section">
-      <div class="summary-grid">
-        <div class="summary-item">
-          <span class="summary-label">Monthly Credit</span>
-          <span class="summary-value">{{ formatCurrency(getMonthlyCredit()) }}</span>
-        </div>
-        <div class="summary-item">
-          <span class="summary-label">Monthly Debit</span>
-          <span class="summary-value">{{ formatCurrency(getMonthlyDebit()) }}</span>
-        </div>
-        <div class="summary-item balance-item">
-          <span class="summary-label">Final Balance Till Month</span>
-          <span class="summary-value">{{ formatCurrency(getFinalBalance()) }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Total Row (Cyan) -->
-    <div class="total-section">
-      <div class="total-grid">
-        <div class="total-label">TOTAL</div>
-        <div class="total-item">
-          <span class="total-value-label">Monthly Credit</span>
-          <span class="total-value">{{ formatCurrency(getTotalMonthlyCredit()) }}</span>
-        </div>
-        <div class="total-item">
-          <span class="total-value-label">Monthly Debit</span>
-          <span class="total-value">{{ formatCurrency(getTotalMonthlyDebit()) }}</span>
-        </div>
-        <div class="total-item">
-          <span class="total-value-label">Final Balance Till Month</span>
-          <span class="total-value">{{ formatCurrency(getTotalFinalBalance()) }}</span>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- Empty State -->
