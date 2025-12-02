@@ -60,7 +60,8 @@ namespace OmniPlanner_API.Queries.Tasks2
                 t.id,
                 t.title,
                 t.description,
-                t.task_on_date AS taskOnDate,
+                t.start_date AS startDate,
+                t.end_date AS endDate,
                 t.start_time AS startTime,
                 t.end_time AS endTime,
                 t.created_on AS createdAt,
@@ -72,7 +73,6 @@ namespace OmniPlanner_API.Queries.Tasks2
                 t.remarks,
                 t.important,
                 t.completed,
-                t.periodic_tasks_main_task_id,
                 -- Priority
                 t.priority_level_id,
                 pm.priority AS priority_name,
@@ -89,7 +89,7 @@ namespace OmniPlanner_API.Queries.Tasks2
             LEFT JOIN priority_master pm ON t.priority_level_id = pm.id AND pm.is_deleted = false
             LEFT JOIN status_master sm ON t.status_id = sm.id AND sm.is_deleted = false
             LEFT JOIN category_master cm ON t.category_id = cm.id AND cm.is_deleted = false
-            ORDER BY t.task_on_date NULLS LAST, t.priority_order NULLS LAST, t.start_time NULLS LAST, t.id";
+            ORDER BY t.start_date NULLS LAST, t.priority_order NULLS LAST, t.start_time NULLS LAST, t.id";
 
         // Get a single task2 by ID (for returning after insert/update)
         public const string GetTask2ById = @"
@@ -97,7 +97,8 @@ namespace OmniPlanner_API.Queries.Tasks2
                 t.id,
                 t.title,
                 t.description,
-                t.task_on_date AS taskOnDate,
+                t.start_date AS startDate,
+                t.end_date AS endDate,
                 t.start_time AS startTime,
                 t.end_time AS endTime,
                 t.created_on AS createdAt,
@@ -109,7 +110,6 @@ namespace OmniPlanner_API.Queries.Tasks2
                 t.remarks,
                 t.important,
                 t.completed,
-                t.periodic_tasks_main_task_id,
                 -- Priority
                 t.priority_level_id,
                 pm.priority AS priority_name,
@@ -145,6 +145,8 @@ namespace OmniPlanner_API.Queries.Tasks2
                 l1.id,
                 l1.title,
                 l1.description,
+                l1.start_date AS startDate,
+                l1.end_date AS endDate,
                 l1.start_time AS startTime,
                 l1.end_time AS endTime,
                 l1.created_on AS createdAt,
@@ -171,6 +173,8 @@ namespace OmniPlanner_API.Queries.Tasks2
                 l2.id,
                 l2.title,
                 l2.description,
+                l2.start_date AS startDate,
+                l2.end_date AS endDate,
                 l2.start_time AS startTime,
                 l2.end_time AS endTime,
                 l2.created_on AS createdAt,
@@ -195,13 +199,13 @@ namespace OmniPlanner_API.Queries.Tasks2
         public const string AddMainTask2 = @"
             INSERT INTO tasks2_main_task (
                 title, description, priority_level_id, status_id, category_id,
-                task_on_date, start_time, end_time, created_on, created_by,
+                start_date, end_date, start_time, end_time, created_on, created_by,
                 modified_on, modified_by, estimated_hours, priority_order,
                 remarks, important, completed
             )
             VALUES (
                 @title, @description, @priority_level_id, @status_id, @category_id,
-                @task_on_date, @start_time, @end_time, NOW(), @created_by,
+                @start_date, @end_date, @start_time, @end_time, NOW(), @created_by,
                 NOW(), @modified_by, @estimated_hours, @priority_order,
                 @remarks, @important, @completed
             )
@@ -215,7 +219,8 @@ namespace OmniPlanner_API.Queries.Tasks2
                 priority_level_id = @priority_level_id,
                 status_id = @status_id,
                 category_id = @category_id,
-                task_on_date = @task_on_date,
+                start_date = @start_date,
+                end_date = @end_date,
                 start_time = @start_time,
                 end_time = @end_time,
                 modified_on = NOW(),
@@ -270,13 +275,13 @@ namespace OmniPlanner_API.Queries.Tasks2
         public const string AddLevel1Subtask2 = @"
             INSERT INTO tasks2_level_1_sub_task (
                 title, description, priority_level_id, status_id,
-                start_time, end_time, created_on, created_by,
+                start_date, end_date, start_time, end_time, created_on, created_by,
                 modified_on, modified_by, estimated_hours, priority_order,
                 important, completed, tasks2_main_task_id
             )
             VALUES (
                 @title, @description, @priority_level_id, @status_id,
-                @start_time, @end_time, NOW(), @created_by,
+                @start_date, @end_date, @start_time, @end_time, NOW(), @created_by,
                 NOW(), @modified_by, @estimated_hours, @priority_order,
                 @important, @completed, @tasks2_main_task_id
             )
@@ -289,6 +294,8 @@ namespace OmniPlanner_API.Queries.Tasks2
                 description = @description,
                 priority_level_id = @priority_level_id,
                 status_id = @status_id,
+                start_date = @start_date,
+                end_date = @end_date,
                 start_time = @start_time,
                 end_time = @end_time,
                 modified_on = NOW(),
@@ -307,13 +314,13 @@ namespace OmniPlanner_API.Queries.Tasks2
         public const string AddLevel2Subtask2 = @"
             INSERT INTO tasks2_level_2_sub_task (
                 title, description, priority_level_id, status_id,
-                start_time, end_time, created_on, created_by,
+                start_date, end_date, start_time, end_time, created_on, created_by,
                 modified_on, modified_by, estimated_hours, priority_order,
                 important, completed, tasks2_level_1_sub_task_id
             )
             VALUES (
                 @title, @description, @priority_level_id, @status_id,
-                @start_time, @end_time, NOW(), @created_by,
+                @start_date, @end_date, @start_time, @end_time, NOW(), @created_by,
                 NOW(), @modified_by, @estimated_hours, @priority_order,
                 @important, @completed, @tasks2_level_1_sub_task_id
             )
@@ -326,6 +333,8 @@ namespace OmniPlanner_API.Queries.Tasks2
                 description = @description,
                 priority_level_id = @priority_level_id,
                 status_id = @status_id,
+                start_date = @start_date,
+                end_date = @end_date,
                 start_time = @start_time,
                 end_time = @end_time,
                 modified_on = NOW(),

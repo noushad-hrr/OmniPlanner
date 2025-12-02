@@ -101,8 +101,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
     priorityLevel: null,
     status: null,
     category: null,
-    // @ts-ignore
-    taskOnDate: null,
+    startDate: null,
+    endDate: null,
     startTime: '00:00',
     endTime: '00:00',
     estimatedHours: null,
@@ -139,10 +139,14 @@ export class Tasks2Component implements OnInit, OnDestroy {
 
   // Form validation errors
   titleError: string = '';
+  startDateError: string = '';
+  endDateError: string = '';
   categoryError: string = '';
   statusError: string = '';
   priorityError: string = '';
   urlErrors: { [key: number]: string } = {};
+  subtaskStartDateError: string = '';
+  subtaskEndDateError: string = '';
 
   periodicTaskTitleError: string = '';
   periodicTaskCategoryError: string = '';
@@ -305,22 +309,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
     // Find index where to insert date column
     const statusIndex = columns.findIndex(c => c.key === 'status');
 
-    if (this.viewMode === 'list') {
-      // For Tasks: Only Date column (renamed from SD), no End Date
-      columns.splice(statusIndex + 1, 0, {
-        key: 'taskOnDate',
-        title: 'Date',
-        sortable: true,
-        filterable: true,
-        resizable: true,
-        width: '100px',
-        minWidth: '80px',
-        maxWidth: '120px',
-        align: 'center',
-        type: 'date'
-      });
-    } else if (this.viewMode === 'periodic-tasks') {
-      // For Periodic Tasks: Both Start Date (SD) and End Date (ED)
+    if (this.viewMode === 'list' || this.viewMode === 'periodic-tasks') {
+      // For both Tasks and Periodic Tasks: Show Start Date (SD) and End Date (ED)
       columns.splice(statusIndex + 1, 0, {
         key: 'startDate',
         title: 'SD',
@@ -396,14 +386,14 @@ export class Tasks2Component implements OnInit, OnDestroy {
 
 
   // Subtask form properties
-  newSubtask: Partial<Subtask> & { remarks?: string; urls?: { label: string; url: string }[]; important?: boolean; category?: { name: string; icon: string } } = {
+  newSubtask: Partial<Subtask> & { remarks?: string; urls?: { label: string; url: string }[]; important?: boolean; category?: { name: string; icon: string }; startDate?: string | Date | null; endDate?: string | Date | null } = {
     title: '',
     description: '',
     priority: undefined,
     status: undefined,
     category: undefined,
-    // @ts-ignore
-    taskOnDate: null,
+    startDate: null,
+    endDate: null,
     startTime: '00:00',
     endTime: '00:00',
     estimatedHours: undefined,
@@ -565,16 +555,35 @@ export class Tasks2Component implements OnInit, OnDestroy {
 
   // Helper method to check if task is for today (for regular tasks)
   private isTaskForToday(task: Task): boolean {
-    if (this.viewMode === 'periodic-tasks') {
-      return false; // Periodic tasks use different logic
-    }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const taskDate = (task as any)['taskOnDate'];
-    if (!taskDate) return true; // null means today
-    const taskDateObj = new Date(taskDate);
-    taskDateObj.setHours(0, 0, 0, 0);
-    return taskDateObj.getTime() === today.getTime();
+
+    const taskStartDate = (task as any)['startDate'];
+    const taskEndDate = (task as any)['endDate'];
+
+    // If no dates, not for today (or maybe yes? assuming no)
+    if (!taskStartDate && !taskEndDate) return false;
+
+    const start = taskStartDate ? new Date(taskStartDate) : null;
+    const end = taskEndDate ? new Date(taskEndDate) : null;
+
+    if (start) start.setHours(0, 0, 0, 0);
+    if (end) end.setHours(0, 0, 0, 0);
+
+    // Check if today is within range [start, end]
+    // If only start exists: check if today >= start
+    // If only end exists: check if today <= end
+    // If both: check range
+
+    if (start && end) {
+      return today >= start && today <= end;
+    } else if (start) {
+      return today.getTime() === start.getTime(); // Treat single start date as "the day"
+    } else if (end) {
+      return today.getTime() === end.getTime(); // Treat single end date as "the day"
+    }
+
+    return false;
   }
 
   // Helper method to check if task is overdue
@@ -591,13 +600,13 @@ export class Tasks2Component implements OnInit, OnDestroy {
       endDateObj.setHours(0, 0, 0, 0);
       return endDateObj.getTime() < today.getTime();
     } else {
-      const taskDate = (task as any)['taskOnDate'];
-      if (!taskDate) return false; // null is not overdue
+      const endDate = (task as any)['endDate'];
+      if (!endDate) return false;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const taskDateObj = new Date(taskDate);
-      taskDateObj.setHours(0, 0, 0, 0);
-      return taskDateObj.getTime() < today.getTime();
+      const endDateObj = new Date(endDate);
+      endDateObj.setHours(0, 0, 0, 0);
+      return endDateObj.getTime() < today.getTime();
     }
   }
 
@@ -652,11 +661,25 @@ export class Tasks2Component implements OnInit, OnDestroy {
         end.setHours(0, 0, 0, 0);
         return today >= start && today <= end;
       } else {
-        const taskDate = (task as any)['taskOnDate'];
-        if (!taskDate) return true; // null means today
-        const taskDateObj = new Date(taskDate);
-        taskDateObj.setHours(0, 0, 0, 0);
-        return taskDateObj.getTime() === today.getTime();
+        const taskStartDate = (task as any)['startDate'];
+        const taskEndDate = (task as any)['endDate'];
+
+        if (!taskStartDate && !taskEndDate) return true; // No dates means "anytime", maybe today? Original logic said null means today.
+
+        const start = taskStartDate ? new Date(taskStartDate) : null;
+        const end = taskEndDate ? new Date(taskEndDate) : null;
+
+        if (start) start.setHours(0, 0, 0, 0);
+        if (end) end.setHours(0, 0, 0, 0);
+
+        if (start && end) {
+          return today >= start && today <= end;
+        } else if (start) {
+          return today.getTime() === start.getTime();
+        } else if (end) {
+          return today.getTime() === end.getTime();
+        }
+        return false;
       }
     });
 
@@ -874,8 +897,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       priorityLevel: priorityValue,
       status: statusValue,
       category: null,
-      // @ts-ignore
-      taskOnDate: todayString,
+      startDate: null,
+      endDate: null,
       startTime: '00:00',
       endTime: '00:00',
       estimatedHours: null,
@@ -888,6 +911,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
     };
     // Reset errors
     this.titleError = '';
+    this.startDateError = '';
+    this.endDateError = '';
     this.categoryError = '';
     this.statusError = '';
     this.priorityError = '';
@@ -908,26 +933,26 @@ export class Tasks2Component implements OnInit, OnDestroy {
   }
 
   matchesStartDate(task: Task, startDate: string): boolean {
-    const taskOnDate: any = (task as any)['taskOnDate'];
-    // Always include tasks with null/empty/ND taskOnDate
-    if (!taskOnDate || taskOnDate === null || taskOnDate === '' || taskOnDate === 'ND') {
+    const taskStartDate: any = (task as any)['startDate'];
+    // Always include tasks with null/empty taskStartDate
+    if (!taskStartDate || taskStartDate === null || taskStartDate === '') {
       return true;
     }
     if (!startDate) return true;
     const filterStartDate = new Date(startDate);
-    const taskDate = new Date(taskOnDate);
+    const taskDate = new Date(taskStartDate);
     return taskDate >= filterStartDate;
   }
 
   matchesEndDate(task: Task, endDate: string): boolean {
-    const taskOnDate: any = (task as any)['taskOnDate'];
-    // Always include tasks with null/empty/ND taskOnDate
-    if (!taskOnDate || taskOnDate === null || taskOnDate === '' || taskOnDate === 'ND') {
+    const taskEndDate: any = (task as any)['endDate'];
+    // Always include tasks with null/empty taskEndDate
+    if (!taskEndDate || taskEndDate === null || taskEndDate === '') {
       return true;
     }
     if (!endDate) return true;
     const filterEndDate = new Date(endDate);
-    const taskDate = new Date(taskOnDate);
+    const taskDate = new Date(taskEndDate);
     return taskDate <= filterEndDate;
   }
 
@@ -985,7 +1010,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       priority_level_id: priorityId,
       status_id: statusId,
       category_id: categoryId,
-      task_on_date: toDateStringOrNull(this.newTask.taskOnDate),
+      start_date: toDateStringOrNull(this.newTask.startDate),
+      end_date: toDateStringOrNull(this.newTask.endDate),
       start_time: toTimeStringOrNull(this.newTask.startTime),
       end_time: toTimeStringOrNull(this.newTask.endTime),
       estimated_hours: toNumberOrNull(this.newTask.estimatedHours),
@@ -1019,6 +1045,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
 
     // Reset errors
     this.titleError = '';
+    this.startDateError = '';
+    this.endDateError = '';
     this.categoryError = '';
     this.statusError = '';
     this.priorityError = '';
@@ -1026,6 +1054,18 @@ export class Tasks2Component implements OnInit, OnDestroy {
     // Validate title
     if (!this.newTask.title || !this.newTask.title.trim()) {
       this.titleError = 'Task title is required';
+      isValid = false;
+    }
+
+    // Validate start date
+    if (!this.newTask.startDate) {
+      this.startDateError = 'Start Date is required';
+      isValid = false;
+    }
+
+    // Validate end date
+    if (!this.newTask.endDate) {
+      this.endDateError = 'End Date is required';
       isValid = false;
     }
 
@@ -1447,6 +1487,12 @@ export class Tasks2Component implements OnInit, OnDestroy {
       case 'title':
         this.titleError = '';
         break;
+      case 'startDate':
+        this.startDateError = '';
+        break;
+      case 'endDate':
+        this.endDateError = '';
+        break;
       case 'category':
         this.categoryError = '';
         // Load available URLs when category changes
@@ -1680,8 +1726,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       priorityLevel: priorityValue,
       status: statusValue,
       category: null,
-      // @ts-ignore
-      taskOnDate: todayString,
+      startDate: new Date(todayString),
+      endDate: new Date(todayString),
       startTime: '00:00',
       endTime: '00:00',
       estimatedHours: null,
@@ -1961,8 +2007,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       description: '',
       status: finalStatus as any,
       priority: finalPriority as any,
-      // @ts-ignore
-      taskOnDate: null,
+      startDate: null,
+      endDate: null,
       startTime: '09:00',
       endTime: '17:00',
       estimatedHours: 0,
@@ -2034,8 +2080,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       description: '',
       status: statusValue,
       priority: priorityValue,
-      // @ts-ignore
-      taskOnDate: null,
+      startDate: null,
+      endDate: null,
       startTime: '09:00',
       endTime: '17:00',
       estimatedHours: 0,
@@ -2154,25 +2200,25 @@ export class Tasks2Component implements OnInit, OnDestroy {
 
   initializeSubtaskDefaults(): void {
     // Get date from parent task or parent Level 1 subtask in local format (YYYY-MM-DD)
-    let taskOnDateString: string | null = null;
+    let startDateString: string | null = null;
     let parentDate: Date | null = null;
 
     // For Level 2 subtasks, get date from parent Level 1 subtask (which inherits from main task)
-    if (this.parentLevel1SubtaskForLevel2?.taskOnDate) {
-      parentDate = new Date(this.parentLevel1SubtaskForLevel2.taskOnDate);
-    } else if (this.parentTaskForLevel1Subtask?.taskOnDate) {
+    if (this.parentLevel1SubtaskForLevel2?.startDate) {
+      parentDate = new Date(this.parentLevel1SubtaskForLevel2.startDate);
+    } else if (this.parentTaskForLevel1Subtask?.startDate) {
       // Fallback to main task if Level 1 subtask doesn't have date
-      parentDate = new Date(this.parentTaskForLevel1Subtask.taskOnDate);
-    } else if (this.parentTaskForSubtask?.taskOnDate) {
+      parentDate = new Date(this.parentTaskForLevel1Subtask.startDate);
+    } else if (this.parentTaskForSubtask?.startDate) {
       // For Level 1 subtasks, get date from main task
-      parentDate = new Date(this.parentTaskForSubtask.taskOnDate);
+      parentDate = new Date(this.parentTaskForSubtask.startDate);
     }
 
     if (parentDate) {
       const year = parentDate.getFullYear();
       const month = String(parentDate.getMonth() + 1).padStart(2, '0');
       const day = String(parentDate.getDate()).padStart(2, '0');
-      taskOnDateString = `${year}-${month}-${day}`;
+      startDateString = `${year}-${month}-${day}`;
     }
 
     // Get default status (is_default = true, or first available)
@@ -2202,8 +2248,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       priority: priorityValue || undefined,
       status: statusValue || undefined,
       category: categoryValue || undefined,
-      // @ts-ignore
-      taskOnDate: taskOnDateString,
+      startDate: (this.parentLevel1SubtaskForLevel2?.startDate || this.parentTaskForLevel1Subtask?.startDate || this.parentTaskForSubtask?.startDate) || null,
+      endDate: (this.parentLevel1SubtaskForLevel2?.endDate || this.parentTaskForLevel1Subtask?.endDate || this.parentTaskForSubtask?.endDate) || null,
       startTime: '00:00',
       endTime: '00:00',
       estimatedHours: undefined,
@@ -2231,8 +2277,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       priority: undefined,
       status: undefined,
       category: undefined,
-      // @ts-ignore
-      taskOnDate: null,
+      startDate: null,
+      endDate: null,
       startTime: '00:00',
       endTime: '00:00',
       estimatedHours: undefined,
@@ -2298,6 +2344,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       description: this.newSubtask.description ?? null,
       priority_level_id: priorityId,
       status_id: statusId,
+      start_date: this.newSubtask.startDate ?? null,
+      end_date: this.newSubtask.endDate ?? null,
       start_time: this.newSubtask.startTime ?? null,
       end_time: this.newSubtask.endTime ?? null,
       estimated_hours: estimatedHours ?? null,
@@ -2331,10 +2379,24 @@ export class Tasks2Component implements OnInit, OnDestroy {
     this.subtaskTitleError = '';
     this.subtaskStatusError = '';
     this.subtaskPriorityError = '';
+    this.subtaskStartDateError = '';
+    this.subtaskEndDateError = '';
 
     // Validate title
     if (!this.newSubtask.title || !this.newSubtask.title.trim()) {
       this.subtaskTitleError = 'Subtask title is required';
+      isValid = false;
+    }
+
+    // Validate start date
+    if (!this.newSubtask.startDate) {
+      this.subtaskStartDateError = 'Start Date is required';
+      isValid = false;
+    }
+
+    // Validate end date
+    if (!this.newSubtask.endDate) {
+      this.subtaskEndDateError = 'End Date is required';
       isValid = false;
     }
 
@@ -2375,10 +2437,24 @@ export class Tasks2Component implements OnInit, OnDestroy {
     this.subtaskTitleError = '';
     this.subtaskStatusError = '';
     this.subtaskPriorityError = '';
+    this.subtaskStartDateError = '';
+    this.subtaskEndDateError = '';
 
     // Validate title
     if (!this.selectedLevel1Subtask?.title || !this.selectedLevel1Subtask.title.trim()) {
       this.subtaskTitleError = 'Subtask title is required';
+      isValid = false;
+    }
+
+    // Validate start date
+    if (!this.selectedLevel1Subtask?.startDate) {
+      this.subtaskStartDateError = 'Start Date is required';
+      isValid = false;
+    }
+
+    // Validate end date
+    if (!this.selectedLevel1Subtask?.endDate) {
+      this.subtaskEndDateError = 'End Date is required';
       isValid = false;
     }
 
@@ -2410,6 +2486,12 @@ export class Tasks2Component implements OnInit, OnDestroy {
         break;
       case 'priority':
         this.subtaskPriorityError = '';
+        break;
+      case 'startDate':
+        this.subtaskStartDateError = '';
+        break;
+      case 'endDate':
+        this.subtaskEndDateError = '';
         break;
     }
   }
@@ -2517,8 +2599,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       status: statusValue,
       priority: priorityValue,
       category: this.categoryMasters.length > 0 ? { name: this.categoryMasters[0].category, icon: this.categoryMasters[0].icon } : null,
-      // @ts-ignore
-      taskOnDate: null,
+      startDate: null,
+      endDate: null,
       startTime: '09:00',
       endTime: '17:00',
       estimatedHours: 0
@@ -2752,15 +2834,37 @@ export class Tasks2Component implements OnInit, OnDestroy {
       priorityOrder: this.selectedLevel1Subtask.priorityOrder
     });
 
-    // Set date from parent task in YYYY-MM-DD format (disabled in form)
-    if (this.parentTaskForLevel1Subtask.taskOnDate) {
-      const date = new Date(this.parentTaskForLevel1Subtask.taskOnDate);
+    // Set date from parent task in YYYY-MM-DD format (default, but editable)
+    if (this.selectedLevel1Subtask.startDate) {
+      const date = new Date(this.selectedLevel1Subtask.startDate);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
-      (this.selectedLevel1Subtask as any).taskOnDate = `${year}-${month}-${day}`;
+      (this.selectedLevel1Subtask as any).startDate = `${year}-${month}-${day}`;
+    } else if (this.parentTaskForLevel1Subtask.startDate) {
+      const date = new Date(this.parentTaskForLevel1Subtask.startDate);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      (this.selectedLevel1Subtask as any).startDate = `${year}-${month}-${day}`;
     } else {
-      (this.selectedLevel1Subtask as any).taskOnDate = null;
+      (this.selectedLevel1Subtask as any).startDate = null;
+    }
+
+    if (this.selectedLevel1Subtask.endDate) {
+      const date = new Date(this.selectedLevel1Subtask.endDate);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      (this.selectedLevel1Subtask as any).endDate = `${year}-${month}-${day}`;
+    } else if (this.parentTaskForLevel1Subtask.endDate) {
+      const date = new Date(this.parentTaskForLevel1Subtask.endDate);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      (this.selectedLevel1Subtask as any).endDate = `${year}-${month}-${day}`;
+    } else {
+      (this.selectedLevel1Subtask as any).endDate = null;
     }
 
     // Set category from parent task (for display only, disabled in form)
@@ -2804,18 +2908,19 @@ export class Tasks2Component implements OnInit, OnDestroy {
 
     this.parentTaskForLevel1Subtask = task;
 
-    // Create a copy and ensure category and taskOnDate are set from parent
+    // Create a copy and ensure category and dates are set from parent
     this.selectedLevel1Subtask = { ...level1Subtask };
 
     // Set date from parent task in YYYY-MM-DD format (for display)
-    if (this.parentTaskForLevel1Subtask.taskOnDate) {
-      const date = new Date(this.parentTaskForLevel1Subtask.taskOnDate);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      (this.selectedLevel1Subtask as any).taskOnDate = this.parentTaskForLevel1Subtask.taskOnDate;
+    if (this.parentTaskForLevel1Subtask.startDate) {
+      (this.selectedLevel1Subtask as any).startDate = this.parentTaskForLevel1Subtask.startDate;
     } else {
-      (this.selectedLevel1Subtask as any).taskOnDate = null;
+      (this.selectedLevel1Subtask as any).startDate = null;
+    }
+    if (this.parentTaskForLevel1Subtask.endDate) {
+      (this.selectedLevel1Subtask as any).endDate = this.parentTaskForLevel1Subtask.endDate;
+    } else {
+      (this.selectedLevel1Subtask as any).endDate = null;
     }
 
     // Set category from parent task (for display only)
@@ -2855,6 +2960,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       description: this.selectedLevel1Subtask.description ?? null,
       priority_level_id: priorityId,
       status_id: statusId,
+      start_date: this.selectedLevel1Subtask.startDate ?? null,
+      end_date: this.selectedLevel1Subtask.endDate ?? null,
       start_time: this.selectedLevel1Subtask.startTime ?? null,
       end_time: this.selectedLevel1Subtask.endTime ?? null,
       estimated_hours: this.selectedLevel1Subtask.estimatedHours ?? null,
@@ -2931,20 +3038,33 @@ export class Tasks2Component implements OnInit, OnDestroy {
       (this.selectedLevel2Subtask as any).category = this.parentTaskForLevel1Subtask.category;
     }
 
-    // Set taskOnDate from parent Level 1 subtask (which inherits from main task) and format to YYYY-MM-DD
-    if (this.parentLevel1SubtaskForLevel2?.taskOnDate) {
-      const date = new Date(this.parentLevel1SubtaskForLevel2.taskOnDate);
+    // Set startDate/endDate from parent Level 1 subtask
+    if (this.selectedLevel2Subtask.startDate) {
+      const date = new Date(this.selectedLevel2Subtask.startDate);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
-      (this.selectedLevel2Subtask as any).taskOnDate = `${year}-${month}-${day}`;
-    } else if (this.selectedLevel2Subtask.taskOnDate) {
-      // Fallback to existing taskOnDate if parent doesn't have one
-      const date = new Date(this.selectedLevel2Subtask.taskOnDate);
+      (this.selectedLevel2Subtask as any).startDate = `${year}-${month}-${day}`;
+    } else if (this.parentLevel1SubtaskForLevel2?.startDate) {
+      const date = new Date(this.parentLevel1SubtaskForLevel2.startDate);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
-      (this.selectedLevel2Subtask as any).taskOnDate = `${year}-${month}-${day}`;
+      (this.selectedLevel2Subtask as any).startDate = `${year}-${month}-${day}`;
+    }
+
+    if (this.selectedLevel2Subtask.endDate) {
+      const date = new Date(this.selectedLevel2Subtask.endDate);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      (this.selectedLevel2Subtask as any).endDate = `${year}-${month}-${day}`;
+    } else if (this.parentLevel1SubtaskForLevel2?.endDate) {
+      const date = new Date(this.parentLevel1SubtaskForLevel2.endDate);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      (this.selectedLevel2Subtask as any).endDate = `${year}-${month}-${day}`;
     }
 
     // Preserve actual values - only default if null/undefined (preserves 0, false, empty string)
@@ -3011,6 +3131,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       description: this.selectedLevel2Subtask.description ?? null,
       priority_level_id: priorityId,
       status_id: statusId,
+      start_date: this.selectedLevel2Subtask.startDate ?? null,
+      end_date: this.selectedLevel2Subtask.endDate ?? null,
       start_time: this.selectedLevel2Subtask.startTime ?? null,
       end_time: this.selectedLevel2Subtask.endTime ?? null,
       estimated_hours: estimatedHours ?? null, // Supports decimal values
@@ -3109,10 +3231,24 @@ export class Tasks2Component implements OnInit, OnDestroy {
     this.subtaskTitleError = '';
     this.subtaskStatusError = '';
     this.subtaskPriorityError = '';
+    this.subtaskStartDateError = '';
+    this.subtaskEndDateError = '';
 
     // Validate title
     if (!this.selectedLevel2Subtask?.title || !this.selectedLevel2Subtask.title.trim()) {
       this.subtaskTitleError = 'Subtask title is required';
+      isValid = false;
+    }
+
+    // Validate start date
+    if (!this.selectedLevel2Subtask?.startDate) {
+      this.subtaskStartDateError = 'Start Date is required';
+      isValid = false;
+    }
+
+    // Validate end date
+    if (!this.selectedLevel2Subtask?.endDate) {
+      this.subtaskEndDateError = 'End Date is required';
       isValid = false;
     }
 
@@ -3160,6 +3296,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       description: this.newSubtask.description ?? null,
       priority_level_id: priorityId,
       status_id: statusId,
+      start_date: this.newSubtask.startDate ?? null,
+      end_date: this.newSubtask.endDate ?? null,
       start_time: this.newSubtask.startTime ?? null,
       end_time: this.newSubtask.endTime ?? null,
       estimated_hours: estimatedHours ?? null,
@@ -3294,9 +3432,9 @@ export class Tasks2Component implements OnInit, OnDestroy {
   }
 
   isOverdue(task: Task): boolean {
-    const d: any = (task as any)['taskOnDate'];
+    const d: any = (task as any)['endDate'];
     if (!d) return false;
-    return d < new Date() && !this.isCompletedStatus(task.status);
+    return new Date(d) < new Date() && !this.isCompletedStatus(task.status);
   }
 
   // Drag and Drop Methods
@@ -3376,13 +3514,20 @@ export class Tasks2Component implements OnInit, OnDestroy {
     }
 
     this.selectedTask = { ...task };
-    // Convert taskOnDate to YYYY-MM-DD format if it exists
-    if (this.selectedTask.taskOnDate) {
-      const date = new Date(this.selectedTask.taskOnDate);
+    // Convert startDate/endDate to YYYY-MM-DD format if it exists
+    if (this.selectedTask.startDate) {
+      const date = new Date(this.selectedTask.startDate);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
-      (this.selectedTask as any).taskOnDate = `${year}-${month}-${day}`;
+      (this.selectedTask as any).startDate = `${year}-${month}-${day}`;
+    }
+    if (this.selectedTask.endDate) {
+      const date = new Date(this.selectedTask.endDate);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      (this.selectedTask as any).endDate = `${year}-${month}-${day}`;
     }
     // Ensure URLs array exists
     if (!this.selectedTask.urls) {
@@ -3733,7 +3878,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       priority_level_id: priorityId,
       status_id: statusId,
       category_id: categoryId,
-      task_on_date: this.selectedTask.taskOnDate ? new Date(this.selectedTask.taskOnDate).toISOString().split('T')[0] : null,
+      start_date: this.selectedTask.startDate ? new Date(this.selectedTask.startDate).toISOString().split('T')[0] : null,
+      end_date: this.selectedTask.endDate ? new Date(this.selectedTask.endDate).toISOString().split('T')[0] : null,
       start_time: this.selectedTask.startTime || null,
       end_time: this.selectedTask.endTime || null,
       estimated_hours: this.selectedTask.estimatedHours || null,
@@ -3742,7 +3888,7 @@ export class Tasks2Component implements OnInit, OnDestroy {
       url_ids: urlIds.length > 0 ? urlIds : null,
       important: this.selectedTask.important || false,
       completed: this.selectedTask.completed || false,
-      periodic_tasks_main_task_id: (this.selectedTask as any).periodicTask?.id || null
+      //periodic_tasks_main_task_id: (this.selectedTask as any).periodicTask?.id || null
     };
 
     this.task2Service.updateMainTask(taskData).subscribe({
@@ -3768,23 +3914,47 @@ export class Tasks2Component implements OnInit, OnDestroy {
 
     let isValid = true;
 
+    // Reset errors
+    this.titleError = '';
+    this.startDateError = '';
+    this.endDateError = '';
+    this.categoryError = '';
+    this.statusError = '';
+    this.priorityError = '';
+
     // Validate title
     if (!this.selectedTask.title || !this.selectedTask.title.trim()) {
+      this.titleError = 'Task title is required';
+      isValid = false;
+    }
+
+    // Validate start date
+    if (!this.selectedTask.startDate) {
+      this.startDateError = 'Start Date is required';
+      isValid = false;
+    }
+
+    // Validate end date
+    if (!this.selectedTask.endDate) {
+      this.endDateError = 'End Date is required';
       isValid = false;
     }
 
     // Validate category
     if (!this.selectedTask.category || !this.selectedTask.category.name) {
+      this.categoryError = 'Category is required';
       isValid = false;
     }
 
     // Validate status
     if (!this.selectedTask.status || !this.selectedTask.status.name) {
+      this.statusError = 'Status is required';
       isValid = false;
     }
 
     // Validate priority
     if (!this.selectedTask.priorityLevel || !this.selectedTask.priorityLevel.name) {
+      this.priorityError = 'Priority is required';
       isValid = false;
     }
 
@@ -4061,9 +4231,22 @@ export class Tasks2Component implements OnInit, OnDestroy {
   // Calendar Methods
   getTasksForDate(date: Date): Task[] {
     return this.filteredTasks.filter(task => {
-      const d: any = (task as any)['taskOnDate'];
-      if (!d) return false;
-      return d.toDateString() === date.toDateString();
+      const start: any = (task as any)['startDate'];
+      const end: any = (task as any)['endDate'];
+      if (!start && !end) return false;
+
+      const checkDate = date.toDateString();
+      if (start && new Date(start).toDateString() === checkDate) return true;
+      if (end && new Date(end).toDateString() === checkDate) return true;
+
+      // Also check if date is within range
+      if (start && end) {
+        const s = new Date(start); s.setHours(0, 0, 0, 0);
+        const e = new Date(end); e.setHours(0, 0, 0, 0);
+        const d = new Date(date); d.setHours(0, 0, 0, 0);
+        return d >= s && d <= e;
+      }
+      return false;
     });
   }
 
@@ -4072,13 +4255,13 @@ export class Tasks2Component implements OnInit, OnDestroy {
     futureDate.setDate(futureDate.getDate() + days);
 
     return this.filteredTasks.filter(task => {
-      const d: any = (task as any)['taskOnDate'];
+      const d: any = (task as any)['endDate'];
       if (!d || this.isCompletedStatus(task.status)) return false;
-      return d <= futureDate && d >= new Date();
+      return new Date(d) <= futureDate && new Date(d) >= new Date();
     }).sort((a, b) => {
-      const ad: any = (a as any)['taskOnDate'];
-      const bd: any = (b as any)['taskOnDate'];
-      return ((ad?.getTime()) || 0) - ((bd?.getTime()) || 0);
+      const ad: any = (a as any)['endDate'];
+      const bd: any = (b as any)['endDate'];
+      return ((new Date(ad).getTime()) || 0) - ((new Date(bd).getTime()) || 0);
     });
   }
 
@@ -4136,9 +4319,21 @@ export class Tasks2Component implements OnInit, OnDestroy {
 
   getTasksForCalendarDate(date: Date): Task[] {
     return this.filteredTasks.filter(task => {
-      const d: any = (task as any)['taskOnDate'];
-      if (!d) return false;
-      return d.toDateString() === date.toDateString();
+      const start: any = (task as any)['startDate'];
+      const end: any = (task as any)['endDate'];
+      if (!start && !end) return false;
+
+      const checkDate = date.toDateString();
+      if (start && new Date(start).toDateString() === checkDate) return true;
+      if (end && new Date(end).toDateString() === checkDate) return true;
+
+      if (start && end) {
+        const s = new Date(start); s.setHours(0, 0, 0, 0);
+        const e = new Date(end); e.setHours(0, 0, 0, 0);
+        const d = new Date(date); d.setHours(0, 0, 0, 0);
+        return d >= s && d <= e;
+      }
+      return false;
     });
   }
 
@@ -4156,7 +4351,7 @@ export class Tasks2Component implements OnInit, OnDestroy {
 
   updateTaskEndDate(dateString: string): void {
     if (this.selectedTask) {
-      (this.selectedTask as any)['taskOnDate'] = dateString ? new Date(dateString) : null;
+      (this.selectedTask as any)['endDate'] = dateString ? new Date(dateString) : null;
     }
   }
 
@@ -4340,7 +4535,7 @@ export class Tasks2Component implements OnInit, OnDestroy {
   hasOrderMismatch(task: Task): boolean {
     // Only check tasks with valid start_time and priority_order
     if (!task.startTime ||
-      !task.taskOnDate ||
+      !task.startDate ||
       task.startTime === '00:00' ||
       task.priorityOrder === null ||
       task.priorityOrder === undefined) {
@@ -4349,16 +4544,16 @@ export class Tasks2Component implements OnInit, OnDestroy {
 
     // Group tasks by date and get tasks on the same date
     const sameDateTasks = this.filteredTasks.filter(t => {
-      if (!t.taskOnDate || !t.startTime || t.startTime === '00:00') {
+      if (!t.startDate || !t.startTime || t.startTime === '00:00') {
         return false;
       }
 
       // Compare dates (normalize to date only, ignoring time)
-      if (!task.taskOnDate || !t.taskOnDate) {
+      if (!task.startDate || !t.startDate) {
         return false;
       }
-      const taskDate = new Date(task.taskOnDate);
-      const otherDate = new Date(t.taskOnDate);
+      const taskDate = new Date(task.startDate);
+      const otherDate = new Date(t.startDate);
       return taskDate.getFullYear() === otherDate.getFullYear() &&
         taskDate.getMonth() === otherDate.getMonth() &&
         taskDate.getDate() === otherDate.getDate();
@@ -4381,7 +4576,7 @@ export class Tasks2Component implements OnInit, OnDestroy {
 
   // Check if a task has schedule overlap with other tasks on the same date
   hasScheduleOverlap(task: Task): boolean {
-    if (!task.taskOnDate || !task.startTime || !task.endTime) {
+    if (!task.startDate || !task.startTime || !task.endTime) {
       return false;
     }
 
@@ -4401,7 +4596,7 @@ export class Tasks2Component implements OnInit, OnDestroy {
       }
 
       // Must be on the same date
-      if (!otherTask.taskOnDate ||
+      if (!otherTask.startDate ||
         !otherTask.startTime ||
         !otherTask.endTime ||
         otherTask.startTime === '00:00' && otherTask.endTime === '00:00') {
@@ -4409,11 +4604,11 @@ export class Tasks2Component implements OnInit, OnDestroy {
       }
 
       // Compare dates (normalize to date only, ignoring time)
-      if (!task.taskOnDate || !otherTask.taskOnDate) {
+      if (!task.startDate || !otherTask.startDate) {
         return false;
       }
-      const taskDate = new Date(task.taskOnDate);
-      const otherDate = new Date(otherTask.taskOnDate);
+      const taskDate = new Date(task.startDate);
+      const otherDate = new Date(otherTask.startDate);
       if (taskDate.getFullYear() !== otherDate.getFullYear() ||
         taskDate.getMonth() !== otherDate.getMonth() ||
         taskDate.getDate() !== otherDate.getDate()) {
@@ -4469,14 +4664,15 @@ export class Tasks2Component implements OnInit, OnDestroy {
         hasOrderMismatch: hasOrderMismatch // Flag for priority order mismatch with start time
       };
 
-      // For periodic tasks view: include startDate and endDate
+      // For regular tasks section: include startDate and endDate
       if (this.viewMode === 'periodic-tasks') {
         const periodicTask = task as any;
         baseData.startDate = periodicTask.startDate || null;
         baseData.endDate = periodicTask.endDate || null;
       } else {
-        // For regular tasks section: always include taskOnDate (preserve it even if periodicTask exists)
-        baseData.taskOnDate = (task as any)['taskOnDate'] || null;
+        // For regular tasks section: include startDate and endDate from task
+        baseData.startDate = (task as any)['startDate'] || null;
+        baseData.endDate = (task as any)['endDate'] || null;
         // periodicTask object is already included in baseData above
       }
 

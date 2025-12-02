@@ -18,7 +18,8 @@ export interface Subtask2 {
   status: { name: 'todo' | 'in-progress' | 'review' | 'done' | 'open'; color: string };
   priority: { name: 'low' | 'medium' | 'high' | 'urgent' | 'normal'; color: string };
   // Category removed - only main tasks have categories
-  taskOnDate: Date | null;
+  startDate: Date | null;
+  endDate: Date | null;
   startTime: string;
   endTime: string;
   createdAt: Date;
@@ -48,7 +49,8 @@ export interface Task2 {
   priorityLevel: { name: 'low' | 'medium' | 'high' | 'urgent' | 'normal'; color: string } | null; // Renamed from priority
   status: { name: 'todo' | 'in-progress' | 'review' | 'done' | 'open'; color: string } | null;
   category: { name: string; icon: string } | null;
-  taskOnDate: Date | null;
+  startDate: Date | null;
+  endDate: Date | null;
   startTime: string | null;
   endTime: string | null;
   createdAt: Date;
@@ -141,7 +143,8 @@ export class Task2Service {
       priority: Subtask2.priority_level ?? Subtask2.priority ?? { name: 'medium', color: '#F97316' },
       // Category removed - only main tasks have categories
       // Backend sends taskOnDate for subtasks (By date/day tasks)
-      taskOnDate: Subtask2.taskOnDate ? new Date(Subtask2.taskOnDate) : (Subtask2.startDate ? new Date(Subtask2.startDate) : null),
+      startDate: Subtask2.startDate ? new Date(Subtask2.startDate) : (Subtask2.taskOnDate ? new Date(Subtask2.taskOnDate) : null),
+      endDate: Subtask2.endDate ? new Date(Subtask2.endDate) : (Subtask2.taskOnDate ? new Date(Subtask2.taskOnDate) : null),
       // Preserve actual time values - only default if null/undefined
       startTime: Subtask2.startTime ?? '',
       endTime: Subtask2.endTime ?? '',
@@ -181,7 +184,8 @@ export class Task2Service {
       status: task.status ?? null,
       category: task.category ?? null,
       // Backend sends taskOnDate for Task2s (By date/day tasks)
-      taskOnDate: task.taskOnDate ? new Date(task.taskOnDate) : (task.startDate ? new Date(task.startDate) : null),
+      startDate: task.startDate ? new Date(task.startDate) : (task.taskOnDate ? new Date(task.taskOnDate) : null),
+      endDate: task.endDate ? new Date(task.endDate) : (task.taskOnDate ? new Date(task.taskOnDate) : null),
       startTime: task.startTime ?? null,
       endTime: task.endTime ?? null,
       createdAt: task.createdAt ? new Date(task.createdAt) : new Date(),
@@ -216,7 +220,8 @@ export class Task2Service {
       priorityLevel: taskData.priorityLevel || { name: 'medium', color: '#F97316' },
       status: taskData.status || { name: 'todo', color: '#64748B' },
       category: taskData.category || { name: 'General', icon: 'ðŸ“‹' },
-      taskOnDate: (taskData as any)['taskOnDate'] || null,
+      startDate: (taskData as any)['startDate'] || null,
+      endDate: (taskData as any)['endDate'] || null,
       startTime: taskData.startTime || '09:00',
       endTime: taskData.endTime || '17:00',
       createdAt: new Date(),
@@ -277,7 +282,8 @@ export class Task2Service {
       status: Subtask2Data.status || { name: 'todo', color: '#64748B' },
       priority: Subtask2Data.priority || { name: 'medium', color: '#F97316' },
       // Category removed from subtasks - only main tasks have categories
-      taskOnDate: (Subtask2Data as any)['taskOnDate'] || null,
+      startDate: (Subtask2Data as any)['startDate'] || null,
+      endDate: (Subtask2Data as any)['endDate'] || null,
       startTime: Subtask2Data.startTime || '09:00',
       endTime: Subtask2Data.endTime || '17:00',
       createdAt: new Date(),
@@ -449,56 +455,72 @@ export class Task2Service {
           return false;
         }
       }
-      // Date filtering: Applied on taskOnDate column
-      // If taskOnDate is null, always include the task
-      // If taskOnDate exists, check if it's within the date range [startDate, endDate]
-      const taskOnDate = task.taskOnDate;
+      // Date filtering: Applied on startDate and endDate columns
+      const taskStartDate = task.startDate;
+      const taskEndDate = task.endDate;
 
       // If both startDate and endDate filters are provided
       if (filters.startDate && filters.endDate) {
-        // If taskOnDate is null, include the task
-        if (!taskOnDate || taskOnDate === null) {
-          // Include task - taskOnDate is null
-        } else {
-          // Apply date filter: taskOnDate must be within [startDate, endDate]
-          const taskDate = new Date(taskOnDate);
-          const startDate = new Date(filters.startDate);
-          const endDate = new Date(filters.endDate);
+        const filterStartDate = new Date(filters.startDate);
+        const filterEndDate = new Date(filters.endDate);
+        filterStartDate.setHours(0, 0, 0, 0);
+        filterEndDate.setHours(23, 59, 59, 999);
 
-          // Set time to start of day for accurate date comparison
-          taskDate.setHours(0, 0, 0, 0);
-          startDate.setHours(0, 0, 0, 0);
-          endDate.setHours(23, 59, 59, 999);
+        // Check for overlap: (StartA <= EndB) and (EndA >= StartB)
+        // Task range: [taskStartDate, taskEndDate]
+        // Filter range: [filterStartDate, filterEndDate]
 
-          if (taskDate < startDate || taskDate > endDate) {
+        // If task has no dates, decide whether to include it. 
+        // Usually if filtering by date, we want tasks that have dates.
+        // But if we want to show everything when no filter, that's handled by the outer if.
+        // Here filters are present.
+
+        if (!taskStartDate && !taskEndDate) {
+          // No dates on task, so it doesn't match the date filter
+          // Unless we want to show undated tasks? Let's assume strict filtering.
+          // Actually, let's include if it's "undated" only if the user explicitly asks for undated (not implemented).
+          // For now, if filtering by date, undated tasks are excluded.
+          if (filters.startDate || filters.endDate) return false;
+        }
+
+        const tStart = taskStartDate ? new Date(taskStartDate) : null;
+        const tEnd = taskEndDate ? new Date(taskEndDate) : (tStart ? new Date(tStart) : null);
+
+        if (tStart) tStart.setHours(0, 0, 0, 0);
+        if (tEnd) tEnd.setHours(23, 59, 59, 999);
+
+        if (tStart && tEnd) {
+          if (tStart > filterEndDate || tEnd < filterStartDate) {
             return false;
+          }
+        } else if (tStart) {
+          // Only start date exists
+          if (tStart > filterEndDate || tStart < filterStartDate) { // This logic treats single date as point
+            // If it's just a start date, does it fall in range?
+            if (tStart < filterStartDate || tStart > filterEndDate) return false;
           }
         }
       } else if (filters.startDate) {
-        // Only startDate filter is provided
-        if (!taskOnDate || taskOnDate === null) {
-          // Include task - taskOnDate is null
-        } else {
-          const taskDate = new Date(taskOnDate);
-          const startDate = new Date(filters.startDate);
-          taskDate.setHours(0, 0, 0, 0);
-          startDate.setHours(0, 0, 0, 0);
-          if (taskDate < startDate) {
-            return false;
-          }
+        // Only startDate filter provided - show tasks starting on or after this date
+        const filterStartDate = new Date(filters.startDate);
+        filterStartDate.setHours(0, 0, 0, 0);
+
+        const tEnd = taskEndDate ? new Date(taskEndDate) : (taskStartDate ? new Date(taskStartDate) : null);
+        if (tEnd) tEnd.setHours(23, 59, 59, 999);
+
+        if (!tEnd || tEnd < filterStartDate) {
+          return false;
         }
       } else if (filters.endDate) {
-        // Only endDate filter is provided
-        if (!taskOnDate || taskOnDate === null) {
-          // Include task - taskOnDate is null
-        } else {
-          const taskDate = new Date(taskOnDate);
-          const endDate = new Date(filters.endDate);
-          taskDate.setHours(0, 0, 0, 0);
-          endDate.setHours(23, 59, 59, 999);
-          if (taskDate > endDate) {
-            return false;
-          }
+        // Only endDate filter provided - show tasks ending on or before this date
+        const filterEndDate = new Date(filters.endDate);
+        filterEndDate.setHours(23, 59, 59, 999);
+
+        const tStart = taskStartDate ? new Date(taskStartDate) : null;
+        if (tStart) tStart.setHours(0, 0, 0, 0);
+
+        if (!tStart || tStart > filterEndDate) {
+          return false;
         }
       }
       return true;
@@ -688,9 +710,9 @@ export class Task2Service {
   }
 
   private isOverdue(task: Task2): boolean {
-    const d: any = (task as any)['taskOnDate'];
-    if (!d || task.status?.name === 'done') return false;
-    return d < new Date();
+    const endDate = task.endDate;
+    if (!endDate || task.status?.name === 'done') return false;
+    return endDate < new Date();
   }
 
   // Initialize sample data

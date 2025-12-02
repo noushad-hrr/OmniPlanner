@@ -12,7 +12,8 @@ namespace OmniPlanner_API.Models.Tasks2
         public string? description { get; set; }
         public TaskStatus status { get; set; }
         public TaskPriority priority_level { get; set; }
-        public DateTime? taskOnDate { get; set; }
+        public DateTime? startDate { get; set; }
+        public DateTime? endDate { get; set; }
         public string? startTime { get; set; }
         public string? endTime { get; set; }
         public DateTime createdAt { get; set; }
@@ -35,7 +36,8 @@ namespace OmniPlanner_API.Models.Tasks2
         public TaskPriority priority_level { get; set; }
         public TaskStatus status { get; set; }
         public TaskCategory category { get; set; }
-        public DateTime? taskOnDate { get; set; }
+        public DateTime? startDate { get; set; }
+        public DateTime? endDate { get; set; }
         public string? startTime { get; set; }
         public string? endTime { get; set; }
         public DateTime createdAt { get; set; }
@@ -48,6 +50,6 @@ namespace OmniPlanner_API.Models.Tasks2
         public List<TaskUrl>? urls { get; set; }
         public bool important { get; set; } = false;
         public bool completed { get; set; } = false;
-        public PeriodicTask? periodic_task { get; set; }
+        //public PeriodicTask? periodic_task { get; set; }
     }
 }

@@ -242,7 +242,8 @@ namespace OmniPlanner_API.Repository
                             id = taskId,
                             title = GetValue("title")?.ToString() ?? string.Empty,
                             description = GetValue("description")?.ToString(),
-                            taskOnDate = ParseDate(GetValue("taskOnDate")),
+                            startDate = ParseDate(GetValue("startDate")),
+                            endDate = ParseDate(GetValue("endDate")),
                             startTime = GetValue("startTime")?.ToString(),
                             endTime = GetValue("endTime")?.ToString(),
                             createdAt = ParseDate(GetValue("createdAt")) ?? DateTime.UtcNow,
@@ -270,12 +271,12 @@ namespace OmniPlanner_API.Repository
                                 name = GetValue("category_name")?.ToString() ?? "",
                                 icon = GetValue("category_icon")?.ToString() ?? ""
                             } : null,
-                            periodic_task = GetValue("periodic_task_id") != null ? new PeriodicTask
-                            {
-                                id = GetValue("periodic_task_id") as int? ?? 0,
-                                startDate = GetValue("periodic_start_date") as DateTime?,
-                                endDate = GetValue("periodic_end_date") as DateTime?
-                            } : null
+                            //periodic_task = GetValue("periodic_task_id") != null ? new PeriodicTask
+                            //{
+                            //    id = GetValue("periodic_task_id") as int? ?? 0,
+                            //    startDate = GetValue("periodic_start_date") as DateTime?,
+                            //    endDate = GetValue("periodic_end_date") as DateTime?
+                            //} : null
                         };
                         taskIds.Add(taskId);
                     }
@@ -304,8 +305,7 @@ namespace OmniPlanner_API.Repository
                     var level1Rows = await connection.QueryAsync<dynamic>(Tasks2Queries.GetLevel1Subtasks, new { task_id = taskId });
                     var level1Subtasks = new List<Subtask2>();
                     
-                    // Get parent task's taskOnDate to inherit for subtasks
-                    var parentTaskOnDate = tasks.ContainsKey(taskId) ? tasks[taskId].taskOnDate : null;
+                    // Level 1 subtasks inherit dates from parent task
                     
                     foreach (var row in level1Rows)
                     {
@@ -321,8 +321,9 @@ namespace OmniPlanner_API.Repository
                             updatedAt = GetValueWithFallback<DateTime?>(row, "updatedAt", "modified_on") ?? DateTime.UtcNow,
                             estimatedHours = GetValueWithFallback<decimal?>(row, "estimatedHours", "estimated_hours", null),
                             priority_order = GetValueWithFallback<int?>(row, "priorityOrder", "priority_order", null),
-                            // Inherit taskOnDate from parent task (Level 1 subtasks don't have their own date)
-                            taskOnDate = parentTaskOnDate,
+                            // Use helper method with fallback to database column names
+                            startDate = GetValueWithFallback<DateTime?>(row, "startDate", "start_date", null),
+                            endDate = GetValueWithFallback<DateTime?>(row, "endDate", "end_date", null),
                             important = GetValue<bool>(row, "important", false),
                             completed = GetValue<bool>(row, "completed", false),
                             level = 1,
@@ -359,8 +360,7 @@ namespace OmniPlanner_API.Repository
                             new { level1_subtask_id = level1Subtask.id });
                         var level2Subtasks = new List<Subtask2>();
                         
-                        // Get parent Level 1 subtask's taskOnDate to inherit for Level 2 subtasks
-                        var parentLevel1TaskOnDate = level1Subtask.taskOnDate;
+                        // Level 2 subtasks inherit dates from parent Level 1 subtask
                         
                         foreach (var row in level2Rows)
                         {
@@ -376,8 +376,9 @@ namespace OmniPlanner_API.Repository
                                 updatedAt = GetValueWithFallback<DateTime?>(row, "updatedAt", "modified_on") ?? DateTime.UtcNow,
                                 estimatedHours = GetValueWithFallback<decimal?>(row, "estimatedHours", "estimated_hours", null),
                                 priority_order = GetValueWithFallback<int?>(row, "priorityOrder", "priority_order", null),
-                                // Inherit taskOnDate from parent Level 1 subtask (which inherits from main task)
-                                taskOnDate = parentLevel1TaskOnDate,
+                                // Use helper method with fallback to database column names (same as Level 1)
+                                startDate = GetValueWithFallback<DateTime?>(row, "startDate", "start_date", null),
+                                endDate = GetValueWithFallback<DateTime?>(row, "endDate", "end_date", null),
                                 important = GetValue<bool>(row, "important", false),
                                 completed = GetValue<bool>(row, "completed", false),
                                 level = 2,
@@ -421,11 +422,11 @@ namespace OmniPlanner_API.Repository
                     {
                         // Auto-assign priority_order if null
                         int? priorityOrder = request.priority_order;
-                        if (!priorityOrder.HasValue && request.task_on_date.HasValue)
+                        if (!priorityOrder.HasValue && request.start_date.HasValue)
                         {
                             var maxOrder = await connection.QueryFirstOrDefaultAsync<int?>(
-                                "SELECT MAX(priority_order) FROM tasks2_main_task WHERE task_on_date = @task_on_date",
-                                new { task_on_date = request.task_on_date }, transaction);
+                                "SELECT MAX(priority_order) FROM tasks2_main_task WHERE start_date = @start_date",
+                                new { start_date = request.start_date }, transaction);
                             priorityOrder = (maxOrder ?? 0) + 1;
                         }
 
@@ -437,7 +438,8 @@ namespace OmniPlanner_API.Repository
                             priority_level_id = request.priority_level_id,
                             status_id = request.status_id,
                             category_id = request.category_id,
-                            task_on_date = request.task_on_date,
+                            start_date = request.start_date,
+                            end_date = request.end_date,
                             start_time = request.start_time,
                             end_time = request.end_time,
                             created_by = userId,
@@ -450,9 +452,9 @@ namespace OmniPlanner_API.Repository
                         }, transaction);
 
                         // Reorder tasks on the same date to maintain non-gapped sequence
-                        if (request.task_on_date.HasValue)
+                        if (request.start_date.HasValue)
                         {
-                            await ReorderMainTasks2ByDate(connection, request.task_on_date.Value, transaction);
+                            await ReorderMainTasks2ByDate(connection, request.start_date.Value, transaction);
                         }
 
                         // Insert URL mappings
@@ -503,7 +505,6 @@ namespace OmniPlanner_API.Repository
                     id = (int)taskRow.id,
                     title = taskRow.title ?? string.Empty,
                     description = taskRow.description,
-                    taskOnDate = taskRow.taskOnDate as DateTime?,
                     startTime = taskRow.startTime,
                     endTime = taskRow.endTime,
                     createdAt = taskRow.createdAt as DateTime? ?? DateTime.UtcNow,
@@ -531,12 +532,12 @@ namespace OmniPlanner_API.Repository
                         name = taskRow.category_name,
                         icon = taskRow.category_icon ?? ""
                     } : null,
-                    periodic_task = taskRow.periodic_task_id != null ? new PeriodicTask
-                    {
-                        id = taskRow.periodic_task_id,
-                        startDate = taskRow.periodic_start_date as DateTime?,
-                        endDate = taskRow.periodic_end_date as DateTime?
-                    } : null
+                    //periodic_task = taskRow.periodic_task_id != null ? new PeriodicTask
+                    //{
+                    //    id = taskRow.periodic_task_id,
+                    //    startDate = taskRow.periodic_start_date as DateTime?,
+                    //    endDate = taskRow.periodic_end_date as DateTime?
+                    //} : null
                 };
 
                 return task;
@@ -554,10 +555,10 @@ namespace OmniPlanner_API.Repository
                     {
                         // Get old task data to check if date changed
                         var oldTask = await connection.QueryFirstOrDefaultAsync<dynamic>(
-                            "SELECT task_on_date, priority_order FROM tasks2_main_task WHERE id = @id",
+                            "SELECT start_date, priority_order FROM tasks2_main_task WHERE id = @id",
                             new { id = request.id }, transaction);
                         
-                        var oldDate = oldTask?.task_on_date as DateTime?;
+                        var oldDate = oldTask?.start_date as DateTime?;
                         var oldPriorityOrder = oldTask?.priority_order as int?;
 
                         // Auto-set completed when status is marked as completion status
@@ -566,19 +567,19 @@ namespace OmniPlanner_API.Repository
 
                         // Auto-assign priority_order if null
                         int? priorityOrder = request.priority_order;
-                        if (!priorityOrder.HasValue && request.task_on_date.HasValue)
+                        if (!priorityOrder.HasValue && request.start_date.HasValue)
                         {
                             var maxOrder = await connection.QueryFirstOrDefaultAsync<int?>(
-                                "SELECT MAX(priority_order) FROM tasks2_main_task WHERE task_on_date = @task_on_date AND id != @id",
-                                new { task_on_date = request.task_on_date, id = request.id }, transaction);
+                                "SELECT MAX(priority_order) FROM tasks2_main_task WHERE start_date = @start_date AND id != @id",
+                                new { start_date = request.start_date, id = request.id }, transaction);
                             priorityOrder = (maxOrder ?? 0) + 1;
                         }
 
                         // Handle priority_order change: move task to new position and shift others BEFORE updating
-                        if (request.task_on_date.HasValue && priorityOrder.HasValue && oldPriorityOrder.HasValue && oldPriorityOrder != priorityOrder)
+                        if (request.start_date.HasValue && priorityOrder.HasValue && oldPriorityOrder.HasValue && oldPriorityOrder != priorityOrder)
                         {
                             // If date changed, reorder old date first
-                            if (oldDate.HasValue && oldDate != request.task_on_date)
+                            if (oldDate.HasValue && oldDate != request.start_date)
                             {
                                 await ReorderMainTasks2ByDate(connection, oldDate.Value, transaction);
                             }
@@ -587,7 +588,7 @@ namespace OmniPlanner_API.Repository
                             await connection.ExecuteAsync(
                                 "UPDATE tasks2_main_task SET " +
                                 "title = @title, description = @description, priority_level_id = @priority_level_id, " +
-                                "status_id = @status_id, category_id = @category_id, task_on_date = @task_on_date, " +
+                                "status_id = @status_id, category_id = @category_id, start_date = @start_date, end_date = @end_date, " +
                                 "start_time = @start_time, end_time = @end_time, modified_on = NOW(), " +
                                 "modified_by = @modified_by, estimated_hours = @estimated_hours, " +
                                 "remarks = @remarks, important = @important, completed = @completed " +
@@ -600,7 +601,8 @@ namespace OmniPlanner_API.Repository
                                     priority_level_id = request.priority_level_id,
                                     status_id = request.status_id,
                                     category_id = request.category_id,
-                                    task_on_date = request.task_on_date,
+                                    start_date = request.start_date,
+                                    end_date = request.end_date,
                                     start_time = request.start_time,
                                     end_time = request.end_time,
                                     modified_by = userId,
@@ -611,7 +613,7 @@ namespace OmniPlanner_API.Repository
                                 }, transaction);
                             
                             // Move task to new position on new date (this will update priority_order)
-                            await MoveMainTask2ToPosition(connection, request.id, priorityOrder.Value, request.task_on_date.Value, transaction);
+                            await MoveMainTask2ToPosition(connection, request.id, priorityOrder.Value, request.start_date.Value, transaction);
                         }
                         else
                         {
@@ -624,7 +626,8 @@ namespace OmniPlanner_API.Repository
                                 priority_level_id = request.priority_level_id,
                                 status_id = request.status_id,
                                 category_id = request.category_id,
-                                task_on_date = request.task_on_date,
+                                start_date = request.start_date,
+                                end_date = request.end_date,
                                 start_time = request.start_time,
                                 end_time = request.end_time,
                                 modified_by = userId,
@@ -636,20 +639,20 @@ namespace OmniPlanner_API.Repository
                             }, transaction);
 
                             // Reorder if date changed or priority_order changed
-                            if (oldDate.HasValue && oldDate != request.task_on_date)
+                            if (oldDate.HasValue && oldDate != request.start_date)
                             {
                                 // Reorder old date
                                 await ReorderMainTasks2ByDate(connection, oldDate.Value, transaction);
                             }
-                            if (request.task_on_date.HasValue)
+                            if (request.start_date.HasValue)
                             {
                                 // Reorder new date
-                                await ReorderMainTasks2ByDate(connection, request.task_on_date.Value, transaction);
+                                await ReorderMainTasks2ByDate(connection, request.start_date.Value, transaction);
                             }
-                            else if (oldDate.HasValue && oldDate == request.task_on_date && oldPriorityOrder != priorityOrder)
+                            else if (oldDate.HasValue && oldDate == request.start_date && oldPriorityOrder != priorityOrder)
                             {
                                 // Same date but priority_order changed
-                                await ReorderMainTasks2ByDate(connection, request.task_on_date.Value, transaction);
+                                await ReorderMainTasks2ByDate(connection, request.start_date.Value, transaction);
                             }
                         }
 
@@ -697,7 +700,7 @@ namespace OmniPlanner_API.Repository
                     {
                         // Get task date before deletion for reordering
                         var taskDate = await connection.QueryFirstOrDefaultAsync<DateTime?>(
-                            "SELECT task_on_date FROM tasks2_main_task WHERE id = @id",
+                            "SELECT start_date FROM tasks2_main_task WHERE id = @id",
                             new { id = id }, transaction);
 
                         // Cascade delete will handle subtasks and URL mappings
@@ -747,6 +750,8 @@ namespace OmniPlanner_API.Repository
                             description = request.description,
                             priority_level_id = request.priority_level_id,
                             status_id = request.status_id,
+                            start_date = request.start_date,
+                            end_date = request.end_date,
                             start_time = request.start_time,
                             end_time = request.end_time,
                             created_by = userId,
@@ -1044,384 +1049,45 @@ namespace OmniPlanner_API.Repository
                                 }, transaction);
                             
                             // Move subtask to new position (this will update priority_order)
-                            await MoveLevel1SubtaskToPosition(connection, request.id, priorityOrder.Value, parentTaskId.Value, transaction);
-                        }
-                        else
-                        {
-                            // Update subtask with all fields
-                            await connection.ExecuteAsync(Tasks2Queries.UpdateLevel1Subtask, new
-                            {
-                                id = request.id,
-                                title = request.title,
-                                description = request.description,
-                                priority_level_id = request.priority_level_id,
-                                status_id = request.status_id,
-                                start_time = request.start_time,
-                                end_time = request.end_time,
-                                modified_by = userId,
-                                estimated_hours = request.estimated_hours,
-                                priority_order = priorityOrder,
-                                important = request.important,
-                                completed = request.completed
-                            }, transaction);
-
-                            // Reorder siblings if priority_order changed
-                            if (parentTaskId.HasValue && oldPriorityOrder != priorityOrder)
-                            {
-                                await ReorderLevel1Subtasks2(connection, parentTaskId.Value, transaction);
-                            }
                         }
 
                         transaction.Commit();
 
-                        // Get the task ID for this subtask
-                        var taskId = parentTaskId;
+                        // Return the updated Level 1 subtask
+                        var level1Rows = await connection.QueryAsync<dynamic>(Tasks2Queries.GetLevel1Subtasks, 
+                            new { task_id = parentTaskId.Value });
                         
-                        if (taskId.HasValue)
-                        {
-                            // Query the specific updated row directly to ensure we get the latest values
-                            var directQuery = @"
-                                SELECT 
-                                    l1.id,
-                                    l1.title,
-                                    l1.description,
-                                    l1.start_time AS startTime,
-                                    l1.end_time AS endTime,
-                                    l1.created_on AS createdAt,
-                                    l1.modified_on AS updatedAt,
-                                    l1.estimated_hours AS estimatedHours,
-                                    l1.priority_order AS priorityOrder,
-                                    l1.important,
-                                    l1.completed,
-                                    l1.priority_level_id,
-                                    pm.priority AS priority_name,
-                                    pm.color AS priority_color,
-                                    l1.status_id,
-                                    sm.status AS status_name,
-                                    sm.color AS status_color
-                                FROM tasks2_level_1_sub_task l1
-                                LEFT JOIN priority_master pm ON l1.priority_level_id = pm.id AND pm.is_deleted = false
-                                LEFT JOIN status_master sm ON l1.status_id = sm.id AND sm.is_deleted = false
-                                WHERE l1.id = @id";
-                            
-                            var row = await connection.QueryFirstOrDefaultAsync<dynamic>(directQuery, new { id = request.id });
-                            
-                            if (row != null)
-                            {
-                                return new Subtask2
-                                {
-                                    id = (int)row.id,
-                                    title = row.title ?? string.Empty,
-                                    description = row.description,
-                                    startTime = row.startTime as string,
-                                    endTime = row.endTime as string,
-                                    createdAt = row.createdAt as DateTime? ?? DateTime.UtcNow,
-                                    updatedAt = row.updatedAt as DateTime? ?? DateTime.UtcNow,
-                                    estimatedHours = row.estimatedHours as int?,
-                                    priority_order = row.priorityOrder as int?,
-                                    important = row.important ?? false,
-                                    completed = row.completed ?? false,
-                                    level = 1,
-                                    isExpanded = false,
-                                    subtasks = new List<Subtask2>(),
-                                    parentId = taskId.Value.ToString(),
-                                    priority_level = !string.IsNullOrEmpty(row.priority_name) ? new TaskPriority
-                                    {
-                                        name = row.priority_name,
-                                        color = row.priority_color ?? "#64748B"
-                                    } : null,
-                                    status = !string.IsNullOrEmpty(row.status_name) ? new TaskStatus
-                                    {
-                                        name = row.status_name,
-                                        color = row.status_color ?? "#64748B"
-                                    } : null
-                                };
-                            }
-                        }
-                        
-                        return null;
-                    }
-                    catch
-                    {
-                        transaction.Rollback();
-                        throw;
-                    }
-                }
-            }
-        }
-
-        public async System.Threading.Tasks.Task<bool> DeleteLevel1Subtask2(int id)
-        {
-            using (var connection = _context.CreateConnection())
-            {
-                connection.Open();
-                using (var transaction = connection.BeginTransaction())
-                {
-                    try
-                    {
-                        // Get parent task ID before deletion for reordering
-                        var parentTaskId = await connection.QueryFirstOrDefaultAsync<int?>(
-                            "SELECT tasks2_main_task_id FROM tasks2_level_1_sub_task WHERE id = @id",
-                            new { id = id }, transaction);
-
-                        // Cascade delete will handle level 2 subtasks
-                        var rowsAffected = await connection.ExecuteAsync(Tasks2Queries.DeleteLevel1Subtask, new { id }, transaction);
-                        
-                        // Reorder remaining siblings
-                        if (parentTaskId.HasValue && rowsAffected > 0)
-                        {
-                            await ReorderLevel1Subtasks2(connection, parentTaskId.Value, transaction);
-                        }
-
-                        transaction.Commit();
-                        return rowsAffected > 0;
-                    }
-                    catch
-                    {
-                        transaction.Rollback();
-                        throw;
-                    }
-                }
-            }
-        }
-
-        public async System.Threading.Tasks.Task<Subtask2> AddLevel2Subtask2(AddLevel2Subtask2Request request, int userId)
-        {
-            using (var connection = _context.CreateConnection())
-            {
-                connection.Open();
-                using (var transaction = connection.BeginTransaction())
-                {
-                    try
-                    {
-                        // Auto-assign priority_order if null
-                        int? priorityOrder = request.priority_order;
-                        if (!priorityOrder.HasValue)
-                        {
-                            var maxOrder = await connection.QueryFirstOrDefaultAsync<int?>(
-                                "SELECT MAX(priority_order) FROM tasks2_level_2_sub_task WHERE tasks2_level_1_sub_task_id = @tasks2_level_1_sub_task_id",
-                                new { tasks2_level_1_sub_task_id = request.tasks2_level_1_sub_task_id }, transaction);
-                            priorityOrder = (maxOrder ?? 0) + 1;
-                        }
-
-                        var subtaskId = await connection.ExecuteScalarAsync<int>(Tasks2Queries.AddLevel2Subtask, new
-                        {
-                            tasks2_level_1_sub_task_id = request.tasks2_level_1_sub_task_id,
-                            title = request.title,
-                            description = request.description,
-                            priority_level_id = request.priority_level_id,
-                            status_id = request.status_id,
-                            start_time = request.start_time,
-                            end_time = request.end_time,
-                            created_by = userId,
-                            modified_by = userId,
-                            estimated_hours = request.estimated_hours,
-                            priority_order = priorityOrder,
-                            important = request.important,
-                            completed = request.completed
-                        }, transaction);
-
-                        // Reorder siblings to maintain non-gapped sequence
-                        await ReorderLevel2Subtasks2(connection, request.tasks2_level_1_sub_task_id, transaction);
-
-                        transaction.Commit();
-
-                        // Get parent Level 1 subtask's taskOnDate to inherit for Level 2 subtask
-                        var parentLevel1TaskOnDate = await connection.ExecuteScalarAsync<DateTime?>(
-                            "SELECT t.task_on_date FROM tasks2_main_task t " +
-                            "INNER JOIN tasks2_level_1_sub_task l1 ON l1.tasks2_main_task_id = t.id " +
-                            "WHERE l1.id = @level1_subtask_id",
-                            new { level1_subtask_id = request.tasks2_level_1_sub_task_id });
-                        
-                        // Return the created subtask by fetching it
-                        var level2Rows = await connection.QueryAsync<dynamic>(Tasks2Queries.GetLevel2Subtasks, 
-                            new { level1_subtask_id = request.tasks2_level_1_sub_task_id });
-                        
-                        var row = level2Rows.FirstOrDefault(r => (int)r.id == subtaskId);
-                        if (row != null)
+                        var updatedRow = level1Rows.FirstOrDefault(r => (int)r.id == request.id);
+                        if (updatedRow != null)
                         {
                             return new Subtask2
                             {
-                                id = (int)row.id,
-                                title = row.title ?? string.Empty,
-                                description = row.description,
-                                // Use helper method with fallback to database column names
-                                startTime = GetValueWithFallback<string>(row, "startTime", "start_time", null),
-                                endTime = GetValueWithFallback<string>(row, "endTime", "end_time", null),
-                                createdAt = GetValueWithFallback<DateTime?>(row, "createdAt", "created_on") ?? DateTime.UtcNow,
-                                updatedAt = GetValueWithFallback<DateTime?>(row, "updatedAt", "modified_on") ?? DateTime.UtcNow,
-                                estimatedHours = GetValueWithFallback<decimal?>(row, "estimatedHours", "estimated_hours", null),
-                                priority_order = GetValueWithFallback<int?>(row, "priorityOrder", "priority_order", null),
-                                // Inherit taskOnDate from parent Level 1 subtask (which inherits from main task)
-                                taskOnDate = parentLevel1TaskOnDate,
-                                important = GetValue<bool>(row, "important", false),
-                                completed = GetValue<bool>(row, "completed", false),
-                                level = 2,
+                                id = (int)updatedRow.id,
+                                title = updatedRow.title ?? string.Empty,
+                                description = updatedRow.description,
+                                startTime = updatedRow.startTime,
+                                endTime = updatedRow.endTime,
+                                createdAt = updatedRow.createdAt as DateTime? ?? DateTime.UtcNow,
+                                updatedAt = updatedRow.updatedAt as DateTime? ?? DateTime.UtcNow,
+                                estimatedHours = updatedRow.estimatedHours as decimal?,
+                                priority_order = updatedRow.priorityOrder as int?,
+                                important = updatedRow.important ?? false,
+                                completed = updatedRow.completed ?? false,
+                                level = 1,
                                 isExpanded = false,
                                 subtasks = new List<Subtask2>(),
-                                parentId = request.tasks2_level_1_sub_task_id.ToString(),
-                                priority_level = !string.IsNullOrEmpty(row.priority_name) ? new TaskPriority
+                                parentId = parentTaskId.Value.ToString(),
+                                priority_level = !string.IsNullOrEmpty(updatedRow.priority_name) ? new TaskPriority
                                 {
-                                    name = row.priority_name,
-                                    color = row.priority_color ?? "#64748B"
+                                    name = updatedRow.priority_name,
+                                    color = updatedRow.priority_color ?? "#64748B"
                                 } : null,
-                                status = !string.IsNullOrEmpty(row.status_name) ? new TaskStatus
+                                status = !string.IsNullOrEmpty(updatedRow.status_name) ? new TaskStatus
                                 {
-                                    name = row.status_name,
-                                    color = row.status_color ?? "#64748B"
+                                    name = updatedRow.status_name,
+                                    color = updatedRow.status_color ?? "#64748B"
                                 } : null
                             };
-                        }
-                        
-                        return null;
-                    }
-                    catch
-                    {
-                        transaction.Rollback();
-                        throw;
-                    }
-                }
-            }
-        }
-
-        public async System.Threading.Tasks.Task<Subtask2> UpdateLevel2Subtask2(UpdateLevel2Subtask2Request request, int userId)
-        {
-            using (var connection = _context.CreateConnection())
-            {
-                connection.Open();
-                using (var transaction = connection.BeginTransaction())
-                {
-                    try
-                    {
-                        // Get parent Level 1 subtask ID and old priority_order
-                        var parentInfo = await connection.QueryFirstOrDefaultAsync<dynamic>(
-                            "SELECT tasks2_level_1_sub_task_id, priority_order FROM tasks2_level_2_sub_task WHERE id = @id",
-                            new { id = request.id }, transaction);
-                        
-                        var parentLevel1SubtaskId = parentInfo?.tasks2_level_1_sub_task_id as int?;
-                        var oldPriorityOrder = parentInfo?.priority_order as int?;
-
-                        // Auto-set completed when status is marked as completion status
-                        var shouldForceCompleted = await ShouldForceCompletedAsync(connection, request.status_id, transaction);
-                        request.completed = request.completed || shouldForceCompleted;
-
-                        // Auto-assign priority_order if null
-                        int? priorityOrder = request.priority_order;
-                        if (!priorityOrder.HasValue && parentLevel1SubtaskId.HasValue)
-                        {
-                            var maxOrder = await connection.QueryFirstOrDefaultAsync<int?>(
-                                "SELECT MAX(priority_order) FROM tasks2_level_2_sub_task WHERE tasks2_level_1_sub_task_id = @tasks2_level_1_sub_task_id AND id != @id",
-                                new { tasks2_level_1_sub_task_id = parentLevel1SubtaskId.Value, id = request.id }, transaction);
-                            priorityOrder = (maxOrder ?? 0) + 1;
-                        }
-
-                        // Handle priority_order change: move subtask to new position and shift others BEFORE updating
-                        if (parentLevel1SubtaskId.HasValue && priorityOrder.HasValue && oldPriorityOrder.HasValue && oldPriorityOrder != priorityOrder)
-                        {
-                            // Update subtask with all fields EXCEPT priority_order first (to avoid conflicts)
-                            await connection.ExecuteAsync(
-                                "UPDATE tasks2_level_2_sub_task SET " +
-                                "title = @title, description = @description, priority_level_id = @priority_level_id, " +
-                                "status_id = @status_id, start_time = @start_time, end_time = @end_time, " +
-                                "modified_on = NOW(), modified_by = @modified_by, estimated_hours = @estimated_hours, " +
-                                "important = @important, completed = @completed " +
-                                "WHERE id = @id",
-                                new
-                                {
-                                    id = request.id,
-                                    title = request.title,
-                                    description = request.description,
-                                    priority_level_id = request.priority_level_id,
-                                    status_id = request.status_id,
-                                    start_time = request.start_time,
-                                    end_time = request.end_time,
-                                    modified_by = userId,
-                                    estimated_hours = request.estimated_hours,
-                                    important = request.important,
-                                    completed = request.completed
-                                }, transaction);
-                            
-                            // Move subtask to new position (this will update priority_order)
-                            await MoveLevel2SubtaskToPosition(connection, request.id, priorityOrder.Value, parentLevel1SubtaskId.Value, transaction);
-                        }
-                        else
-                        {
-                            // Update subtask with all fields
-                            await connection.ExecuteAsync(Tasks2Queries.UpdateLevel2Subtask, new
-                            {
-                                id = request.id,
-                                title = request.title,
-                                description = request.description,
-                                priority_level_id = request.priority_level_id,
-                                status_id = request.status_id,
-                                start_time = request.start_time,
-                                end_time = request.end_time,
-                                modified_by = userId,
-                                estimated_hours = request.estimated_hours,
-                                priority_order = priorityOrder,
-                                important = request.important,
-                                completed = request.completed
-                            }, transaction);
-
-                            // Reorder siblings if priority_order changed
-                            if (parentLevel1SubtaskId.HasValue && oldPriorityOrder != priorityOrder)
-                            {
-                                await ReorderLevel2Subtasks2(connection, parentLevel1SubtaskId.Value, transaction);
-                            }
-                        }
-
-                        transaction.Commit();
-
-                        // Get the level 1 subtask ID for this subtask
-                        var level1SubtaskId = parentLevel1SubtaskId;
-                        
-                        if (level1SubtaskId.HasValue)
-                        {
-                            // Get parent Level 1 subtask's taskOnDate to inherit for Level 2 subtask
-                            var parentLevel1TaskOnDate = await connection.ExecuteScalarAsync<DateTime?>(
-                                "SELECT t.task_on_date FROM tasks2_main_task t " +
-                                "INNER JOIN tasks2_level_1_sub_task l1 ON l1.tasks2_main_task_id = t.id " +
-                                "WHERE l1.id = @level1_subtask_id",
-                                new { level1_subtask_id = level1SubtaskId.Value });
-                            
-                            var level2Rows = await connection.QueryAsync<dynamic>(Tasks2Queries.GetLevel2Subtasks, 
-                                new { level1_subtask_id = level1SubtaskId.Value });
-                            
-                            var row = level2Rows.FirstOrDefault(r => (int)r.id == request.id);
-                            if (row != null)
-                            {
-                                return new Subtask2
-                                {
-                                    id = (int)row.id,
-                                    title = row.title ?? string.Empty,
-                                    description = row.description,
-                                    // Use helper method with fallback to database column names
-                                    startTime = GetValueWithFallback<string>(row, "startTime", "start_time", null),
-                                    endTime = GetValueWithFallback<string>(row, "endTime", "end_time", null),
-                                    createdAt = GetValueWithFallback<DateTime?>(row, "createdAt", "created_on") ?? DateTime.UtcNow,
-                                    updatedAt = GetValueWithFallback<DateTime?>(row, "updatedAt", "modified_on") ?? DateTime.UtcNow,
-                                    estimatedHours = GetValueWithFallback<decimal?>(row, "estimatedHours", "estimated_hours", null),
-                                    priority_order = GetValueWithFallback<int?>(row, "priorityOrder", "priority_order", null),
-                                    // Inherit taskOnDate from parent Level 1 subtask (which inherits from main task)
-                                    taskOnDate = parentLevel1TaskOnDate,
-                                    important = GetValue<bool>(row, "important", false),
-                                    completed = GetValue<bool>(row, "completed", false),
-                                    level = 2,
-                                    isExpanded = false,
-                                    subtasks = new List<Subtask2>(),
-                                    parentId = level1SubtaskId.Value.ToString(),
-                                    priority_level = !string.IsNullOrEmpty(row.priority_name) ? new TaskPriority
-                                    {
-                                        name = row.priority_name,
-                                        color = row.priority_color ?? "#64748B"
-                                    } : null,
-                                    status = !string.IsNullOrEmpty(row.status_name) ? new TaskStatus
-                                    {
-                                        name = row.status_name,
-                                        color = row.status_color ?? "#64748B"
-                                    } : null
-                                };
-                            }
                         }
                         
                         return null;
@@ -1487,7 +1153,7 @@ namespace OmniPlanner_API.Repository
 
             // Get all tasks on this date ordered by priority_order (including the moving task to get correct order)
             var allTasks = await connection.QueryAsync<dynamic>(
-                "SELECT id, priority_order FROM tasks2_main_task WHERE task_on_date = @date ORDER BY priority_order NULLS LAST, id",
+                "SELECT id, priority_order FROM tasks2_main_task WHERE start_date = @date ORDER BY priority_order NULLS LAST, id",
                 new { date = date }, transaction);
 
             var taskList = allTasks.ToList();
@@ -1539,7 +1205,7 @@ namespace OmniPlanner_API.Repository
         private async System.Threading.Tasks.Task ReorderMainTasks2ByDate(IDbConnection connection, DateTime date, IDbTransaction transaction)
         {
             var tasks = await connection.QueryAsync<dynamic>(
-                "SELECT id, priority_order FROM tasks2_main_task WHERE task_on_date = @date ORDER BY priority_order NULLS LAST, id",
+                "SELECT id, priority_order FROM tasks2_main_task WHERE start_date = @date ORDER BY priority_order NULLS LAST, id",
                 new { date = date }, transaction);
 
             var taskList = tasks.ToList();
@@ -1765,6 +1431,66 @@ namespace OmniPlanner_API.Repository
                         new { order = order, id = subtaskId }, transaction);
                 }
                 order++;
+            }
+        }
+
+        public async System.Threading.Tasks.Task<bool> DeleteLevel1Subtask2(int id)
+        {
+            using (var connection = _context.CreateConnection())
+            {
+                var rowsAffected = await connection.ExecuteAsync(Tasks2Queries.DeleteLevel1Subtask, new { id });
+                return rowsAffected > 0;
+            }
+        }
+
+        public async System.Threading.Tasks.Task<Subtask2> AddLevel2Subtask2(AddLevel2Subtask2Request request, int userId)
+        {
+            using (var connection = _context.CreateConnection())
+            {
+                var subtaskId = await connection.ExecuteScalarAsync<int>(Tasks2Queries.AddLevel2Subtask, new
+                {
+                    tasks2_level_1_sub_task_id = request.tasks2_level_1_sub_task_id,
+                    title = request.title,
+                    description = request.description,
+                    priority_level_id = request.priority_level_id,
+                    status_id = request.status_id,
+                    start_time = request.start_time,
+                    end_time = request.end_time,
+                    start_date = request.start_date,
+                    end_date = request.end_date,
+                    created_by = userId,
+                    modified_by = userId,
+                    estimated_hours = request.estimated_hours,
+                    priority_order = request.priority_order,
+                    important = request.important,
+                    completed = request.completed
+                });
+                return null;
+            }
+        }
+
+        public async System.Threading.Tasks.Task<Subtask2> UpdateLevel2Subtask2(UpdateLevel2Subtask2Request request, int userId)
+        {
+            using (var connection = _context.CreateConnection())
+            {
+                await connection.ExecuteAsync(Tasks2Queries.UpdateLevel2Subtask, new
+                {
+                    id = request.id,
+                    title = request.title,
+                    description = request.description,
+                    priority_level_id = request.priority_level_id,
+                    status_id = request.status_id,
+                    start_time = request.start_time,
+                    end_time = request.end_time,
+                    start_date = request.start_date,
+                    end_date = request.end_date,
+                    modified_by = userId,
+                    estimated_hours = request.estimated_hours,
+                    priority_order = request.priority_order,
+                    important = request.important,
+                    completed = request.completed
+                });
+                return null;
             }
         }
 

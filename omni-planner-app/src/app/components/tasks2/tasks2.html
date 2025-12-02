@@ -185,9 +185,11 @@
                 <span class="progress-text">{{ task.estimatedHours }}h</span>
               </div>
 
-              <div class="task-due-date" *ngIf="task.taskOnDate">
+              <div class="task-due-date" *ngIf="task.startDate || task.endDate">
                 <span class="due-icon">📅</span>
-                {{ task.taskOnDate | date:'MMM dd, yyyy' }}
+                <span *ngIf="task.startDate">{{ task.startDate | date:'MMM dd, yyyy' }}</span>
+                <span *ngIf="task.startDate && task.endDate"> - </span>
+                <span *ngIf="task.endDate">{{ task.endDate | date:'MMM dd, yyyy' }}</span>
               </div>
             </div>
 
@@ -354,7 +356,7 @@
           <h3>Upcoming Deadlines</h3>
           <div class="deadline-list">
             <div *ngFor="let task of getUpcomingTasks(7)" class="deadline-item">
-              <div class="deadline-date">{{ task.taskOnDate | date:'MMM dd' }}</div>
+              <div class="deadline-date">{{ task.endDate | date:'MMM dd' }}</div>
               <div class="deadline-content">
                 <div class="deadline-title">{{ task.title }}</div>
               </div>
@@ -448,8 +450,17 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="taskDate">Date</label>
-            <input type="date" id="taskDate" [(ngModel)]="newTask.taskOnDate" class="form-input">
+            <label for="taskDate">Start Date <span class="required">*</span></label>
+            <input type="date" id="taskDate" [(ngModel)]="newTask.startDate" (input)="onInput('startDate')"
+              class="form-input" [class.error]="startDateError">
+            <div class="error-message" *ngIf="startDateError">{{ startDateError }}</div>
+          </div>
+
+          <div class="form-group">
+            <label for="taskEndDate">End Date <span class="required">*</span></label>
+            <input type="date" id="taskEndDate" [(ngModel)]="newTask.endDate" (input)="onInput('endDate')"
+              class="form-input" [class.error]="endDateError">
+            <div class="error-message" *ngIf="endDateError">{{ endDateError }}</div>
           </div>
 
           <div class="form-group">
@@ -598,9 +609,17 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="subtaskDate">Date</label>
-            <input type="date" id="subtaskDate" [(ngModel)]="newSubtask.taskOnDate" class="form-input"
-              [disabled]="true">
+            <label for="subtaskDate">Start Date <span class="required">*</span></label>
+            <input type="date" id="subtaskDate" [(ngModel)]="newSubtask.startDate" class="form-input"
+              (input)="onSubtaskInput('startDate')" [class.error]="subtaskStartDateError">
+            <div class="error-message" *ngIf="subtaskStartDateError">{{ subtaskStartDateError }}</div>
+          </div>
+
+          <div class="form-group">
+            <label for="subtaskEndDate">End Date <span class="required">*</span></label>
+            <input type="date" id="subtaskEndDate" [(ngModel)]="newSubtask.endDate" (input)="onSubtaskInput('endDate')"
+              class="form-input" [class.error]="subtaskEndDateError">
+            <div class="error-message" *ngIf="subtaskEndDateError">{{ subtaskEndDateError }}</div>
           </div>
 
           <div class="form-group">
@@ -686,8 +705,12 @@
             </div>
 
             <div class="detail-item">
-              <label>Date</label>
-              <span>{{ selectedTask?.taskOnDate ? (selectedTask?.taskOnDate | date:'MMM dd, yyyy') : 'No date' }}</span>
+              <label>Start Date</label>
+              <span>{{ selectedTask?.startDate ? (selectedTask?.startDate | date:'MMM dd, yyyy') : 'No date' }}</span>
+            </div>
+            <div class="detail-item">
+              <label>End Date</label>
+              <span>{{ selectedTask?.endDate ? (selectedTask?.endDate | date:'MMM dd, yyyy') : 'No date' }}</span>
             </div>
 
             <div class="detail-item">
@@ -1338,8 +1361,17 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="editTaskDate">Date</label>
-            <input type="date" id="editTaskDate" [(ngModel)]="selectedTask.taskOnDate" class="form-input">
+            <label for="editTaskStartDate">Start Date <span class="required">*</span></label>
+            <input type="date" id="editTaskStartDate" [(ngModel)]="selectedTask.startDate"
+              (input)="onInput('startDate')" class="form-input" [class.error]="startDateError">
+            <div class="error-message" *ngIf="startDateError">{{ startDateError }}</div>
+          </div>
+
+          <div class="form-group">
+            <label for="editTaskEndDate">End Date <span class="required">*</span></label>
+            <input type="date" id="editTaskEndDate" [(ngModel)]="selectedTask.endDate" (input)="onInput('endDate')"
+              class="form-input" [class.error]="endDateError">
+            <div class="error-message" *ngIf="endDateError">{{ endDateError }}</div>
           </div>
 
           <div class="form-group">
@@ -1503,10 +1535,20 @@
         <div class="view-info-compact">
           <i class="fas fa-calendar view-info-icon"></i>
           <div class="view-info-text">
-            <span class="view-info-label">Date</span>
+            <span class="view-info-label">Start Date</span>
             <span class="view-info-value">
-              <span *ngIf="selectedTask?.taskOnDate">{{ selectedTask.taskOnDate | date:'EEE, MMM dd, yyyy' }}</span>
-              <span *ngIf="!selectedTask?.taskOnDate">ND</span>
+              <span *ngIf="selectedTask?.startDate">{{ selectedTask.startDate | date:'EEE, MMM dd, yyyy' }}</span>
+              <span *ngIf="!selectedTask?.startDate">ND</span>
+            </span>
+          </div>
+        </div>
+        <div class="view-info-compact">
+          <i class="fas fa-calendar view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">End Date</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedTask?.endDate">{{ selectedTask.endDate | date:'EEE, MMM dd, yyyy' }}</span>
+              <span *ngIf="!selectedTask?.endDate">ND</span>
             </span>
           </div>
         </div>
@@ -1678,9 +1720,13 @@
         </div>
 
         <div class="subtask-dates">
-          <div class="date-item" *ngIf="selectedSubtask?.taskOnDate">
-            <span class="date-label">Date:</span>
-            <span class="date-value">{{ selectedSubtask?.taskOnDate | date:'MMM dd, yyyy' }}</span>
+          <div class="date-item" *ngIf="selectedSubtask?.startDate || selectedSubtask?.endDate">
+            <span class="date-label">Dates:</span>
+            <span class="date-value">
+              <span *ngIf="selectedSubtask?.startDate">{{ selectedSubtask?.startDate | date:'MMM dd, yyyy' }}</span>
+              <span *ngIf="selectedSubtask?.startDate && selectedSubtask?.endDate"> - </span>
+              <span *ngIf="selectedSubtask?.endDate">{{ selectedSubtask?.endDate | date:'MMM dd, yyyy' }}</span>
+            </span>
           </div>
           <div class="date-item" *ngIf="selectedSubtask?.createdAt">
             <span class="date-label">Created:</span>
@@ -1847,9 +1893,18 @@
 
       <div class="form-row">
         <div class="form-group">
-          <label for="level2SubtaskDate">Date</label>
-          <input type="date" id="level2SubtaskDate" [(ngModel)]="newSubtask.taskOnDate" class="form-input"
-            [disabled]="true">
+          <label for="level2SubtaskDate">Start Date <span class="required">*</span></label>
+          <input type="date" id="level2SubtaskDate" [(ngModel)]="newSubtask.startDate" class="form-input"
+            (input)="onSubtaskInput('startDate')" [class.error]="subtaskStartDateError">
+
+          <div class="error-message" *ngIf="subtaskStartDateError">{{ subtaskStartDateError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="level2SubtaskEndDate">End Date <span class="required">*</span></label>
+          <input type="date" id="level2SubtaskEndDate" [(ngModel)]="newSubtask.endDate"
+            (input)="onSubtaskInput('endDate')" class="form-input" [class.error]="subtaskEndDateError">
+          <div class="error-message" *ngIf="subtaskEndDateError">{{ subtaskEndDateError }}</div>
         </div>
 
         <div class="form-group">
@@ -1952,9 +2007,18 @@
 
       <div class="form-row">
         <div class="form-group">
-          <label for="editLevel1SubtaskDate">Date</label>
-          <input type="date" id="editLevel1SubtaskDate" [(ngModel)]="selectedLevel1Subtask.taskOnDate"
-            class="form-input" [disabled]="true">
+          <label for="editLevel1SubtaskDate">Start Date <span class="required">*</span></label>
+          <input type="date" id="editLevel1SubtaskDate" [(ngModel)]="selectedLevel1Subtask.startDate"
+            (input)="onSubtaskInput('startDate')" class="form-input" [class.error]="subtaskStartDateError">
+
+          <div class="error-message" *ngIf="subtaskStartDateError">{{ subtaskStartDateError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="editLevel1SubtaskEndDate">End Date <span class="required">*</span></label>
+          <input type="date" id="editLevel1SubtaskEndDate" [(ngModel)]="selectedLevel1Subtask.endDate"
+            (input)="onSubtaskInput('endDate')" class="form-input" [class.error]="subtaskEndDateError">
+          <div class="error-message" *ngIf="subtaskEndDateError">{{ subtaskEndDateError }}</div>
         </div>
 
         <div class="form-group">
@@ -2054,12 +2118,23 @@
         <div class="view-info-compact">
           <i class="fas fa-calendar view-info-icon"></i>
           <div class="view-info-text">
-            <span class="view-info-label">Date</span>
+            <span class="view-info-label">Start Date</span>
             <span class="view-info-value">
-              <span *ngIf="selectedLevel1Subtask?.taskOnDate">{{ selectedLevel1Subtask.taskOnDate | date:'MMM dd, yyyy'
+              <span *ngIf="selectedLevel1Subtask?.startDate">{{ selectedLevel1Subtask.startDate | date:'MMM dd, yyyy'
                 }}</span>
-              <span *ngIf="!selectedLevel1Subtask?.taskOnDate" class="nd-value">ND</span>
+              <span *ngIf="!selectedLevel1Subtask?.startDate" class="nd-value">ND</span>
             </span>
+          </div>
+          <div class="view-info-compact">
+            <i class="fas fa-calendar view-info-icon"></i>
+            <div class="view-info-text">
+              <span class="view-info-label">End Date</span>
+              <span class="view-info-value">
+                <span *ngIf="selectedLevel1Subtask?.endDate">{{ selectedLevel1Subtask.endDate | date:'MMM dd, yyyy'
+                  }}</span>
+                <span *ngIf="!selectedLevel1Subtask?.endDate" class="nd-value">ND</span>
+              </span>
+            </div>
           </div>
         </div>
 
@@ -2207,9 +2282,17 @@
 
       <div class="form-row">
         <div class="form-group">
-          <label for="editLevel2SubtaskDate">Date</label>
-          <input type="date" id="editLevel2SubtaskDate" [(ngModel)]="selectedLevel2Subtask.taskOnDate"
-            class="form-input" [disabled]="true">
+          <label for="editLevel2SubtaskDate">Start Date <span class="required">*</span></label>
+          <input type="date" id="editLevel2SubtaskDate" [(ngModel)]="selectedLevel2Subtask.startDate"
+            (input)="onSubtaskInput('startDate')" class="form-input" [class.error]="subtaskStartDateError">
+          <div class="error-message" *ngIf="subtaskStartDateError">{{ subtaskStartDateError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="editLevel2SubtaskEndDate">End Date <span class="required">*</span></label>
+          <input type="date" id="editLevel2SubtaskEndDate" [(ngModel)]="selectedLevel2Subtask.endDate"
+            (input)="onSubtaskInput('endDate')" class="form-input" [class.error]="subtaskEndDateError">
+          <div class="error-message" *ngIf="subtaskEndDateError">{{ subtaskEndDateError }}</div>
         </div>
 
         <div class="form-group">
@@ -2267,7 +2350,8 @@
       <!-- First Row: Category, Status, Priority -->
       <div class="view-top-row">
         <div class="view-info-compact">
-          <span class="view-info-icon" *ngIf="getLevel2SubtaskCategory()">{{ getLevel2SubtaskCategory()?.icon }}</span>
+          <span class="view-info-icon" *ngIf="getLevel2SubtaskCategory()">{{ getLevel2SubtaskCategory()?.icon
+            }}</span>
           <div class="view-info-text">
             <span class="view-info-label">Category</span>
             <span class="view-info-value">
@@ -2295,7 +2379,8 @@
           <div class="view-info-text">
             <span class="view-info-label">Priority</span>
             <span class="view-info-value">
-              <span *ngIf="selectedLevel2Subtask.priority">{{ selectedLevel2Subtask.priority.name | titlecase }}</span>
+              <span *ngIf="selectedLevel2Subtask.priority">{{ selectedLevel2Subtask.priority.name | titlecase
+                }}</span>
               <span *ngIf="!selectedLevel2Subtask.priority" class="nd-value">ND</span>
               <span *ngIf="selectedLevel2Subtask?.important" class="important-star-view"
                 style="margin-left: 5px;">★</span>
@@ -2309,11 +2394,24 @@
         <div class="view-info-compact">
           <i class="fas fa-calendar view-info-icon"></i>
           <div class="view-info-text">
-            <span class="view-info-label">Date</span>
+            <span class="view-info-label">Start Date</span>
             <span class="view-info-value">
-              <span *ngIf="selectedLevel2Subtask?.taskOnDate">{{ selectedLevel2Subtask.taskOnDate | date:'MMM dd, yyyy'
+              <span *ngIf="selectedLevel2Subtask?.startDate">{{ selectedLevel2Subtask.startDate | date:'MMM dd, yyyy'
                 }}</span>
-              <span *ngIf="!selectedLevel2Subtask?.taskOnDate" class="nd-value">ND</span>
+
+
+              <span *ngIf="!selectedLevel2Subtask?.startDate" class="nd-value">ND</span>
+            </span>
+          </div>
+        </div>
+        <div class="view-info-compact">
+          <i class="fas fa-calendar view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">End Date</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedLevel2Subtask?.endDate">{{ selectedLevel2Subtask.endDate | date:'MMM dd, yyyy'
+                }}</span>
+              <span *ngIf="!selectedLevel2Subtask?.endDate" class="nd-value">ND</span>
             </span>
           </div>
         </div>
@@ -2376,7 +2474,8 @@
 
       <!-- Metadata Footer -->
       <div class="view-metadata-compact">
-        <span><i class="fas fa-plus-circle"></i> Created: {{ selectedLevel2Subtask.createdAt | date:'MMM dd, yyyy HH:mm'
+        <span><i class="fas fa-plus-circle"></i> Created: {{ selectedLevel2Subtask.createdAt | date:'MMM dd, yyyy
+          HH:mm'
           }}</span>
         <span><i class="fas fa-edit"></i> Updated: {{ selectedLevel2Subtask.updatedAt | date:'MMM dd, yyyy HH:mm'
           }}</span>
