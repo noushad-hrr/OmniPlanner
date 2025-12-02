@@ -3,7 +3,7 @@ namespace OmniPlanner_API.Models.Tasks
     public class PeriodicTask
     {
         public int id { get; set; }
-        public string title { get; set; }
+        public string? title { get; set; }
         public string? description { get; set; }
         public TaskPriority priority_level { get; set; } // Renamed from priority
         public TaskStatus status { get; set; }
@@ -36,6 +36,7 @@ namespace OmniPlanner_API.Models.Tasks
         public bool important { get; set; } = false;
         public bool active { get; set; } = true;
         public bool completed { get; set; } = false;
+
     }
 
     public class PeriodicSubtask

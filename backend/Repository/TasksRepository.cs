@@ -273,7 +273,8 @@ namespace OmniPlanner_API.Repository
                             {
                                 id = GetValue("periodic_task_id") as int? ?? 0,
                                 startDate = GetValue("periodic_start_date") as DateTime?,
-                                endDate = GetValue("periodic_end_date") as DateTime?
+                                endDate = GetValue("periodic_end_date") as DateTime?,
+                                title = GetValue("periodic_main_task_title") as string ?? ""
                             } : null
                         };
                         taskIds.Add(taskId);

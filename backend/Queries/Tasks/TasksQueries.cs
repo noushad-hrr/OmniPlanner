@@ -88,12 +88,13 @@ namespace OmniPlanner_API.Queries.Tasks
                 -- Periodic Task
                 pt.id AS periodic_task_id,
                 pt.start_date AS periodic_start_date,
-                pt.end_date AS periodic_end_date
+                pt.end_date AS periodic_end_date,
+                pt.title AS periodic_main_task_title
             FROM tasks_main_task t
             LEFT JOIN priority_master pm ON t.priority_level_id = pm.id AND pm.is_deleted = false
             LEFT JOIN status_master sm ON t.status_id = sm.id AND sm.is_deleted = false
             LEFT JOIN category_master cm ON t.category_id = cm.id AND cm.is_deleted = false
-            LEFT JOIN periodic_tasks_main_task pt ON t.periodic_tasks_main_task_id = pt.id
+            LEFT JOIN tasks2_main_task pt ON t.periodic_tasks_main_task_id = pt.id
             ORDER BY t.task_on_date NULLS LAST, t.priority_order NULLS LAST, t.start_time NULLS LAST, t.id";
 
         // Get a single task by ID (for returning after insert/update)

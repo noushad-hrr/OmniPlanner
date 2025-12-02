@@ -785,7 +785,8 @@
           <div class="form-group">
             <label for="periodicTaskTitle">Title <span class="required">*</span></label>
             <input type="text" id="periodicTaskTitle" [(ngModel)]="newPeriodicTask.title"
-              placeholder="Enter task title..." class="form-input" [class.error]="periodicTaskTitleError" maxlength="500">
+              placeholder="Enter task title..." class="form-input" [class.error]="periodicTaskTitleError"
+              maxlength="500">
             <div class="error-message" *ngIf="periodicTaskTitleError">{{ periodicTaskTitleError }}</div>
           </div>
 
@@ -895,7 +896,7 @@
 
         </div>
 
-        
+
         <!-- Date & Time -->
         <div class="form-section">
           <h4 class="section-title">Date & Time</h4>
@@ -903,7 +904,8 @@
           <div class="form-row">
             <div class="form-group">
               <label for="periodicStartDate">Start Date <span class="required">*</span></label>
-              <input type="date" id="periodicStartDate" [(ngModel)]="newPeriodicTask.startDate" class="form-input" [class.error]="periodicTaskStartDateError">
+              <input type="date" id="periodicStartDate" [(ngModel)]="newPeriodicTask.startDate" class="form-input"
+                [class.error]="periodicTaskStartDateError">
               <div class="error-message" *ngIf="periodicTaskStartDateError">{{ periodicTaskStartDateError }}</div>
             </div>
           </div>
@@ -911,7 +913,8 @@
           <div class="form-row">
             <div class="form-group">
               <label for="recurrenceEndType">Recurrence Ends <span class="required">*</span></label>
-              <select id="recurrenceEndType" [(ngModel)]="newPeriodicTask.recurrence_end_type" (change)="onRecurrenceEndTypeChange()" class="form-input">
+              <select id="recurrenceEndType" [(ngModel)]="newPeriodicTask.recurrence_end_type"
+                (change)="onRecurrenceEndTypeChange()" class="form-input">
                 <option value="">Select End Type</option>
                 <option value="on_date">On Date</option>
                 <option value="after_occurrences">After Occurrences</option>
@@ -932,8 +935,8 @@
 
             <div class="form-group">
               <label for="periodicEstimatedHours">Estimated Hours</label>
-              <input type="number" id="periodicEstimatedHours" [(ngModel)]="newPeriodicTask.estimatedHours" placeholder="0"
-                class="form-input" min="0" step="0.1">
+              <input type="number" id="periodicEstimatedHours" [(ngModel)]="newPeriodicTask.estimatedHours"
+                placeholder="0" class="form-input" min="0" step="0.1">
             </div>
           </div>
 
@@ -941,14 +944,17 @@
             <div class="form-group">
               <label for="recurrenceEndDate">End Date <span class="required">*</span></label>
               <input type="date" id="recurrenceEndDate" [(ngModel)]="newPeriodicTask.recurrence_end_date"
-                [disabled]="newPeriodicTask.recurrence_end_type === 'after_occurrences'" class="form-input" [class.error]="periodicTaskEndDateError">
-              <div class="error-message" *ngIf="periodicTaskEndDateError && newPeriodicTask.recurrence_end_type === 'on_date'">{{ periodicTaskEndDateError }}</div>
+                [disabled]="newPeriodicTask.recurrence_end_type === 'after_occurrences'" class="form-input"
+                [class.error]="periodicTaskEndDateError">
+              <div class="error-message"
+                *ngIf="periodicTaskEndDateError && newPeriodicTask.recurrence_end_type === 'on_date'">{{
+                periodicTaskEndDateError }}</div>
             </div>
 
             <div *ngIf="newPeriodicTask.recurrence_end_type === 'after_occurrences'" class="form-group">
               <label for="recurrenceOccurrences">Occurrences</label>
-              <input type="number" id="recurrenceOccurrences" [(ngModel)]="newPeriodicTask.recurrence_occurrences" min="1"
-                (change)="onRecurrenceOccurrencesChange()" class="form-input" style="width: 150px;">
+              <input type="number" id="recurrenceOccurrences" [(ngModel)]="newPeriodicTask.recurrence_occurrences"
+                min="1" (change)="onRecurrenceOccurrencesChange()" class="form-input" style="width: 150px;">
             </div>
           </div>
 
@@ -962,7 +968,8 @@
           <div class="form-row">
             <div class="form-group">
               <label for="periodicPriority">Priority <span class="required">*</span></label>
-              <select id="periodicPriority" [(ngModel)]="newPeriodicTask.priorityLevel" [compareWith]="compareObjects" class="form-input" [class.error]="periodicTaskPriorityError">
+              <select id="periodicPriority" [(ngModel)]="newPeriodicTask.priorityLevel" [compareWith]="compareObjects"
+                class="form-input" [class.error]="periodicTaskPriorityError">
                 <option [ngValue]="null">Select Priority</option>
                 <option *ngFor="let priority of priorities"
                   [ngValue]="{ name: priority.priority, color: priority.color }">
@@ -974,7 +981,8 @@
 
             <div class="form-group">
               <label for="periodicStatus">Status <span class="required">*</span></label>
-              <select id="periodicStatus" [(ngModel)]="newPeriodicTask.status" class="form-input" [class.error]="periodicTaskStatusError">
+              <select id="periodicStatus" [(ngModel)]="newPeriodicTask.status" class="form-input"
+                [class.error]="periodicTaskStatusError">
                 <option [ngValue]="null">Select Status</option>
                 <option *ngFor="let status of statuses" [ngValue]="{ name: status.status, color: status.color }">
                   {{ status.status }}
@@ -985,7 +993,8 @@
 
             <div class="form-group">
               <label for="periodicCategory">Category <span class="required">*</span></label>
-              <select id="periodicCategory" [(ngModel)]="newPeriodicTask.category" class="form-input" [class.error]="periodicTaskCategoryError">
+              <select id="periodicCategory" [(ngModel)]="newPeriodicTask.category" class="form-input"
+                [class.error]="periodicTaskCategoryError">
                 <option [ngValue]="null">Select Category</option>
                 <option *ngFor="let category of categoryMasters"
                   [ngValue]="{ name: category.category, icon: category.icon }">
@@ -1010,7 +1019,8 @@
               <div *ngFor="let url of newPeriodicTask.urls; let i = index" class="url-row">
                 <span class="url-label-display">{{ url.label }}</span>
                 <span class="url-value-display">{{ url.url }}</span>
-                <button class="btn-icon btn-remove-url" (click)="removePeriodicTaskUrl(i); loadAvailableUrlsForPeriodicTask()" title="Remove URL">
+                <button class="btn-icon btn-remove-url"
+                  (click)="removePeriodicTaskUrl(i); loadAvailableUrlsForPeriodicTask()" title="Remove URL">
                   <i class="fas fa-times"></i>
                 </button>
               </div>
@@ -1073,7 +1083,8 @@
         <!-- First Row: Category, Status, Priority -->
         <div class="view-top-row">
           <div class="view-info-compact">
-            <span class="view-info-icon" *ngIf="selectedPeriodicTask.category">{{ selectedPeriodicTask.category?.icon }}</span>
+            <span class="view-info-icon" *ngIf="selectedPeriodicTask.category">{{ selectedPeriodicTask.category?.icon
+              }}</span>
             <div class="view-info-text">
               <span class="view-info-label">Category</span>
               <span class="view-info-value">
@@ -1101,9 +1112,11 @@
             <div class="view-info-text">
               <span class="view-info-label">Priority</span>
               <span class="view-info-value">
-                <span *ngIf="selectedPeriodicTask.priorityLevel">{{ selectedPeriodicTask.priorityLevel?.name | titlecase }}</span>
+                <span *ngIf="selectedPeriodicTask.priorityLevel">{{ selectedPeriodicTask.priorityLevel?.name | titlecase
+                  }}</span>
                 <span *ngIf="!selectedPeriodicTask.priorityLevel">ND</span>
-                <span *ngIf="selectedPeriodicTask?.important" class="important-star-view" style="margin-left: 5px;">★</span>
+                <span *ngIf="selectedPeriodicTask?.important" class="important-star-view"
+                  style="margin-left: 5px;">★</span>
               </span>
             </div>
           </div>
@@ -1116,7 +1129,8 @@
             <div class="view-info-text">
               <span class="view-info-label">Start Date</span>
               <span class="view-info-value">
-                <span *ngIf="selectedPeriodicTask?.startDate">{{ selectedPeriodicTask.startDate | date:'MMM dd, yyyy' }}</span>
+                <span *ngIf="selectedPeriodicTask?.startDate">{{ selectedPeriodicTask.startDate | date:'MMM dd, yyyy'
+                  }}</span>
                 <span *ngIf="!selectedPeriodicTask?.startDate">ND</span>
               </span>
             </div>
@@ -1127,7 +1141,8 @@
             <div class="view-info-text">
               <span class="view-info-label">End Date</span>
               <span class="view-info-value">
-                <span *ngIf="selectedPeriodicTask?.recurrence_end_date">{{ selectedPeriodicTask.recurrence_end_date | date:'MMM dd, yyyy' }}</span>
+                <span *ngIf="selectedPeriodicTask?.recurrence_end_date">{{ selectedPeriodicTask.recurrence_end_date |
+                  date:'MMM dd, yyyy' }}</span>
                 <span *ngIf="!selectedPeriodicTask?.recurrence_end_date">ND</span>
               </span>
             </div>
@@ -1151,7 +1166,8 @@
             <div class="view-info-text">
               <span class="view-info-label">Estimated Hours</span>
               <span class="view-info-value">
-                <span *ngIf="(selectedPeriodicTask?.estimatedHours ?? 0) > 0">{{ selectedPeriodicTask?.estimatedHours }}h</span>
+                <span *ngIf="(selectedPeriodicTask?.estimatedHours ?? 0) > 0">{{ selectedPeriodicTask?.estimatedHours
+                  }}h</span>
                 <span *ngIf="(selectedPeriodicTask?.estimatedHours ?? 0) === 0">ND</span>
               </span>
             </div>
@@ -1167,17 +1183,21 @@
           <div class="view-content-body">
             <div class="recurrence-info">
               <span><strong>Pattern:</strong> {{ selectedPeriodicTask?.recurrence_pattern | titlecase }}</span>
-              <span><strong>Interval:</strong> Every {{ selectedPeriodicTask?.recurrence_interval }} {{ getIntervalLabel() }}</span>
-              <span *ngIf="selectedPeriodicTask?.recurrence_pattern === 'weekly' && selectedPeriodicTask?.recurrence_days">
-                <strong>Days:</strong> 
+              <span><strong>Interval:</strong> Every {{ selectedPeriodicTask?.recurrence_interval }} {{
+                getIntervalLabel() }}</span>
+              <span
+                *ngIf="selectedPeriodicTask?.recurrence_pattern === 'weekly' && selectedPeriodicTask?.recurrence_days">
+                <strong>Days:</strong>
                 <span *ngFor="let day of getSelectedDaysLabel(selectedPeriodicTask.recurrence_days); let last = last">
                   {{ day }}<span *ngIf="!last">, </span>
                 </span>
               </span>
               <span *ngIf="selectedPeriodicTask?.recurrence_end_type">
-                <strong>Ends:</strong> 
-                <span *ngIf="selectedPeriodicTask.recurrence_end_type === 'on_date'">On {{ selectedPeriodicTask.recurrence_end_date | date:'MMM dd, yyyy' }}</span>
-                <span *ngIf="selectedPeriodicTask.recurrence_end_type === 'after_occurrences'">After {{ selectedPeriodicTask.recurrence_occurrences }} occurrences</span>
+                <strong>Ends:</strong>
+                <span *ngIf="selectedPeriodicTask.recurrence_end_type === 'on_date'">On {{
+                  selectedPeriodicTask.recurrence_end_date | date:'MMM dd, yyyy' }}</span>
+                <span *ngIf="selectedPeriodicTask.recurrence_end_type === 'after_occurrences'">After {{
+                  selectedPeriodicTask.recurrence_occurrences }} occurrences</span>
                 <span *ngIf="selectedPeriodicTask.recurrence_end_type === 'never'">Never</span>
               </span>
             </div>
@@ -1223,8 +1243,10 @@
 
         <!-- Metadata Footer -->
         <div class="view-metadata-compact">
-          <span *ngIf="selectedPeriodicTask?.createdAt"><i class="fas fa-plus-circle"></i> Created: {{ selectedPeriodicTask.createdAt | date:'MMM dd, yyyy HH:mm' }}</span>
-          <span *ngIf="selectedPeriodicTask?.updatedAt"><i class="fas fa-edit"></i> Updated: {{ selectedPeriodicTask.updatedAt | date:'MMM dd, yyyy HH:mm' }}</span>
+          <span *ngIf="selectedPeriodicTask?.createdAt"><i class="fas fa-plus-circle"></i> Created: {{
+            selectedPeriodicTask.createdAt | date:'MMM dd, yyyy HH:mm' }}</span>
+          <span *ngIf="selectedPeriodicTask?.updatedAt"><i class="fas fa-edit"></i> Updated: {{
+            selectedPeriodicTask.updatedAt | date:'MMM dd, yyyy HH:mm' }}</span>
         </div>
       </div>
 
@@ -1448,32 +1470,6 @@
           </div>
         </div>
 
-        <div class="view-info-compact">
-          <i class="fas fa-repeat view-info-icon"></i>
-          <div class="view-info-text">
-            <span class="view-info-label">Periodic Task</span>
-            <span class="view-info-value">
-              <span *ngIf="selectedTask?.periodicTask">
-                <span *ngIf="selectedTask?.periodicTask?.id">ID: {{ selectedTask?.periodicTask?.id }}</span>
-                <span
-                  *ngIf="selectedTask?.periodicTask?.id && (selectedTask?.periodicTask?.startDate || selectedTask?.periodicTask?.endDate)">
-                  | </span>
-                <span *ngIf="selectedTask?.periodicTask?.startDate && selectedTask?.periodicTask?.endDate">
-                  {{ selectedTask?.periodicTask?.startDate | date:'MMM dd, yyyy' }} - {{
-                  selectedTask?.periodicTask?.endDate | date:'MMM dd, yyyy' }}
-                </span>
-                <span
-                  *ngIf="selectedTask?.periodicTask?.id && !selectedTask?.periodicTask?.startDate && !selectedTask?.periodicTask?.endDate">
-                  Active
-                </span>
-              </span>
-              <span *ngIf="!selectedTask?.periodicTask">
-                <span><i>On Date Task (non periodic)</i></span>
-                <!-- <span *ngIf="!selectedTask?.taskOnDate">Non Periodic Task</span> -->
-              </span>
-            </span>
-          </div>
-        </div>
       </div>
 
       <!-- Second Row: Date, Time, Estimated Hours, Priority Order, Progress, Subtasks -->
@@ -1546,6 +1542,38 @@
             <span class="view-info-label">Subtasks</span>
             <span class="view-info-value">{{ getSubtaskCount(selectedTask) }}</span>
           </div>
+        </div>
+
+      </div>
+
+
+      <div class="view-info-compact">
+        <i class="fas fa-repeat view-info-icon"></i>
+        <div class="view-info-text">
+          <span class="view-info-label">Periodic Task</span>
+          <span class="view-info-value">
+            <span *ngIf="selectedTask?.periodicTask">
+              <span *ngIf="selectedTask?.periodicTask?.id">ID: {{ selectedTask?.periodicTask?.id }}</span>
+              <span
+                *ngIf="selectedTask?.periodicTask?.id && (selectedTask?.periodicTask?.startDate || selectedTask?.periodicTask?.endDate)">
+                | </span>
+              <span *ngIf="selectedTask?.periodicTask?.startDate && selectedTask?.periodicTask?.endDate">
+                {{ selectedTask?.periodicTask?.startDate | date:'MMM dd, yyyy' }} - {{
+                selectedTask?.periodicTask?.endDate | date:'MMM dd, yyyy' }}
+              </span>
+              <span
+                *ngIf="selectedTask?.periodicTask?.id && !selectedTask?.periodicTask?.startDate && !selectedTask?.periodicTask?.endDate">
+                Active
+              </span>
+              <span *ngIf="selectedTask?.periodicTask?.id && selectedTask?.periodicTask?.title">
+                | {{ selectedTask?.periodicTask?.title }}
+              </span>
+            </span>
+            <span *ngIf="!selectedTask?.periodicTask">
+              <span><i>On Date Task (non periodic)</i></span>
+              <!-- <span *ngIf="!selectedTask?.taskOnDate">Non Periodic Task</span> -->
+            </span>
+          </span>
         </div>
       </div>
 

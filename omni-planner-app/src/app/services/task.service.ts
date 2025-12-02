@@ -37,6 +37,7 @@ export interface Subtask {
 
 export interface PeriodicTaskReference {
   id: number;
+  title?: string;
   startDate: Date | null;
   endDate: Date | null;
 }
@@ -168,6 +169,7 @@ export class TaskService {
     if (task.periodic_task && task.periodic_task.id) {
       periodicTask = {
         id: task.periodic_task.id,
+        title: task.periodic_task.title || null,
         startDate: task.periodic_task.startDate ? new Date(task.periodic_task.startDate) : null,
         endDate: task.periodic_task.endDate ? new Date(task.periodic_task.endDate) : null
       };
@@ -238,7 +240,7 @@ export class TaskService {
   updateTask(id: number, updates: Partial<Task>): Task | null {
     const tasks = this.tasksSubject.value;
     const taskIndex = tasks.findIndex(task => task.id === id);
-    
+
     if (taskIndex === -1) return null;
 
     const updatedTask = {
@@ -269,7 +271,7 @@ export class TaskService {
     if (!task) return null;
 
     const level = parentSubtaskId ? this.getSubtaskLevel(task, parentSubtaskId) + 1 : 1;
-    
+
     const subtask: Subtask = {
       id: this.generateId(),
       title: subtaskData.title || '',
@@ -369,7 +371,7 @@ export class TaskService {
 
     // Reorder subtasks based on the provided order
     const reorderedSubtasks: Subtask[] = [];
-    
+
     subtaskIds.forEach(id => {
       const subtask = task.subtasks!.find(s => s.id === id);
       if (subtask) {
@@ -403,7 +405,7 @@ export class TaskService {
           }
         }
       }
-      
+
       // Case-insensitive comparison for status (array or string)
       if (filters.status) {
         const statusArray = Array.isArray(filters.status) ? filters.status : [filters.status];
@@ -415,7 +417,7 @@ export class TaskService {
           }
         }
       }
-      
+
       // Case-insensitive comparison for priority (array or string)
       if (filters.priority) {
         const priorityArray = Array.isArray(filters.priority) ? filters.priority : [filters.priority];
@@ -427,7 +429,7 @@ export class TaskService {
           }
         }
       }
-      
+
       // Important/Starred filter
       if (filters.important && filters.important !== 'all') {
         const taskImportant = task.important || false;
@@ -438,13 +440,13 @@ export class TaskService {
           return false;
         }
       }
-      
+
       if (filters.searchQuery) {
         const query = filters.searchQuery.toLowerCase();
         const matchesTitle = task.title?.toLowerCase().includes(query) || false;
         const matchesDescription = task.description?.toLowerCase().includes(query) || false;
         const matchesSubtasks = task.subtasks ? this.searchInSubtasks(task.subtasks, query) : false;
-        
+
         if (!matchesTitle && !matchesDescription && !matchesSubtasks) {
           return false;
         }
@@ -453,7 +455,7 @@ export class TaskService {
       // If taskOnDate is null, always include the task
       // If taskOnDate exists, check if it's within the date range [startDate, endDate]
       const taskOnDate = task.taskOnDate;
-      
+
       // If both startDate and endDate filters are provided
       if (filters.startDate && filters.endDate) {
         // If taskOnDate is null, include the task
@@ -464,12 +466,12 @@ export class TaskService {
           const taskDate = new Date(taskOnDate);
           const startDate = new Date(filters.startDate);
           const endDate = new Date(filters.endDate);
-          
+
           // Set time to start of day for accurate date comparison
           taskDate.setHours(0, 0, 0, 0);
           startDate.setHours(0, 0, 0, 0);
           endDate.setHours(23, 59, 59, 999);
-          
+
           if (taskDate < startDate || taskDate > endDate) {
             return false;
           }
@@ -513,7 +515,7 @@ export class TaskService {
     const inProgress = tasks.filter(t => t.status?.name === 'in-progress').length;
     const overdue = tasks.filter(t => this.isOverdue(t)).length;
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-    
+
     const averageDuration = 0;
 
     return {
@@ -551,7 +553,7 @@ export class TaskService {
   private getAllSubtasksFlat(subtasks: Subtask[]): Subtask[] {
     if (!subtasks || subtasks.length === 0) return [];
     const flat: Subtask[] = [];
-    
+
     const addSubtasks = (subs: Subtask[]) => {
       subs.forEach(sub => {
         flat.push(sub);
@@ -560,7 +562,7 @@ export class TaskService {
         }
       });
     };
-    
+
     addSubtasks(subtasks);
     return flat;
   }
@@ -577,17 +579,17 @@ export class TaskService {
   // Helper method to flatten all subtasks (including nested ones) with level information and respect expansion state
   getAllSubtasks(subtasks: any[]): any[] {
     const flattenedSubtasks: any[] = [];
-    
+
     const addSubtasksWithLevel = (subtasks: any[], level: number = 1) => {
       // Sort subtasks by priorityOrder before processing
       const sortedSubtasks = this.sortSubtasksByPriorityOrder(subtasks);
-      
+
       sortedSubtasks.forEach(subtask => {
         flattenedSubtasks.push({
           ...subtask,
           level: level
         });
-        
+
         // Recursively add nested subtasks only if parent is expanded
         // Sort nested subtasks as well
         if (subtask.subtasks && subtask.subtasks.length > 0 && subtask.isExpanded) {
@@ -597,7 +599,7 @@ export class TaskService {
         }
       });
     };
-    
+
     addSubtasksWithLevel(subtasks);
     return flattenedSubtasks;
   }
@@ -606,7 +608,7 @@ export class TaskService {
   toggleTaskExpansion(taskId: number): boolean {
     const task = this.getTask(taskId);
     if (!task) return false;
-    
+
     task.isExpanded = !task.isExpanded;
     this.tasksSubject.next([...this.tasksSubject.value]);
     return task.isExpanded;
@@ -616,10 +618,10 @@ export class TaskService {
   toggleSubtaskExpansion(taskId: number, subtaskId: number): boolean {
     const task = this.getTask(taskId);
     if (!task) return false;
-    
+
     const subtask = this.findSubtaskById(task, subtaskId);
     if (!subtask) return false;
-    
+
     subtask.isExpanded = !subtask.isExpanded;
     this.tasksSubject.next([...this.tasksSubject.value]);
     return subtask.isExpanded;
@@ -639,7 +641,7 @@ export class TaskService {
       }
       return null;
     };
-    
+
     return findInSubtasks(task.subtasks);
   }
 
@@ -681,7 +683,7 @@ export class TaskService {
   private searchInSubtasks(subtasks: Subtask[], query: string): boolean {
     return subtasks.some(subtask => {
       const matchesSubtask = subtask.title?.toLowerCase().includes(query) ||
-                            subtask.description?.toLowerCase().includes(query) || false;
+        subtask.description?.toLowerCase().includes(query) || false;
       const matchesNested = subtask.subtasks ? this.searchInSubtasks(subtask.subtasks, query) : false;
       return matchesSubtask || matchesNested;
     });
@@ -742,9 +744,9 @@ export class TaskService {
                 id: 111,
                 title: 'Install JWT library',
                 description: 'Add JWT package to project dependencies',
-        status: { name: 'done', color: '#059669' },
-        priority: { name: 'medium', color: '#F97316' },
-        category: { name: 'Development', icon: '🚀' },
+                status: { name: 'done', color: '#059669' },
+                priority: { name: 'medium', color: '#F97316' },
+                category: { name: 'Development', icon: '🚀' },
 
                 startDate: new Date('2024-01-01'),
                 endDate: new Date('2024-01-01'),
@@ -763,9 +765,9 @@ export class TaskService {
                 id: 112,
                 title: 'Configure JWT secret',
                 description: 'Set up environment variables for JWT secret',
-        status: { name: 'done', color: '#059669' },
-        priority: { name: 'high', color: '#DC2626' },
-        category: { name: 'Development', icon: '🚀' },
+                status: { name: 'done', color: '#059669' },
+                priority: { name: 'high', color: '#DC2626' },
+                category: { name: 'Development', icon: '🚀' },
 
                 startDate: new Date('2024-01-01'),
                 endDate: new Date('2024-01-01'),
@@ -784,9 +786,9 @@ export class TaskService {
                 id: 113,
                 title: 'Create token generation service',
                 description: 'Implement service for creating and signing JWT tokens',
-        status: { name: 'done', color: '#059669' },
-        priority: { name: 'high', color: '#DC2626' },
-        category: { name: 'Development', icon: '🚀' },
+                status: { name: 'done', color: '#059669' },
+                priority: { name: 'high', color: '#DC2626' },
+                category: { name: 'Development', icon: '🚀' },
 
                 startDate: new Date('2024-01-01'),
                 endDate: new Date('2024-01-02'),
@@ -807,9 +809,9 @@ export class TaskService {
             id: 12,
             title: 'Create user roles and permissions',
             description: 'Define and implement role-based access control',
-        status: { name: 'in-progress', color: '#2563EB' },
-        priority: { name: 'high', color: '#DC2626' },
-        category: { name: 'Development', icon: '🚀' },
+            status: { name: 'in-progress', color: '#2563EB' },
+            priority: { name: 'high', color: '#DC2626' },
+            category: { name: 'Development', icon: '🚀' },
 
             startDate: new Date('2024-01-02'),
             endDate: new Date('2024-01-10'),
@@ -826,9 +828,9 @@ export class TaskService {
                 id: 121,
                 title: 'Define user roles',
                 description: 'Create enum for user roles (admin, user, guest)',
-        status: { name: 'done', color: '#059669' },
-        priority: { name: 'medium', color: '#F97316' },
-        category: { name: 'Development', icon: '🚀' },
+                status: { name: 'done', color: '#059669' },
+                priority: { name: 'medium', color: '#F97316' },
+                category: { name: 'Development', icon: '🚀' },
                 startDate: new Date('2024-01-02'),
                 endDate: new Date('2024-01-02'),
                 startTime: '09:00',
@@ -846,9 +848,9 @@ export class TaskService {
                 id: 122,
                 title: 'Create permission system',
                 description: 'Implement permission checking middleware',
-        status: { name: 'in-progress', color: '#2563EB' },
-        priority: { name: 'high', color: '#DC2626' },
-        category: { name: 'Development', icon: '🚀' },
+                status: { name: 'in-progress', color: '#2563EB' },
+                priority: { name: 'high', color: '#DC2626' },
+                category: { name: 'Development', icon: '🚀' },
 
                 startDate: new Date('2024-01-03'),
                 endDate: new Date('2024-01-10'),
@@ -867,9 +869,9 @@ export class TaskService {
                 id: 123,
                 title: 'Add role-based routes',
                 description: 'Protect routes based on user roles',
-        status: { name: 'todo', color: '#64748B' },
-        priority: { name: 'medium', color: '#F97316' },
-        category: { name: 'Development', icon: '🚀' },
+                status: { name: 'todo', color: '#64748B' },
+                priority: { name: 'medium', color: '#F97316' },
+                category: { name: 'Development', icon: '🚀' },
 
                 startDate: new Date('2024-01-08'),
                 endDate: new Date('2024-01-10'),
@@ -890,9 +892,9 @@ export class TaskService {
             id: 13,
             title: 'Add password reset functionality',
             description: 'Implement secure password reset with email verification',
-        status: { name: 'todo', color: '#64748B' },
-        priority: { name: 'medium', color: '#F97316' },
-        category: { name: 'Development', icon: '🚀' },
+            status: { name: 'todo', color: '#64748B' },
+            priority: { name: 'medium', color: '#F97316' },
+            category: { name: 'Development', icon: '🚀' },
 
             startDate: new Date('2024-01-05'),
             endDate: new Date('2024-01-07'),
@@ -909,9 +911,9 @@ export class TaskService {
                 id: 131,
                 title: 'Create reset token table',
                 description: 'Database table for storing password reset tokens',
-        status: { name: 'todo', color: '#64748B' },
-        priority: { name: 'medium', color: '#F97316' },
-        category: { name: 'Development', icon: '🚀' },
+                status: { name: 'todo', color: '#64748B' },
+                priority: { name: 'medium', color: '#F97316' },
+                category: { name: 'Development', icon: '🚀' },
                 startDate: new Date('2024-01-05'),
                 endDate: new Date('2024-01-05'),
                 startTime: '09:00',
@@ -929,9 +931,9 @@ export class TaskService {
                 id: 132,
                 title: 'Implement email service',
                 description: 'Create service for sending password reset emails',
-        status: { name: 'todo', color: '#64748B' },
-        priority: { name: 'medium', color: '#F97316' },
-        category: { name: 'Development', icon: '🚀' },
+                status: { name: 'todo', color: '#64748B' },
+                priority: { name: 'medium', color: '#F97316' },
+                category: { name: 'Development', icon: '🚀' },
 
                 startDate: new Date('2024-01-06'),
                 endDate: new Date('2024-01-07'),
@@ -977,9 +979,9 @@ export class TaskService {
             id: 21,
             title: 'Create main navigation wireframes',
             description: 'Design the primary navigation structure',
-        status: { name: 'todo', color: '#64748B' },
-        priority: { name: 'medium', color: '#F97316' },
-        category: { name: 'Design', icon: '✨' },
+            status: { name: 'todo', color: '#64748B' },
+            priority: { name: 'medium', color: '#F97316' },
+            category: { name: 'Design', icon: '✨' },
 
             startDate: new Date('2024-01-15'),
             endDate: new Date('2024-01-16'),
@@ -996,9 +998,9 @@ export class TaskService {
                 id: 211,
                 title: 'Design bottom tab bar',
                 description: 'Create wireframe for main navigation tabs',
-        status: { name: 'todo', color: '#64748B' },
-        priority: { name: 'medium', color: '#F97316' },
-        category: { name: 'Design', icon: '✨' },
+                status: { name: 'todo', color: '#64748B' },
+                priority: { name: 'medium', color: '#F97316' },
+                category: { name: 'Design', icon: '✨' },
 
                 startDate: new Date('2024-01-15'),
                 endDate: new Date('2024-01-15'),
@@ -1017,9 +1019,9 @@ export class TaskService {
                 id: 212,
                 title: 'Design hamburger menu',
                 description: 'Create wireframe for side navigation menu',
-        status: { name: 'todo', color: '#64748B' },
-        priority: { name: 'medium', color: '#F97316' },
-        category: { name: 'Design', icon: '✨' },
+                status: { name: 'todo', color: '#64748B' },
+                priority: { name: 'medium', color: '#F97316' },
+                category: { name: 'Design', icon: '✨' },
 
                 startDate: new Date('2024-01-15'),
                 endDate: new Date('2024-01-16'),
@@ -1040,9 +1042,9 @@ export class TaskService {
             id: 22,
             title: 'Design user profile screens',
             description: 'Create wireframes for user profile and settings',
-        status: { name: 'todo', color: '#64748B' },
-        priority: { name: 'medium', color: '#F97316' },
-        category: { name: 'Design', icon: '✨' },
+            status: { name: 'todo', color: '#64748B' },
+            priority: { name: 'medium', color: '#F97316' },
+            category: { name: 'Design', icon: '✨' },
 
             startDate: new Date('2024-01-16'),
             endDate: new Date('2024-01-17'),
@@ -1059,9 +1061,9 @@ export class TaskService {
                 id: 221,
                 title: 'Design profile header',
                 description: 'Create wireframe for user profile header section',
-        status: { name: 'todo', color: '#64748B' },
-        priority: { name: 'medium', color: '#F97316' },
-        category: { name: 'Design', icon: '✨' },
+                status: { name: 'todo', color: '#64748B' },
+                priority: { name: 'medium', color: '#F97316' },
+                category: { name: 'Design', icon: '✨' },
 
                 startDate: new Date('2024-01-16'),
                 endDate: new Date('2024-01-16'),
@@ -1080,9 +1082,9 @@ export class TaskService {
                 id: 222,
                 title: 'Design settings menu',
                 description: 'Create wireframe for user settings and preferences',
-        status: { name: 'todo', color: '#64748B' },
-        priority: { name: 'medium', color: '#F97316' },
-        category: { name: 'Design', icon: '✨' },
+                status: { name: 'todo', color: '#64748B' },
+                priority: { name: 'medium', color: '#F97316' },
+                category: { name: 'Design', icon: '✨' },
 
                 startDate: new Date('2024-01-16'),
                 endDate: new Date('2024-01-17'),
@@ -1103,9 +1105,9 @@ export class TaskService {
             id: 22,
             title: 'Create dashboard wireframes',
             description: 'Design the main dashboard layout and widgets',
-        status: { name: 'todo', color: '#64748B' },
-        priority: { name: 'medium', color: '#F97316' },
-        category: { name: 'Design', icon: '✨' },
+            status: { name: 'todo', color: '#64748B' },
+            priority: { name: 'medium', color: '#F97316' },
+            category: { name: 'Design', icon: '✨' },
 
             startDate: new Date('2024-01-17'),
             endDate: new Date('2024-01-18'),
@@ -1122,9 +1124,9 @@ export class TaskService {
                 id: 3,
                 title: 'Design main dashboard layout',
                 description: 'Create wireframe for dashboard grid layout',
-        status: { name: 'todo', color: '#64748B' },
-        priority: { name: 'medium', color: '#F97316' },
-        category: { name: 'Design', icon: '✨' },
+                status: { name: 'todo', color: '#64748B' },
+                priority: { name: 'medium', color: '#F97316' },
+                category: { name: 'Design', icon: '✨' },
 
                 startDate: new Date('2024-01-17'),
                 endDate: new Date('2024-01-17'),
@@ -1143,9 +1145,9 @@ export class TaskService {
                 id: 7,
                 title: 'Design widget components',
                 description: 'Create wireframes for dashboard widgets',
-        status: { name: 'todo', color: '#64748B' },
-        priority: { name: 'medium', color: '#F97316' },
-        category: { name: 'Design', icon: '✨' },
+                status: { name: 'todo', color: '#64748B' },
+                priority: { name: 'medium', color: '#F97316' },
+                category: { name: 'Design', icon: '✨' },
 
                 startDate: new Date('2024-01-17'),
                 endDate: new Date('2024-01-18'),
