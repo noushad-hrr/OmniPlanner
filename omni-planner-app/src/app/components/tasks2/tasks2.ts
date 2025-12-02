@@ -2911,13 +2911,19 @@ export class Tasks2Component implements OnInit, OnDestroy {
     // Create a copy and ensure category and dates are set from parent
     this.selectedLevel1Subtask = { ...level1Subtask };
 
-    // Set date from parent task in YYYY-MM-DD format (for display)
-    if (this.parentTaskForLevel1Subtask.startDate) {
+    // Set date from subtask's own dates, or parent task as fallback (for display)
+    // IMPORTANT: Preserve subtask's own dates if they exist
+    if (level1Subtask.startDate) {
+      (this.selectedLevel1Subtask as any).startDate = level1Subtask.startDate;
+    } else if (this.parentTaskForLevel1Subtask.startDate) {
       (this.selectedLevel1Subtask as any).startDate = this.parentTaskForLevel1Subtask.startDate;
     } else {
       (this.selectedLevel1Subtask as any).startDate = null;
     }
-    if (this.parentTaskForLevel1Subtask.endDate) {
+
+    if (level1Subtask.endDate) {
+      (this.selectedLevel1Subtask as any).endDate = level1Subtask.endDate;
+    } else if (this.parentTaskForLevel1Subtask.endDate) {
       (this.selectedLevel1Subtask as any).endDate = this.parentTaskForLevel1Subtask.endDate;
     } else {
       (this.selectedLevel1Subtask as any).endDate = null;
@@ -3008,19 +3014,26 @@ export class Tasks2Component implements OnInit, OnDestroy {
   openEditLevel1SubtaskFromView(): void {
     if (!this.selectedLevel1Subtask || !this.parentTaskForLevel1Subtask) return;
 
-    // Save references before closing view modal
-    const subtask = { ...this.selectedLevel1Subtask };
+    // Get the original subtask from the tasks array (not the modified selectedLevel1Subtask)
     const taskId = this.parentTaskForLevel1Subtask.id;
-    const parentTask = this.parentTaskForLevel1Subtask;
+    const subtaskId = this.selectedLevel1Subtask.id;
+    const task = this.tasks.find(t => t.id === taskId);
+
+    if (!task) return;
+
+    // Find the original subtask from the task's subtasks array
+    const originalSubtask = task.subtasks?.find(s => s.id === subtaskId);
+
+    if (!originalSubtask) return;
 
     // Close view modal first
     this.showViewLevel1SubtaskModal = false;
 
     // Use setTimeout to ensure smooth transition (view modal closes before edit opens)
     setTimeout(() => {
-      // Restore references and open edit modal
-      this.parentTaskForLevel1Subtask = parentTask;
-      this.editLevel1Subtask(taskId, subtask);
+      // Restore parent task reference and open edit modal with original subtask data
+      this.parentTaskForLevel1Subtask = task;
+      this.editLevel1Subtask(taskId, originalSubtask);
     }, 100);
   }
 
