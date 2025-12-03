@@ -1069,6 +1069,17 @@ export class Tasks2Component implements OnInit, OnDestroy {
       isValid = false;
     }
 
+    // Validate date range: start date must be <= end date
+    if (this.newTask.startDate && this.newTask.endDate) {
+      const startDate = new Date(this.newTask.startDate);
+      const endDate = new Date(this.newTask.endDate);
+      if (startDate > endDate) {
+        this.startDateError = 'Start Date must be less than or equal to End Date';
+        this.endDateError = 'End Date must be greater than or equal to Start Date';
+        isValid = false;
+      }
+    }
+
     // Validate category
     if (!this.newTask.category || !this.newTask.category.name) {
       this.categoryError = 'Category is required';
@@ -2400,6 +2411,17 @@ export class Tasks2Component implements OnInit, OnDestroy {
       isValid = false;
     }
 
+    // Validate date range: start date must be <= end date
+    if (this.newSubtask.startDate && this.newSubtask.endDate) {
+      const startDate = new Date(this.newSubtask.startDate);
+      const endDate = new Date(this.newSubtask.endDate);
+      if (startDate > endDate) {
+        this.subtaskStartDateError = 'Start Date must be less than or equal to End Date';
+        this.subtaskEndDateError = 'End Date must be greater than or equal to Start Date';
+        isValid = false;
+      }
+    }
+
     // Validate status
     if (!this.newSubtask.status || !this.newSubtask.status.name) {
       this.subtaskStatusError = 'Status is required';
@@ -2456,6 +2478,17 @@ export class Tasks2Component implements OnInit, OnDestroy {
     if (!this.selectedLevel1Subtask?.endDate) {
       this.subtaskEndDateError = 'End Date is required';
       isValid = false;
+    }
+
+    // Validate date range: start date must be <= end date
+    if (this.selectedLevel1Subtask?.startDate && this.selectedLevel1Subtask?.endDate) {
+      const startDate = new Date(this.selectedLevel1Subtask.startDate);
+      const endDate = new Date(this.selectedLevel1Subtask.endDate);
+      if (startDate > endDate) {
+        this.subtaskStartDateError = 'Start Date must be less than or equal to End Date';
+        this.subtaskEndDateError = 'End Date must be greater than or equal to Start Date';
+        isValid = false;
+      }
     }
 
     // Validate status
@@ -3265,6 +3298,17 @@ export class Tasks2Component implements OnInit, OnDestroy {
       isValid = false;
     }
 
+    // Validate date range: start date must be <= end date
+    if (this.selectedLevel2Subtask?.startDate && this.selectedLevel2Subtask?.endDate) {
+      const startDate = new Date(this.selectedLevel2Subtask.startDate);
+      const endDate = new Date(this.selectedLevel2Subtask.endDate);
+      if (startDate > endDate) {
+        this.subtaskStartDateError = 'Start Date must be less than or equal to End Date';
+        this.subtaskEndDateError = 'End Date must be greater than or equal to Start Date';
+        isValid = false;
+      }
+    }
+
     // Validate status
     if (!this.selectedLevel2Subtask?.status || !this.selectedLevel2Subtask.status.name) {
       this.subtaskStatusError = 'Status is required';
@@ -3951,6 +3995,17 @@ export class Tasks2Component implements OnInit, OnDestroy {
     if (!this.selectedTask.endDate) {
       this.endDateError = 'End Date is required';
       isValid = false;
+    }
+
+    // Validate date range: start date must be <= end date
+    if (this.selectedTask.startDate && this.selectedTask.endDate) {
+      const startDate = new Date(this.selectedTask.startDate);
+      const endDate = new Date(this.selectedTask.endDate);
+      if (startDate > endDate) {
+        this.startDateError = 'Start Date must be less than or equal to End Date';
+        this.endDateError = 'End Date must be greater than or equal to Start Date';
+        isValid = false;
+      }
     }
 
     // Validate category

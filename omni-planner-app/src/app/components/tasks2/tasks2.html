@@ -452,14 +452,14 @@
           <div class="form-group">
             <label for="taskDate">Start Date <span class="required">*</span></label>
             <input type="date" id="taskDate" [(ngModel)]="newTask.startDate" (input)="onInput('startDate')"
-              class="form-input" [class.error]="startDateError">
+              class="form-input" [class.error]="startDateError" [attr.max]="newTask.endDate">
             <div class="error-message" *ngIf="startDateError">{{ startDateError }}</div>
           </div>
 
           <div class="form-group">
             <label for="taskEndDate">End Date <span class="required">*</span></label>
             <input type="date" id="taskEndDate" [(ngModel)]="newTask.endDate" (input)="onInput('endDate')"
-              class="form-input" [class.error]="endDateError">
+              class="form-input" [class.error]="endDateError" [attr.min]="newTask.startDate">
             <div class="error-message" *ngIf="endDateError">{{ endDateError }}</div>
           </div>
 
@@ -611,14 +611,15 @@
           <div class="form-group">
             <label for="subtaskDate">Start Date <span class="required">*</span></label>
             <input type="date" id="subtaskDate" [(ngModel)]="newSubtask.startDate" class="form-input"
-              (input)="onSubtaskInput('startDate')" [class.error]="subtaskStartDateError">
+              (input)="onSubtaskInput('startDate')" [class.error]="subtaskStartDateError"
+              [attr.max]="newSubtask.endDate">
             <div class="error-message" *ngIf="subtaskStartDateError">{{ subtaskStartDateError }}</div>
           </div>
 
           <div class="form-group">
             <label for="subtaskEndDate">End Date <span class="required">*</span></label>
             <input type="date" id="subtaskEndDate" [(ngModel)]="newSubtask.endDate" (input)="onSubtaskInput('endDate')"
-              class="form-input" [class.error]="subtaskEndDateError">
+              class="form-input" [class.error]="subtaskEndDateError" [attr.min]="newSubtask.startDate">
             <div class="error-message" *ngIf="subtaskEndDateError">{{ subtaskEndDateError }}</div>
           </div>
 
@@ -1363,14 +1364,16 @@
           <div class="form-group">
             <label for="editTaskStartDate">Start Date <span class="required">*</span></label>
             <input type="date" id="editTaskStartDate" [(ngModel)]="selectedTask.startDate"
-              (input)="onInput('startDate')" class="form-input" [class.error]="startDateError">
+              [attr.max]="selectedTask.endDate" (input)="onInput('startDate')" class="form-input"
+              [class.error]="startDateError">
             <div class="error-message" *ngIf="startDateError">{{ startDateError }}</div>
           </div>
 
           <div class="form-group">
             <label for="editTaskEndDate">End Date <span class="required">*</span></label>
-            <input type="date" id="editTaskEndDate" [(ngModel)]="selectedTask.endDate" (input)="onInput('endDate')"
-              class="form-input" [class.error]="endDateError">
+            <input type="date" id="editTaskEndDate" [(ngModel)]="selectedTask.endDate"
+              [attr.min]="selectedTask.startDate" (input)="onInput('endDate')" class="form-input"
+              [class.error]="endDateError">
             <div class="error-message" *ngIf="endDateError">{{ endDateError }}</div>
           </div>
 
@@ -1894,8 +1897,8 @@
       <div class="form-row">
         <div class="form-group">
           <label for="level2SubtaskDate">Start Date <span class="required">*</span></label>
-          <input type="date" id="level2SubtaskDate" [(ngModel)]="newSubtask.startDate" class="form-input"
-            (input)="onSubtaskInput('startDate')" [class.error]="subtaskStartDateError">
+          <input type="date" id="level2SubtaskDate" [(ngModel)]="newSubtask.startDate" [attr.max]="newSubtask.endDate"
+            class="form-input" (input)="onSubtaskInput('startDate')" [class.error]="subtaskStartDateError">
 
           <div class="error-message" *ngIf="subtaskStartDateError">{{ subtaskStartDateError }}</div>
         </div>
@@ -1903,7 +1906,8 @@
         <div class="form-group">
           <label for="level2SubtaskEndDate">End Date <span class="required">*</span></label>
           <input type="date" id="level2SubtaskEndDate" [(ngModel)]="newSubtask.endDate"
-            (input)="onSubtaskInput('endDate')" class="form-input" [class.error]="subtaskEndDateError">
+            [attr.min]="newSubtask.startDate" (input)="onSubtaskInput('endDate')" class="form-input"
+            [class.error]="subtaskEndDateError">
           <div class="error-message" *ngIf="subtaskEndDateError">{{ subtaskEndDateError }}</div>
         </div>
 
@@ -2009,7 +2013,8 @@
         <div class="form-group">
           <label for="editLevel1SubtaskDate">Start Date <span class="required">*</span></label>
           <input type="date" id="editLevel1SubtaskDate" [(ngModel)]="selectedLevel1Subtask.startDate"
-            (input)="onSubtaskInput('startDate')" class="form-input" [class.error]="subtaskStartDateError">
+            [attr.max]="selectedLevel1Subtask.endDate" (input)="onSubtaskInput('startDate')" class="form-input"
+            [class.error]="subtaskStartDateError">
 
           <div class="error-message" *ngIf="subtaskStartDateError">{{ subtaskStartDateError }}</div>
         </div>
@@ -2017,7 +2022,8 @@
         <div class="form-group">
           <label for="editLevel1SubtaskEndDate">End Date <span class="required">*</span></label>
           <input type="date" id="editLevel1SubtaskEndDate" [(ngModel)]="selectedLevel1Subtask.endDate"
-            (input)="onSubtaskInput('endDate')" class="form-input" [class.error]="subtaskEndDateError">
+            [attr.min]="selectedLevel1Subtask.startDate" (input)="onSubtaskInput('endDate')" class="form-input"
+            [class.error]="subtaskEndDateError">
           <div class="error-message" *ngIf="subtaskEndDateError">{{ subtaskEndDateError }}</div>
         </div>
 
@@ -2284,14 +2290,16 @@
         <div class="form-group">
           <label for="editLevel2SubtaskDate">Start Date <span class="required">*</span></label>
           <input type="date" id="editLevel2SubtaskDate" [(ngModel)]="selectedLevel2Subtask.startDate"
-            (input)="onSubtaskInput('startDate')" class="form-input" [class.error]="subtaskStartDateError">
+            [attr.max]="selectedLevel2Subtask.endDate" (input)="onSubtaskInput('startDate')" class="form-input"
+            [class.error]="subtaskStartDateError">
           <div class="error-message" *ngIf="subtaskStartDateError">{{ subtaskStartDateError }}</div>
         </div>
 
         <div class="form-group">
           <label for="editLevel2SubtaskEndDate">End Date <span class="required">*</span></label>
           <input type="date" id="editLevel2SubtaskEndDate" [(ngModel)]="selectedLevel2Subtask.endDate"
-            (input)="onSubtaskInput('endDate')" class="form-input" [class.error]="subtaskEndDateError">
+            [attr.min]="selectedLevel2Subtask.startDate" (input)="onSubtaskInput('endDate')" class="form-input"
+            [class.error]="subtaskEndDateError">
           <div class="error-message" *ngIf="subtaskEndDateError">{{ subtaskEndDateError }}</div>
         </div>
 
