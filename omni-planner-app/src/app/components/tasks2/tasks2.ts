@@ -2275,6 +2275,38 @@ export class Tasks2Component implements OnInit, OnDestroy {
     this.subtaskPriorityError = '';
   }
 
+  // Helper methods for date restrictions
+  getMainTaskStartDate(): string | null {
+    let parentTask = this.parentTaskForSubtask || this.parentTaskForLevel1Subtask;
+
+    // If we are in "Add Level 2 Subtask" mode, parentTaskForLevel1Subtask is set.
+    // If we are in "Add Level 1 Subtask" mode, parentTaskForSubtask is set.
+    // If we are in "Edit Level 1 Subtask" mode, parentTaskForLevel1Subtask is set.
+    // If we are in "Edit Level 2 Subtask" mode, parentTaskForLevel1Subtask is set.
+
+    if (parentTask && parentTask.startDate) {
+      const date = new Date(parentTask.startDate);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    return null;
+  }
+
+  getMainTaskEndDate(): string | null {
+    let parentTask = this.parentTaskForSubtask || this.parentTaskForLevel1Subtask;
+
+    if (parentTask && parentTask.endDate) {
+      const date = new Date(parentTask.endDate);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    return null;
+  }
+
   closeAddSubtaskModal(): void {
     this.showAddSubtaskModal = false;
     this.resetNewSubtask();
