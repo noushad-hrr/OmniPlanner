@@ -447,7 +447,9 @@ namespace OmniPlanner_API.Repository
                             remarks = request.remarks,
                             important = request.important,
                             completed = request.completed,
-                            periodic_tasks_main_task_id = request.periodic_tasks_main_task_id
+                            periodic_tasks_main_task_id = request.periodic_tasks_main_task_id,
+                            periodic_tasks_level_1_sub_task_id = request.periodic_tasks_level_1_sub_task_id,
+                            periodic_tasks_level_2_sub_task_id = request.periodic_tasks_level_2_sub_task_id
                         }, transaction);
 
                         // Reorder tasks on the same date to maintain non-gapped sequence

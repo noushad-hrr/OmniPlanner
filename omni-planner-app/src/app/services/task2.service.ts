@@ -34,6 +34,7 @@ export interface Subtask2 {
   remarks?: string | null; // Field for remarks
   urls?: { label: string; url: string }[] | null; // Field for multiple URLs with labels
   important?: boolean; // Field to mark Subtask2 as important
+  selectedDays?: number[]; // Days selected for the subtask
 }
 
 export interface PeriodicTaskReference {
@@ -65,6 +66,7 @@ export interface Task2 {
   important?: boolean; // Field to mark task as important
   completed?: boolean; // Field to mark task as completed
   periodicTask?: PeriodicTaskReference | null; // Reference to periodic task object (nullable)
+  selectedDays?: number[]; // Days selected for the task
 }
 
 export interface TaskCategory {
@@ -160,7 +162,8 @@ export class Task2Service {
       completed: Subtask2.completed || false,
       remarks: Subtask2.remarks ?? null,
       urls: Subtask2.urls ?? null,
-      important: Subtask2.important || false
+      important: Subtask2.important || false,
+      selectedDays: Subtask2.selected_days ? JSON.parse(Subtask2.selected_days) : []
     };
   }
 
@@ -199,7 +202,8 @@ export class Task2Service {
       urls: task.urls ?? null,
       important: task.important || false,
       completed: task.completed || false,
-      periodicTask: periodicTask
+      periodicTask: periodicTask,
+      selectedDays: task.selected_days ? JSON.parse(task.selected_days) : []
     };
   }
 
@@ -1196,10 +1200,18 @@ export class Task2Service {
 
   // API Methods for CRUD operations
   addMainTask(taskData: any): Observable<any> {
+    // Stringify selected_days if it's an array
+    if (taskData.selected_days && Array.isArray(taskData.selected_days)) {
+      taskData = { ...taskData, selected_days: JSON.stringify(taskData.selected_days) };
+    }
     return this.http.post<any>(API_CONFIG.tasks2.addMainTask, taskData);
   }
 
   updateMainTask(taskData: any): Observable<any> {
+    // Stringify selected_days if it's an array
+    if (taskData.selected_days && Array.isArray(taskData.selected_days)) {
+      taskData = { ...taskData, selected_days: JSON.stringify(taskData.selected_days) };
+    }
     return this.http.put<any>(API_CONFIG.tasks2.updateMainTask, taskData);
   }
 
@@ -1224,10 +1236,18 @@ export class Task2Service {
   }
 
   addLevel1Subtask(Subtask2Data: any): Observable<any> {
+    // Stringify selected_days if it's an array
+    if (Subtask2Data.selected_days && Array.isArray(Subtask2Data.selected_days)) {
+      Subtask2Data = { ...Subtask2Data, selected_days: JSON.stringify(Subtask2Data.selected_days) };
+    }
     return this.http.post<any>(API_CONFIG.tasks2.addLevel1Subtask, Subtask2Data);
   }
 
   updateLevel1Subtask(Subtask2Data: any): Observable<any> {
+    // Stringify selected_days if it's an array
+    if (Subtask2Data.selected_days && Array.isArray(Subtask2Data.selected_days)) {
+      Subtask2Data = { ...Subtask2Data, selected_days: JSON.stringify(Subtask2Data.selected_days) };
+    }
     return this.http.put<any>(API_CONFIG.tasks2.updateLevel1Subtask, Subtask2Data);
   }
 

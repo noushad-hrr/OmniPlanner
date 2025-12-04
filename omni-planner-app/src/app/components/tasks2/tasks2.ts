@@ -111,7 +111,9 @@ export class Tasks2Component implements OnInit, OnDestroy {
     urls: [],
     important: false,
     completed: false,
-    subtasks: []
+
+    subtasks: [],
+    selectedDays: [] // Default no days selected
   };
 
   // Periodic Task Properties
@@ -386,7 +388,7 @@ export class Tasks2Component implements OnInit, OnDestroy {
 
 
   // Subtask form properties
-  newSubtask: Partial<Subtask> & { remarks?: string; urls?: { label: string; url: string }[]; important?: boolean; category?: { name: string; icon: string }; startDate?: string | Date | null; endDate?: string | Date | null } = {
+  newSubtask: Partial<Subtask> & { remarks?: string; urls?: { label: string; url: string }[]; important?: boolean; category?: { name: string; icon: string }; startDate?: string | Date | null; endDate?: string | Date | null; selectedDays?: number[] } = {
     title: '',
     description: '',
     priority: undefined,
@@ -398,6 +400,7 @@ export class Tasks2Component implements OnInit, OnDestroy {
     endTime: '00:00',
     estimatedHours: undefined,
     priorityOrder: undefined,
+    selectedDays: [], // Default no days selected
     remarks: '',
     urls: [],
     important: false,
@@ -907,7 +910,9 @@ export class Tasks2Component implements OnInit, OnDestroy {
       urls: [],
       important: false,
       completed: false,
-      subtasks: []
+
+      subtasks: [],
+      selectedDays: [0, 1, 2, 3, 4, 5, 6]
     };
     // Reset errors
     this.titleError = '';
@@ -1020,7 +1025,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       url_ids: urlIds.length > 0 ? urlIds : null,
       important: this.newTask.important || false,
       completed: this.newTask.completed || false,
-      periodic_tasks_main_task_id: null
+      periodic_tasks_main_task_id: null,
+      selected_days: this.newTask.selectedDays
     };
 
     this.task2Service.addMainTask(taskData).subscribe({
@@ -1345,19 +1351,64 @@ export class Tasks2Component implements OnInit, OnDestroy {
   }
 
   isDaySelected(day: number): boolean {
-    return this.newPeriodicTask.recurrence_days?.includes(day) || false;
+    if (this.showAddPeriodicTaskModal || this.showEditPeriodicTaskModal) {
+      return this.newPeriodicTask.recurrence_days?.includes(day) || false;
+    } else if (this.showAddTaskModal) {
+      return this.newTask.selectedDays?.includes(day) || false;
+    } else if (this.showEditTaskModal && this.selectedTask) {
+      return this.selectedTask.selectedDays?.includes(day) || false;
+    } else if (this.showAddSubtaskModal) {
+      return this.newSubtask.selectedDays?.includes(day) || false;
+    }
+    return false;
   }
 
   toggleDay(day: number): void {
-    if (!this.newPeriodicTask.recurrence_days) {
-      this.newPeriodicTask.recurrence_days = [];
-    }
-
-    const index = this.newPeriodicTask.recurrence_days.indexOf(day);
-    if (index > -1) {
-      this.newPeriodicTask.recurrence_days.splice(index, 1);
-    } else {
-      this.newPeriodicTask.recurrence_days.push(day);
+    // Determine active context
+    if (this.showAddPeriodicTaskModal || this.showEditPeriodicTaskModal) {
+      if (!this.newPeriodicTask.recurrence_days) {
+        this.newPeriodicTask.recurrence_days = [];
+      }
+      const index = this.newPeriodicTask.recurrence_days.indexOf(day);
+      if (index > -1) {
+        this.newPeriodicTask.recurrence_days.splice(index, 1);
+      } else {
+        this.newPeriodicTask.recurrence_days.push(day);
+        this.newPeriodicTask.recurrence_days.sort((a: number, b: number) => a - b);
+      }
+    } else if (this.showAddTaskModal) {
+      if (!this.newTask.selectedDays) {
+        this.newTask.selectedDays = [];
+      }
+      const index = this.newTask.selectedDays.indexOf(day);
+      if (index > -1) {
+        this.newTask.selectedDays.splice(index, 1);
+      } else {
+        this.newTask.selectedDays.push(day);
+        this.newTask.selectedDays.sort((a: number, b: number) => a - b);
+      }
+    } else if (this.showEditTaskModal && this.selectedTask) {
+      if (!this.selectedTask.selectedDays) {
+        this.selectedTask.selectedDays = [];
+      }
+      const index = this.selectedTask.selectedDays.indexOf(day);
+      if (index > -1) {
+        this.selectedTask.selectedDays.splice(index, 1);
+      } else {
+        this.selectedTask.selectedDays.push(day);
+        this.selectedTask.selectedDays.sort((a: number, b: number) => a - b);
+      }
+    } else if (this.showAddSubtaskModal) {
+      if (!this.newSubtask.selectedDays) {
+        this.newSubtask.selectedDays = [];
+      }
+      const index = this.newSubtask.selectedDays.indexOf(day);
+      if (index > -1) {
+        this.newSubtask.selectedDays.splice(index, 1);
+      } else {
+        this.newSubtask.selectedDays.push(day);
+        this.newSubtask.selectedDays.sort((a: number, b: number) => a - b);
+      }
     }
   }
 
@@ -1480,6 +1531,48 @@ export class Tasks2Component implements OnInit, OnDestroy {
       if (this.newPeriodicTask.category) {
         this.loadAvailablePeriodicUrls();
       }
+    }
+  }
+
+  // Days Selection Helpers
+  isDaySelectedFor(target: any, day: number): boolean {
+    if (!target || !target.selectedDays) {
+      return false;
+    }
+    // Handle string format from backend if necessary (though service should normalize it)
+    let days = target.selectedDays;
+    if (typeof days === 'string') {
+      try {
+        days = JSON.parse(days);
+      } catch (e) {
+        days = [];
+      }
+    }
+    return Array.isArray(days) && days.includes(day);
+  }
+
+  toggleDayFor(target: any, day: number): void {
+    if (!target) return;
+
+    // Initialize if missing
+    if (!target.selectedDays) {
+      target.selectedDays = [];
+    }
+
+    // Handle string format
+    if (typeof target.selectedDays === 'string') {
+      try {
+        target.selectedDays = JSON.parse(target.selectedDays);
+      } catch (e) {
+        target.selectedDays = [];
+      }
+    }
+
+    const index = target.selectedDays.indexOf(day);
+    if (index > -1) {
+      target.selectedDays.splice(index, 1);
+    } else {
+      target.selectedDays.push(day);
     }
   }
 
@@ -1747,7 +1840,9 @@ export class Tasks2Component implements OnInit, OnDestroy {
       urls: [],
       important: false,
       completed: false,
-      subtasks: []
+
+      subtasks: [],
+      selectedDays: [0, 1, 2, 3, 4, 5, 6]
     };
     // Reset errors
     this.titleError = '';
@@ -2266,7 +2361,9 @@ export class Tasks2Component implements OnInit, OnDestroy {
       estimatedHours: undefined,
       priorityOrder: undefined,
       important: false,
-      completed: false
+
+      completed: false,
+      selectedDays: [0, 1, 2, 3, 4, 5, 6]
     };
     // Reset errors
     this.subtaskTitleError = '';
@@ -2278,7 +2375,7 @@ export class Tasks2Component implements OnInit, OnDestroy {
   // Helper methods for date restrictions
   getMainTaskStartDate(): string | null {
     let parentTask = this.parentTaskForSubtask || this.parentTaskForLevel1Subtask;
-    
+
     // If we are in "Add Level 2 Subtask" mode, parentTaskForLevel1Subtask is set.
     // If we are in "Add Level 1 Subtask" mode, parentTaskForSubtask is set.
     // If we are in "Edit Level 1 Subtask" mode, parentTaskForLevel1Subtask is set.
@@ -2355,13 +2452,36 @@ export class Tasks2Component implements OnInit, OnDestroy {
       estimatedHours: undefined,
       priorityOrder: undefined,
       important: false,
-      completed: false
+
+      completed: false,
+      selectedDays: [0, 1, 2, 3, 4, 5, 6]
     };
     // Reset errors
     this.subtaskTitleError = '';
     this.subtaskCategoryError = '';
     this.subtaskStatusError = '';
     this.subtaskPriorityError = '';
+  }
+
+  // Helper methods for day selection
+  isDaySelectedForTask(task: any, day: number): boolean {
+    if (task.selectedDays && Array.isArray(task.selectedDays)) {
+      return task.selectedDays.includes(day);
+    }
+    return true;
+  }
+
+  toggleDaySelectionForTask(task: any, day: number): void {
+    if (!task.selectedDays) {
+      task.selectedDays = [0, 1, 2, 3, 4, 5, 6];
+    }
+
+    const index = task.selectedDays.indexOf(day);
+    if (index > -1) {
+      task.selectedDays.splice(index, 1);
+    } else {
+      task.selectedDays.push(day);
+    }
   }
 
   addSubtask(): void {
@@ -2422,7 +2542,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       estimated_hours: estimatedHours ?? null,
       priority_order: this.newSubtask.priorityOrder ?? null,
       important: this.newSubtask.important ?? false,
-      completed: this.newSubtask.completed ?? false
+      completed: this.newSubtask.completed ?? false,
+      selected_days: this.newSubtask.selectedDays
     };
 
     this.task2Service.addLevel1Subtask(subtaskData).subscribe({
@@ -3066,7 +3187,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       estimated_hours: this.selectedLevel1Subtask.estimatedHours ?? null,
       priority_order: this.selectedLevel1Subtask.priorityOrder ?? null,
       important: (this.selectedLevel1Subtask as any).important ?? false,
-      completed: this.selectedLevel1Subtask.completed ?? false
+      completed: this.selectedLevel1Subtask.completed ?? false,
+      selected_days: (this.selectedLevel1Subtask as any).selectedDays
     };
 
     console.log('Updating level 1 subtask with data:', subtaskData);
@@ -3244,7 +3366,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       estimated_hours: estimatedHours ?? null, // Supports decimal values
       priority_order: this.selectedLevel2Subtask.priorityOrder ?? null,
       important: (this.selectedLevel2Subtask as any).important ?? false,
-      completed: this.selectedLevel2Subtask.completed ?? false
+      completed: this.selectedLevel2Subtask.completed ?? false,
+      selected_days: (this.selectedLevel2Subtask as any).selectedDays
     };
 
     if (this.viewMode === 'periodic-tasks') {
@@ -3420,7 +3543,8 @@ export class Tasks2Component implements OnInit, OnDestroy {
       estimated_hours: estimatedHours ?? null,
       priority_order: this.newSubtask.priorityOrder ?? null,
       important: this.newSubtask.important ?? false,
-      completed: this.newSubtask.completed ?? false
+      completed: this.newSubtask.completed ?? false,
+      selected_days: this.newSubtask.selectedDays
     };
 
     if (this.viewMode === 'periodic-tasks') {
@@ -4005,6 +4129,7 @@ export class Tasks2Component implements OnInit, OnDestroy {
       url_ids: urlIds.length > 0 ? urlIds : null,
       important: this.selectedTask.important || false,
       completed: this.selectedTask.completed || false,
+      selected_days: (this.selectedTask as any).selectedDays
       //periodic_tasks_main_task_id: (this.selectedTask as any).periodicTask?.id || null
     };
 

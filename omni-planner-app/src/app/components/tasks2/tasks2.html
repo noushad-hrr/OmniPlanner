@@ -474,6 +474,29 @@
           </div>
         </div>
 
+
+        <!-- Days Selector -->
+        <div class="form-group">
+          <label>Days</label>
+          <div class="days-selector">
+            <label *ngFor="let day of weekDays" class="day-checkbox">
+              <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)">
+              <span>{{ day.label }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Days Selector -->
+        <!-- <div class="form-group">
+          <label>Days</label>
+          <div class="days-selector">
+            <label *ngFor="let day of weekDays" class="day-checkbox">
+              <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)">
+              <span>{{ day.label }}</span>
+            </label>
+          </div>
+        </div> -->
+
         <div class="form-row">
           <div class="form-group">
             <label for="taskEstimatedHours">Estimated Hours</label>
@@ -632,6 +655,17 @@
           <div class="form-group">
             <label for="subtaskEndTime">End Time</label>
             <input type="time" id="subtaskEndTime" [(ngModel)]="newSubtask.endTime" class="form-input">
+          </div>
+        </div>
+
+        <!-- Days Selector -->
+        <div class="form-group">
+          <label>Days</label>
+          <div class="days-selector">
+            <label *ngFor="let day of weekDays" class="day-checkbox">
+              <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)">
+              <span>{{ day.label }}</span>
+            </label>
           </div>
         </div>
 
@@ -1389,6 +1423,17 @@
           </div>
         </div>
 
+        <!-- Days Selector -->
+        <div class="form-group">
+          <label>Days</label>
+          <div class="days-selector">
+            <label *ngFor="let day of weekDays" class="day-checkbox">
+              <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)">
+              <span>{{ day.label }}</span>
+            </label>
+          </div>
+        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label for="editTaskEstimatedHours">Estimated Hours</label>
@@ -1585,6 +1630,19 @@
             </span>
           </div>
         </div>
+
+        <div class="view-info-compact" *ngIf="selectedTask?.selectedDays?.length">
+          <i class="fas fa-calendar-week view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Selected Days</span>
+            <span class="view-info-value">
+              <span *ngFor="let dayIndex of selectedTask.selectedDays; let last = last">
+                {{ weekDays[dayIndex]?.label }}<span *ngIf="!last">, </span>
+              </span>
+            </span>
+          </div>
+        </div>
+
 
         <div class="view-info-compact">
           <i class="fas fa-sort-numeric-down view-info-icon"></i>

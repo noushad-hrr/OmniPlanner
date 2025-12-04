@@ -273,6 +273,7 @@ namespace OmniPlanner_API.Repository
                                 name = GetValue("category_name")?.ToString() ?? "",
                                 icon = GetValue("category_icon")?.ToString() ?? ""
                             } : null,
+                            selected_days = GetValue("selected_days")?.ToString()
                             //periodic_task = GetValue("periodic_task_id") != null ? new PeriodicTask
                             //{
                             //    id = GetValue("periodic_task_id") as int? ?? 0,
@@ -341,7 +342,8 @@ namespace OmniPlanner_API.Repository
                             {
                                 name = row.status_name,
                                 color = row.status_color ?? "#64748B"
-                            } : null
+                            } : null,
+                            selected_days = GetValue<string>(row, "selected_days")
                         };
                         level1Subtasks.Add(subtask);
                     }
@@ -396,7 +398,8 @@ namespace OmniPlanner_API.Repository
                                 {
                                     name = row.status_name,
                                     color = row.status_color ?? "#64748B"
-                                } : null
+                                } : null,
+                                selected_days = GetValue<string>(row, "selected_days")
                             };
                             level2Subtasks.Add(subtask);
                         }
@@ -450,7 +453,8 @@ namespace OmniPlanner_API.Repository
                             priority_order = priorityOrder,
                             remarks = request.remarks,
                             important = request.important,
-                            completed = request.completed
+                            completed = request.completed,
+                            selected_days = request.selected_days
                         }, transaction);
 
                         // Reorder tasks on the same date to maintain non-gapped sequence
@@ -473,6 +477,16 @@ namespace OmniPlanner_API.Repository
                                 }, transaction);
                             }
                         }
+
+        //                for (DateTime currentDate = start; currentDate <= end; currentDate = currentDate.AddDays(1))
+        //{
+        //    // Action to perform for each day in the range
+        //    Console.WriteLine($"Processing date: {currentDate:yyyy-MM-dd}.");
+            
+        //    // Example: Check if it's a weekend
+        //    if (currentDate.DayOfWeek == DayOfWeek.Saturday || currentDate.DayOfWeek == DayOfWeek.Sunday)
+        //    {
+        //        Console.WriteLine("    -> It's a weekend!");
 
                         transaction.Commit();
                     }
@@ -639,7 +653,8 @@ namespace OmniPlanner_API.Repository
                                 priority_order = priorityOrder,
                                 remarks = request.remarks,
                                 important = request.important,
-                                completed = request.completed
+                                completed = request.completed,
+                                selected_days = request.selected_days
                             }, transaction);
 
                             // Reorder if date changed or priority_order changed
@@ -763,7 +778,8 @@ namespace OmniPlanner_API.Repository
                             estimated_hours = request.estimated_hours,
                             priority_order = priorityOrder,
                             important = request.important,
-                            completed = request.completed
+                            completed = request.completed,
+                            selected_days = request.selected_days
                         }, transaction);
 
                         // Reorder siblings to maintain non-gapped sequence

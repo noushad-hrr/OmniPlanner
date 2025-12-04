@@ -208,13 +208,13 @@ namespace OmniPlanner_API.Queries.Tasks
                 title, description, priority_level_id, status_id, category_id,
                 task_on_date, start_time, end_time, created_on, created_by,
                 modified_on, modified_by, estimated_hours, priority_order,
-                remarks, important, completed, periodic_tasks_main_task_id
+                remarks, important, completed, periodic_tasks_main_task_id, periodic_tasks_level_1_sub_task_id, periodic_tasks_level_2_sub_task_id
             )
             VALUES (
                 @title, @description, @priority_level_id, @status_id, @category_id,
                 @task_on_date, @start_time, @end_time, NOW(), @created_by,
                 NOW(), @modified_by, @estimated_hours, @priority_order,
-                @remarks, @important, @completed, @periodic_tasks_main_task_id
+                @remarks, @important, @completed, @periodic_tasks_main_task_id, @periodic_tasks_level_1_sub_task_id, @periodic_tasks_level_2_sub_task_id
             )
             RETURNING id";
 

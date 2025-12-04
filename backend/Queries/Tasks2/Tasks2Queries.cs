@@ -84,7 +84,8 @@ namespace OmniPlanner_API.Queries.Tasks2
                 -- Category
                 t.category_id,
                 cm.category AS category_name,
-                cm.icon AS category_icon
+                cm.icon AS category_icon,
+                t.selected_days
             FROM tasks2_main_task t
             LEFT JOIN priority_master pm ON t.priority_level_id = pm.id AND pm.is_deleted = false
             LEFT JOIN status_master sm ON t.status_id = sm.id AND sm.is_deleted = false
@@ -121,7 +122,8 @@ namespace OmniPlanner_API.Queries.Tasks2
                 -- Category
                 t.category_id,
                 cm.category AS category_name,
-                cm.icon AS category_icon
+                cm.icon AS category_icon,
+                t.selected_days
             FROM tasks2_main_task t
             LEFT JOIN priority_master pm ON t.priority_level_id = pm.id AND pm.is_deleted = false
             LEFT JOIN status_master sm ON t.status_id = sm.id AND sm.is_deleted = false
@@ -160,7 +162,8 @@ namespace OmniPlanner_API.Queries.Tasks2
                 pm.color AS priority_color,
                 l1.status_id,
                 sm.status AS status_name,
-                sm.color AS status_color
+                sm.color AS status_color,
+                l1.selected_days
             FROM tasks2_level_1_sub_task l1
             LEFT JOIN priority_master pm ON l1.priority_level_id = pm.id AND pm.is_deleted = false
             LEFT JOIN status_master sm ON l1.status_id = sm.id AND sm.is_deleted = false
@@ -188,7 +191,8 @@ namespace OmniPlanner_API.Queries.Tasks2
                 pm.color AS priority_color,
                 l2.status_id,
                 sm.status AS status_name,
-                sm.color AS status_color
+                sm.color AS status_color,
+                l2.selected_days
             FROM tasks2_level_2_sub_task l2
             LEFT JOIN priority_master pm ON l2.priority_level_id = pm.id AND pm.is_deleted = false
             LEFT JOIN status_master sm ON l2.status_id = sm.id AND sm.is_deleted = false
@@ -201,13 +205,13 @@ namespace OmniPlanner_API.Queries.Tasks2
                 title, description, priority_level_id, status_id, category_id,
                 start_date, end_date, start_time, end_time, created_on, created_by,
                 modified_on, modified_by, estimated_hours, priority_order,
-                remarks, important, completed
+                remarks, important, completed, selected_days
             )
             VALUES (
                 @title, @description, @priority_level_id, @status_id, @category_id,
                 @start_date, @end_date, @start_time, @end_time, NOW(), @created_by,
                 NOW(), @modified_by, @estimated_hours, @priority_order,
-                @remarks, @important, @completed
+                @remarks, @important, @completed, @selected_days
             )
             RETURNING id";
 
@@ -229,7 +233,8 @@ namespace OmniPlanner_API.Queries.Tasks2
                 priority_order = @priority_order,
                 remarks = @remarks,
                 important = @important,
-                completed = @completed
+                completed = @completed,
+                selected_days = @selected_days
             WHERE id = @id";
 
         // Update Task2 Important Status (lightweight update)
@@ -277,13 +282,13 @@ namespace OmniPlanner_API.Queries.Tasks2
                 title, description, priority_level_id, status_id,
                 start_date, end_date, start_time, end_time, created_on, created_by,
                 modified_on, modified_by, estimated_hours, priority_order,
-                important, completed, tasks2_main_task_id
+                important, completed, tasks2_main_task_id, selected_days
             )
             VALUES (
                 @title, @description, @priority_level_id, @status_id,
                 @start_date, @end_date, @start_time, @end_time, NOW(), @created_by,
                 NOW(), @modified_by, @estimated_hours, @priority_order,
-                @important, @completed, @tasks2_main_task_id
+                @important, @completed, @tasks2_main_task_id, @selected_days
             )
             RETURNING id";
 
@@ -303,7 +308,8 @@ namespace OmniPlanner_API.Queries.Tasks2
                 estimated_hours = @estimated_hours,
                 priority_order = @priority_order,
                 important = @important,
-                completed = @completed
+                completed = @completed,
+                selected_days = @selected_days
             WHERE id = @id";
 
         // Delete Level 1 Subtask2 (cascade will handle level 2 subtasks)
@@ -316,13 +322,13 @@ namespace OmniPlanner_API.Queries.Tasks2
                 title, description, priority_level_id, status_id,
                 start_date, end_date, start_time, end_time, created_on, created_by,
                 modified_on, modified_by, estimated_hours, priority_order,
-                important, completed, tasks2_level_1_sub_task_id
+                important, completed, tasks2_level_1_sub_task_id, selected_days
             )
             VALUES (
                 @title, @description, @priority_level_id, @status_id,
                 @start_date, @end_date, @start_time, @end_time, NOW(), @created_by,
                 NOW(), @modified_by, @estimated_hours, @priority_order,
-                @important, @completed, @tasks2_level_1_sub_task_id
+                @important, @completed, @tasks2_level_1_sub_task_id, @selected_days
             )
             RETURNING id";
 
@@ -342,7 +348,8 @@ namespace OmniPlanner_API.Queries.Tasks2
                 estimated_hours = @estimated_hours,
                 priority_order = @priority_order,
                 important = @important,
-                completed = @completed
+                completed = @completed,
+                selected_days = @selected_days
             WHERE id = @id";
 
         // Delete Level 2 Subtask2

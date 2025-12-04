@@ -26,6 +26,7 @@ namespace OmniPlanner_API.Models.Tasks2
         public bool? isExpanded { get; set; } = false;
         public bool completed { get; set; } = false;
         public bool important { get; set; } = false;
+        public string? selected_days { get; set; }
     }
 
     public class Task2
@@ -50,6 +51,7 @@ namespace OmniPlanner_API.Models.Tasks2
         public List<TaskUrl>? urls { get; set; }
         public bool important { get; set; } = false;
         public bool completed { get; set; } = false;
+        public string? selected_days { get; set; }
         //public PeriodicTask? periodic_task { get; set; }
     }
 }

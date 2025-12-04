@@ -18,6 +18,7 @@ namespace OmniPlanner_API.ViewModels.Tasks2
         public bool completed { get; set; } = false;
         //public int? periodic_tasks_main_task_id { get; set; }
         public List<int>? url_ids { get; set; }
+        public string? selected_days { get; set; }
     }
 
     public class UpdateMainTask2Request
@@ -39,6 +40,7 @@ namespace OmniPlanner_API.ViewModels.Tasks2
         public bool completed { get; set; } = false;
         //public int? periodic_tasks_main_task_id { get; set; }
         public List<int>? url_ids { get; set; }
+        public string? selected_days { get; set; }
     }
 
     public class AddLevel1Subtask2Request
@@ -56,6 +58,7 @@ namespace OmniPlanner_API.ViewModels.Tasks2
         public int? priority_order { get; set; }
         public bool important { get; set; } = false;
         public bool completed { get; set; } = false;
+        public string? selected_days { get; set; }
     }
 
     public class UpdateLevel1Subtask2Request
@@ -73,6 +76,7 @@ namespace OmniPlanner_API.ViewModels.Tasks2
         public int? priority_order { get; set; }
         public bool important { get; set; } = false;
         public bool completed { get; set; } = false;
+        public string? selected_days { get; set; }
     }
 
     public class AddLevel2Subtask2Request
@@ -90,6 +94,7 @@ namespace OmniPlanner_API.ViewModels.Tasks2
         public int? priority_order { get; set; }
         public bool important { get; set; } = false;
         public bool completed { get; set; } = false;
+        public string? selected_days { get; set; }
     }
 
     public class UpdateLevel2Subtask2Request
@@ -107,5 +112,6 @@ namespace OmniPlanner_API.ViewModels.Tasks2
         public int? priority_order { get; set; }
         public bool important { get; set; } = false;
         public bool completed { get; set; } = false;
+        public string? selected_days { get; set; }
     }
 }

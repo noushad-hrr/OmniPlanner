@@ -16,6 +16,8 @@ namespace OmniPlanner_API.ViewModels.Tasks
         public bool important { get; set; } = false;
         public bool completed { get; set; } = false;
         public int? periodic_tasks_main_task_id { get; set; }
+        public int? periodic_tasks_level_1_sub_task_id { get; set; }
+        public int? periodic_tasks_level_2_sub_task_id { get; set; }
         public List<int>? url_ids { get; set; } // List of URL IDs from urls_master
     }
 }
