@@ -1256,10 +1256,18 @@ export class Task2Service {
   }
 
   addLevel2Subtask(Subtask2Data: any): Observable<any> {
+    // Stringify selected_days if it's an array
+    if (Subtask2Data.selected_days && Array.isArray(Subtask2Data.selected_days)) {
+      Subtask2Data = { ...Subtask2Data, selected_days: JSON.stringify(Subtask2Data.selected_days) };
+    }
     return this.http.post<any>(API_CONFIG.tasks2.addLevel2Subtask, Subtask2Data);
   }
 
   updateLevel2Subtask(Subtask2Data: any): Observable<any> {
+    // Stringify selected_days if it's an array
+    if (Subtask2Data.selected_days && Array.isArray(Subtask2Data.selected_days)) {
+      Subtask2Data = { ...Subtask2Data, selected_days: JSON.stringify(Subtask2Data.selected_days) };
+    }
     return this.http.put<any>(API_CONFIG.tasks2.updateLevel2Subtask, Subtask2Data);
   }
 

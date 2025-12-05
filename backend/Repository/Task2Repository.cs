@@ -1051,7 +1051,7 @@ namespace OmniPlanner_API.Repository
                                 "title = @title, description = @description, priority_level_id = @priority_level_id, " +
                                 "status_id = @status_id, start_time = @start_time, end_time = @end_time, start_date = @start_date, end_date = @end_date, " +
                                 "modified_on = NOW(), modified_by = @modified_by, estimated_hours = @estimated_hours, " +
-                                "important = @important, completed = @completed " +
+                                "important = @important, completed = @completed, selected_days = @selected_days " +
                                 "WHERE id = @id",
                                 new
                                 {
@@ -1091,7 +1091,8 @@ namespace OmniPlanner_API.Repository
                                 estimated_hours = request.estimated_hours,
                                 priority_order = priorityOrder,
                                 important = request.important,
-                                completed = request.completed
+                                completed = request.completed,
+                                selected_days = request.selected_days
                             }, transaction);
 
                             // Reorder siblings if priority_order changed
@@ -1554,7 +1555,8 @@ namespace OmniPlanner_API.Repository
                             estimated_hours = request.estimated_hours,
                             priority_order = priorityOrder,
                             important = request.important,
-                            completed = request.completed
+                            completed = request.completed,
+                            selected_days = request.selected_days
                         }, transaction);
 
                         // Reorder siblings to maintain non-gapped sequence
@@ -1661,7 +1663,7 @@ namespace OmniPlanner_API.Repository
                                 "title = @title, description = @description, priority_level_id = @priority_level_id, " +
                                 "status_id = @status_id, start_time = @start_time, end_time = @end_time, start_date = @start_date, end_date = @end_date, " +
                                 "modified_on = NOW(), modified_by = @modified_by, estimated_hours = @estimated_hours, " +
-                                "important = @important, completed = @completed " +
+                                "important = @important, completed = @completed, selected_days = @selected_days " +
                                 "WHERE id = @id",
                                 new
                                 {
@@ -1677,7 +1679,8 @@ namespace OmniPlanner_API.Repository
                                     modified_by = userId,
                                     estimated_hours = request.estimated_hours,
                                     important = request.important,
-                                    completed = request.completed
+                                    completed = request.completed,
+                                    selected_days = request.selected_days
                                 }, transaction);
 
                             // Move subtask to new position (this will update priority_order)
@@ -1701,7 +1704,8 @@ namespace OmniPlanner_API.Repository
                                 estimated_hours = request.estimated_hours,
                                 priority_order = priorityOrder,
                                 important = request.important,
-                                completed = request.completed
+                                completed = request.completed,
+                                selected_days = request.selected_days
                             }, transaction);
 
                             // Reorder siblings if priority_order changed

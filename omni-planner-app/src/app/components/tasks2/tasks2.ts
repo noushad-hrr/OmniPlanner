@@ -1357,10 +1357,14 @@ export class Tasks2Component implements OnInit, OnDestroy {
       return this.newTask.selectedDays?.includes(day) || false;
     } else if (this.showEditTaskModal && this.selectedTask) {
       return this.selectedTask.selectedDays?.includes(day) || false;
-    } else if (this.showAddSubtaskModal) {
-      return this.newSubtask.selectedDays?.includes(day) || false;
-    }
-    return false;
+    } else if (this.showAddSubtaskModal || this.showAddLevel2SubtaskModal) {
+    return this.newSubtask.selectedDays?.includes(day) || false;
+  } else if (this.showEditLevel1SubtaskModal && this.selectedLevel1Subtask) {
+    return (this.selectedLevel1Subtask as any).selectedDays?.includes(day) || false;
+  } else if (this.showEditLevel2SubtaskModal && this.selectedLevel2Subtask) {
+    return (this.selectedLevel2Subtask as any).selectedDays?.includes(day) || false;
+  }
+  return false;
   }
 
   toggleDay(day: number): void {
@@ -1398,19 +1402,41 @@ export class Tasks2Component implements OnInit, OnDestroy {
         this.selectedTask.selectedDays.push(day);
         this.selectedTask.selectedDays.sort((a: number, b: number) => a - b);
       }
-    } else if (this.showAddSubtaskModal) {
-      if (!this.newSubtask.selectedDays) {
-        this.newSubtask.selectedDays = [];
-      }
-      const index = this.newSubtask.selectedDays.indexOf(day);
-      if (index > -1) {
-        this.newSubtask.selectedDays.splice(index, 1);
-      } else {
-        this.newSubtask.selectedDays.push(day);
-        this.newSubtask.selectedDays.sort((a: number, b: number) => a - b);
-      }
+    } else if (this.showAddSubtaskModal || this.showAddLevel2SubtaskModal) {
+    if (!this.newSubtask.selectedDays) {
+      this.newSubtask.selectedDays = [];
+    }
+    const index = this.newSubtask.selectedDays.indexOf(day);
+    if (index > -1) {
+      this.newSubtask.selectedDays.splice(index, 1);
+    } else {
+      this.newSubtask.selectedDays.push(day);
+      this.newSubtask.selectedDays.sort((a: number, b: number) => a - b);
+    }
+  } else if (this.showEditLevel1SubtaskModal && this.selectedLevel1Subtask) {
+    if (!(this.selectedLevel1Subtask as any).selectedDays) {
+      (this.selectedLevel1Subtask as any).selectedDays = [];
+    }
+    const index = (this.selectedLevel1Subtask as any).selectedDays.indexOf(day);
+    if (index > -1) {
+      (this.selectedLevel1Subtask as any).selectedDays.splice(index, 1);
+    } else {
+      (this.selectedLevel1Subtask as any).selectedDays.push(day);
+      (this.selectedLevel1Subtask as any).selectedDays.sort((a: number, b: number) => a - b);
+    }
+  } else if (this.showEditLevel2SubtaskModal && this.selectedLevel2Subtask) {
+    if (!(this.selectedLevel2Subtask as any).selectedDays) {
+      (this.selectedLevel2Subtask as any).selectedDays = [];
+    }
+    const index = (this.selectedLevel2Subtask as any).selectedDays.indexOf(day);
+    if (index > -1) {
+      (this.selectedLevel2Subtask as any).selectedDays.splice(index, 1);
+    } else {
+      (this.selectedLevel2Subtask as any).selectedDays.push(day);
+      (this.selectedLevel2Subtask as any).selectedDays.sort((a: number, b: number) => a - b);
     }
   }
+}
 
   onRecurrencePatternChange(): void {
     // Reset pattern-specific fields when pattern changes
@@ -3040,7 +3066,22 @@ export class Tasks2Component implements OnInit, OnDestroy {
       important: (level1Subtask as any).important ?? false
     };
 
-    // Debug: Log the values after processing
+  // Parse selectedDays if it's a string
+  if ((level1Subtask as any).selectedDays) {
+    if (typeof (level1Subtask as any).selectedDays === 'string') {
+      try {
+        (this.selectedLevel1Subtask as any).selectedDays = JSON.parse((level1Subtask as any).selectedDays);
+      } catch (e) {
+        (this.selectedLevel1Subtask as any).selectedDays = [];
+      }
+    } else {
+      (this.selectedLevel1Subtask as any).selectedDays = (level1Subtask as any).selectedDays;
+    }
+  } else {
+    (this.selectedLevel1Subtask as any).selectedDays = [];
+  }
+
+  // Debug: Log the values after processing
     console.log('Editing level 1 subtask - processed values:', {
       startTime: this.selectedLevel1Subtask.startTime,
       endTime: this.selectedLevel1Subtask.endTime,
@@ -3303,7 +3344,22 @@ export class Tasks2Component implements OnInit, OnDestroy {
     (this.selectedLevel2Subtask as any).completed = this.selectedLevel2Subtask.completed ?? false;
     (this.selectedLevel2Subtask as any).important = (this.selectedLevel2Subtask as any).important ?? false;
 
-    // Match status and priority to master list objects for proper dropdown binding
+  // Parse selectedDays if it's a string
+  if ((level2Subtask as any).selectedDays) {
+    if (typeof (level2Subtask as any).selectedDays === 'string') {
+      try {
+        (this.selectedLevel2Subtask as any).selectedDays = JSON.parse((level2Subtask as any).selectedDays);
+      } catch (e) {
+        (this.selectedLevel2Subtask as any).selectedDays = [];
+      }
+    } else {
+      (this.selectedLevel2Subtask as any).selectedDays = (level2Subtask as any).selectedDays;
+    }
+  } else {
+    (this.selectedLevel2Subtask as any).selectedDays = [];
+  }
+
+  // Match status and priority to master list objects for proper dropdown binding
     // Angular [ngValue] uses reference equality, so we need to match the exact objects from master lists
     if (this.selectedLevel2Subtask.status?.name) {
       const matchedStatus = this.statuses.find(s =>
