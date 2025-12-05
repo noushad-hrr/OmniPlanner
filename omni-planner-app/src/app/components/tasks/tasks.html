@@ -243,10 +243,14 @@
           <div class="day-tasks">
             <div *ngFor="let task of getTasksForCalendarDate(date)" class="calendar-task"
               [style.background-color]="getPriorityColor(task.priorityLevel)"
+              [style.color]="getContrastColor(getPriorityColor(task.priorityLevel))"
               (click)="viewTaskDetails(task); $event.stopPropagation()">
-              <span class="task-title">{{ task.title }}</span>
-              <span class="task-time" *ngIf="task.endTime">
-                {{ task.endTime }}
+              <span class="task-category-icon" *ngIf="task.category">{{ getCategoryIcon(task.category.name) }}</span>
+              <span class="task-separator" *ngIf="task.category">|</span>
+              <span class="task-title">{{ task.title.length > 22 ? (task.title | slice:0:22) : task.title }}</span>
+              <span class="task-separator" *ngIf="task.startTime || task.endTime">|</span>
+              <span class="task-time" *ngIf="task.startTime || task.endTime">
+                {{ task.startTime || '--' }} - {{ task.endTime || '--' }}
               </span>
             </div>
           </div>

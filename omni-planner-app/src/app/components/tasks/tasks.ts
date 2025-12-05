@@ -1310,7 +1310,7 @@ export class TasksComponent implements OnInit, OnDestroy {
     }
   }
 
-    onRecurrencePatternChange(): void {
+  onRecurrencePatternChange(): void {
     // Reset pattern-specific fields when pattern changes
     this.newPeriodicTask.recurrence_days = [];
     this.newPeriodicTask.recurrence_month_day = 1;
@@ -2068,7 +2068,7 @@ export class TasksComponent implements OnInit, OnDestroy {
       if (newTitle && newTitle.trim()) {
         const title = newTitle.trim();
         const result = this.getService().updateSubtask(this.selectedTask.id, subtaskId, { title });
-        
+
         if (result && typeof result === 'object' && 'subscribe' in result) {
           (result as any).subscribe({
             next: (updatedSubtask: any) => {
@@ -2113,7 +2113,7 @@ export class TasksComponent implements OnInit, OnDestroy {
 
     if (confirmed) {
       const result = this.getService().deleteSubtask(this.selectedTask.id, subtaskId);
-      
+
       if (result && typeof result === 'object' && 'subscribe' in result) {
         (result as any).subscribe({
           next: () => {
@@ -3231,6 +3231,25 @@ export class TasksComponent implements OnInit, OnDestroy {
     return masterPriority ? masterPriority.color : '#F97316';
   }
 
+  // Get contrasting text color (black or white) based on background color
+  getContrastColor(bgColor: string): string {
+    if (!bgColor) return '#000000';
+
+    // Remove # if present
+    const color = bgColor.replace('#', '');
+
+    // Convert to RGB
+    const r = parseInt(color.substr(0, 2), 16);
+    const g = parseInt(color.substr(2, 2), 16);
+    const b = parseInt(color.substr(4, 2), 16);
+
+    // Calculate luminance using the formula: (0.299*R + 0.587*G + 0.114*B)
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+    // Return black for light backgrounds, white for dark backgrounds
+    return luminance > 0.5 ? '#000000' : '#FFFFFF';
+  }
+
   getStatusColor(status: Task['status'] | Subtask['status']): string {
     if (!status) {
       const defaultStatus = this.statuses.find(s => s.is_default === true) || this.statuses[0];
@@ -4163,19 +4182,19 @@ export class TasksComponent implements OnInit, OnDestroy {
 
   // Data Table Event Handlers
   onTableRowClick(row: TableData): void {
-  const task = this.tasks.find(t => t.id === Number(row['id']));
-  if (!task) return;
-  if (this.viewMode === 'periodic-tasks') {
-    this.openViewPeriodicTask(task);
-  } else {
-    this.viewTaskDetails(task);
+    const task = this.tasks.find(t => t.id === Number(row['id']));
+    if (!task) return;
+    if (this.viewMode === 'periodic-tasks') {
+      this.openViewPeriodicTask(task);
+    } else {
+      this.viewTaskDetails(task);
+    }
   }
-}
 
-compareObjects(a: any, b: any): boolean {
-  if (!a || !b) return a === b;
-  return a.name === b.name && a.color === b.color;
-}
+  compareObjects(a: any, b: any): boolean {
+    if (!a || !b) return a === b;
+    return a.name === b.name && a.color === b.color;
+  }
 
   onTableRowSelect(selectedRows: TableData[]): void {
     console.log('Selected rows:', selectedRows);

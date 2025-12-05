@@ -3425,29 +3425,44 @@
 
           .calendar-task {
             background: var(--primary-color);
-            color: white;
             padding: 2px $spacing-xs;
             border-radius: $border-radius-sm;
             font-size: 0.7rem;
             cursor: pointer;
             transition: all 0.2s ease;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 4px;
 
             &:hover {
               transform: scale(1.02);
               box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             }
 
+            .task-category-icon {
+              font-size: 0.8rem;
+              flex-shrink: 0;
+            }
+
+            .task-separator {
+              opacity: 0.6;
+              flex-shrink: 0;
+            }
+
             .task-title {
-              display: block;
               white-space: nowrap;
               overflow: hidden;
               text-overflow: ellipsis;
+              flex-shrink: 1;
+              min-width: 0;
             }
 
             .task-time {
               font-size: 0.6rem;
               opacity: 0.8;
+              white-space: nowrap;
+              flex-shrink: 0;
             }
           }
         }
