@@ -152,6 +152,22 @@
   }
 }
 
+@keyframes pulse-star {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(1.5);
+    filter: brightness(1.5);
+  }
+}
+
 // Analytics View Styles
 .analytics-view {
   display: flex;
@@ -3446,8 +3462,10 @@
             }
 
             .task-important-icon {
-              font-size: 0.7rem;
+              font-size: 0.8rem;
               flex-shrink: 0;
+              animation: pulse-star 1s ease-in-out infinite;
+              filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.8));
             }
 
             .task-separator {
