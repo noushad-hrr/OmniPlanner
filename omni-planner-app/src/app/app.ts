@@ -126,7 +126,7 @@ export class AppComponent implements OnInit {
     {
       id: 'budget',
       label: 'Budget',
-      icon: 'dollar-sign',
+      icon: 'credit-card',
       route: '/budget',
       permission: 'budget.view'
     },
@@ -648,7 +648,7 @@ export class AppComponent implements OnInit {
         type: 'menu',
         title: 'Budget Management',
         subtitle: 'View and manage budget',
-        icon: 'dollar-sign',
+        icon: 'credit-card',
         action: () => {
           this.currentView = 'budget';
           this.closeSearch();
