@@ -119,7 +119,7 @@ export class AppComponent implements OnInit {
     {
       id: 'tasks2',
       label: 'Periodic Tasks',
-      icon: 'tasks',
+      icon: 'sync',
       route: '/tasks2',
       permission: 'tasks2.view'  // Temporarily commented for testing
     },
