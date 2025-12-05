@@ -246,6 +246,7 @@
               [style.color]="getContrastColor(getPriorityColor(task.priorityLevel))"
               (click)="viewTaskDetails(task); $event.stopPropagation()">
               <span class="task-category-icon" *ngIf="task.category">{{ task.category.icon }}</span>
+              <span class="task-important-icon" *ngIf="task.important">⭐</span>
               <span class="task-separator" *ngIf="task.category">|</span>
               <span class="task-title">{{ task.title.length > 25 ? (task.title | slice:0:25) : task.title }}</span>
               <span class="task-separator" *ngIf="task.startTime || task.endTime">|</span>
