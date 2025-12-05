@@ -3403,6 +3403,7 @@
         transition: all 0.2s ease;
         display: flex;
         flex-direction: column;
+        position: relative;
 
         &:hover {
           background: var(--hover-bg);
@@ -3431,6 +3432,20 @@
           font-weight: 600;
           color: var(--text-primary);
           margin-bottom: $spacing-xs;
+        }
+
+        .day-summary {
+          position: absolute;
+          top: 10px;
+          right: 4px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          padding: 2px 6px;
+          background: rgba(var(--primary-color-rgb), 0.15);
+          border-radius: $border-radius-sm;
+          white-space: nowrap;
+          line-height: 1.2;
         }
 
         .day-tasks {

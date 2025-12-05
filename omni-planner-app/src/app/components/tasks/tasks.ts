@@ -4161,6 +4161,45 @@ export class TasksComponent implements OnInit, OnDestroy {
     });
   }
 
+  getTaskCountForDate(date: Date): number {
+    return this.getTasksForCalendarDate(date).length;
+  }
+
+  getTotalHoursForDate(date: Date): number {
+    const tasks = this.getTasksForCalendarDate(date);
+    return tasks.reduce((total, task) => {
+      const hours = task.estimatedHours || 0;
+      return total + hours;
+    }, 0);
+  }
+
+  hasNullDataForDate(date: Date): boolean {
+    const tasks = this.getTasksForCalendarDate(date);
+    return tasks.some(task =>
+      task.estimatedHours === null ||
+      task.estimatedHours === undefined ||
+      task.priorityOrder === null ||
+      task.priorityOrder === undefined ||
+      task.startTime === null ||
+      task.startTime === undefined ||
+      task.endTime === null ||
+      task.endTime === undefined ||
+      task.startTime === '00:00' ||
+      task.endTime === '00:00'
+    );
+  }
+
+  getDateSummary(date: Date): string {
+    const count = this.getTaskCountForDate(date);
+    if (count === 0) return '';
+
+    const hours = this.getTotalHoursForDate(date);
+    const hasNull = this.hasNullDataForDate(date);
+    const roundedHours = hours.toFixed(2);
+
+    return `${count} Task${count > 1 ? 's' : ''} | ${roundedHours}Hr${hasNull ? ' + NDs' : ''}`;
+  }
+
   // Analytics Methods
 
   getRecentTasks(limit: number = 5): Task[] {

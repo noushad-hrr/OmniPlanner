@@ -240,6 +240,7 @@
         <div *ngFor="let date of getCalendarDays()" class="calendar-day" [class.current-month]="isCurrentMonth(date)"
           [class.today]="isToday(date)" [class.selected]="isSelectedDate(date)" (click)="selectDate(date)">
           <div class="day-number">{{ date.getDate() }}</div>
+          <div class="day-summary" *ngIf="getDateSummary(date)">{{ getDateSummary(date) }}</div>
           <div class="day-tasks">
             <div *ngFor="let task of getTasksForCalendarDate(date)" class="calendar-task"
               [style.background-color]="getPriorityColor(task.priorityLevel)"
@@ -251,7 +252,7 @@
               <span class="task-title">{{ task.title.length > 22 ? (task.title | slice:0:22) : task.title }}</span>
               <span class="task-separator" *ngIf="task.startTime || task.endTime">|</span>
               <span class="task-time" *ngIf="task.startTime || task.endTime">
-                {{ task.startTime || '--' }} - {{ task.endTime || '--' }}
+                <b>{{ task.startTime || '--' }} - {{ task.endTime || '--' }}</b>
               </span>
             </div>
           </div>
