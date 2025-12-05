@@ -289,6 +289,19 @@
     }
   }
 
+  tbody {
+    td {
+      padding: $spacing-md; // Align with header padding
+      color: #e6e6e6;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      vertical-align: middle;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+  }
+
   &.credits-table {
     thead th {
       background: rgba(16, 185, 129, 0.1);
