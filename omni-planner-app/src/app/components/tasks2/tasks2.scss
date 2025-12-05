@@ -7073,3 +7073,35 @@
     }
   }
 }
+.days-selector {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 8px;
+
+  .day-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    user-select: none;
+    
+    input[type='checkbox'] {
+      margin: 0;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--primary-color);
+    }
+    
+    span {
+      font-size: 0.9rem;
+      color: var(--text-primary);
+    }
+
+    &:hover span {
+      color: var(--primary-color);
+    }
+  }
+}
