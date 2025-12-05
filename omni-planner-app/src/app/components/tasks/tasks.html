@@ -247,7 +247,7 @@
               (click)="viewTaskDetails(task); $event.stopPropagation()">
               <span class="task-category-icon" *ngIf="task.category">{{ getCategoryIcon(task.category.name) }}</span>
               <span class="task-separator" *ngIf="task.category">|</span>
-              <span class="task-title">{{ task.title.length > 22 ? (task.title | slice:0:22) : task.title }}</span>
+              <span class="task-title">{{ task.title.length > 25 ? (task.title | slice:0:25) : task.title }}</span>
               <span class="task-separator" *ngIf="task.startTime || task.endTime">|</span>
               <span class="task-time" *ngIf="task.startTime || task.endTime">
                 {{ task.startTime || '--' }} - {{ task.endTime || '--' }}
