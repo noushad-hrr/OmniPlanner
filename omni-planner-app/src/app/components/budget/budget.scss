@@ -111,11 +111,11 @@
   }
 
   .summary-card {
-    background: #93c5fd; // Light blue background as per design
+    background: #14171c; // Dark background
     border-radius: 8px;
     overflow: hidden;
-    color: #1e293b; // Dark text for contrast on light background
-    border: 1px solid #60a5fa;
+    color: #e6e6e6; // Light text
+    border: 1px solid #2a2f36;
 
     .summary-table {
       width: 100%;
@@ -125,13 +125,14 @@
       th,
       td {
         padding: 8px 12px;
-        border: 1px solid #1e293b; // Dark borders
+        border: 1px solid #2a2f36; // Dark borders
         text-align: center;
       }
 
       th {
         font-weight: 600;
-        background: #93c5fd; // Same as card background
+        background: #1f2228; // Dark header background
+        color: #e6e6e6;
       }
 
       td:first-child {
@@ -141,7 +142,9 @@
 
       .balance-row td,
       .cumulative-row td {
-        border-top: 2px solid #1e293b; // Thicker border for balance rows
+        border-top: 2px solid #3a3f47; // Thicker border for balance rows
+        background: #1b1f26; // Highlight balance row slightly
+        font-weight: 600;
       }
     }
   }
