@@ -386,5 +386,37 @@ namespace OmniPlanner_API.Queries.Tasks2
         public const string DeleteLevel2Subtask = DeleteLevel2Subtask2;
         public const string DeleteTaskUrlMappings = DeleteTask2UrlMappings;
         public const string InsertTaskUrlMapping = InsertTask2UrlMapping;
+
+        //// Periodic Task Queries
+        //public const string InsertPeriodicMainTask = @"
+        //    INSERT INTO periodic_tasks_main_task (
+        //        title, description, start_date, end_date, created_by, created_on,
+        //        last_modified_by, last_modified_on, is_active, is_deleted
+        //    )
+        //    VALUES (
+        //        @title, @description, @start_date, @end_date, @created_by, NOW(),
+        //        @modified_by, NOW(), true, false
+        //    )
+        //    RETURNING id";
+
+        //public const string InsertMainTaskWithPeriodicParent = @"
+        //    INSERT INTO tasks2_main_task (
+        //        title, description, priority_level_id, status_id, category_id,
+        //        start_date, end_date, start_time, end_time, created_on, created_by,
+        //        modified_on, modified_by, estimated_hours, priority_order,
+        //        remarks, important, completed, selected_days, periodic_tasks_main_task_id
+        //    )
+        //    VALUES (
+        //        @title, @description, @priority_level_id, @status_id, @category_id,
+        //        @start_date, @end_date, @start_time, @end_time, NOW(), @created_by,
+        //        NOW(), @modified_by, @estimated_hours, @priority_order,
+        //        @remarks, @important, @completed, @selected_days, @periodic_tasks_main_task_id
+        //    )
+        //    RETURNING id";
+
+        //public const string UpdateMainTaskPeriodicParent = @"
+        //    UPDATE tasks2_main_task 
+        //    SET periodic_tasks_main_task_id = @periodic_tasks_main_task_id 
+        //    WHERE id = @id";
     }
 }

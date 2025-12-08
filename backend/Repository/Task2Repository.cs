@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Claims;
 using AutoMapper;
+using AutoMapper.Internal;
 using Dapper;
 using Microsoft.AspNetCore.Http;
 using OmniPlanner_API.IRepository;
@@ -14,6 +15,7 @@ using OmniPlanner_API.Queries.Tasks;
 using OmniPlanner_API.Queries.Tasks2;
 using OmniPlanner_API.Repository;
 using OmniPlanner_API.ViewModels.Master_Data;
+using OmniPlanner_API.ViewModels.Tasks;
 using OmniPlanner_API.ViewModels.Tasks2;
 using Task2 = OmniPlanner_API.Models.Tasks2.Task2;
 using TaskStatus = OmniPlanner_API.Models.Tasks.TaskStatus;
@@ -478,15 +480,7 @@ namespace OmniPlanner_API.Repository
                             }
                         }
 
-        //                for (DateTime currentDate = start; currentDate <= end; currentDate = currentDate.AddDays(1))
-        //{
-        //    // Action to perform for each day in the range
-        //    Console.WriteLine($"Processing date: {currentDate:yyyy-MM-dd}.");
-            
-        //    // Example: Check if it's a weekend
-        //    if (currentDate.DayOfWeek == DayOfWeek.Saturday || currentDate.DayOfWeek == DayOfWeek.Sunday)
-        //    {
-        //        Console.WriteLine("    -> It's a weekend!");
+                        await ProcessSelectedDates(request.start_date, request.end_date, request.selected_days, "tasks_main_task", connection, transaction, userId, taskId, request);
 
                         transaction.Commit();
                     }
@@ -557,8 +551,216 @@ namespace OmniPlanner_API.Repository
                     //    endDate = taskRow.periodic_end_date as DateTime?
                     //} : null
                 };
-
                 return task;
+            }
+        }
+
+
+        private async System.Threading.Tasks.Task ProcessSelectedDates(DateTime? start_date, DateTime? end_date, string? selected_days, string task_level, IDbConnection connection, IDbTransaction transaction, int userId, int createdTaskId, object requestObj = null)
+        {
+            // ---------------------------
+            // 1. Validate dates
+            // ---------------------------
+            if (start_date == null || end_date == null)
+            {
+                if (!string.IsNullOrWhiteSpace(selected_days))
+                {
+                    throw new ArgumentException("Start and end dates are required when selected_days are provided.");
+                }
+                return;
+            }
+
+            if (start_date > end_date)
+            {
+                throw new ArgumentException("Start date cannot be greater than end date.");
+            }
+
+            // ---------------------------
+            // 2. Parse selected_days JSON safely
+            // ---------------------------
+            List<int>? selectedDays = null;
+
+            if (!string.IsNullOrWhiteSpace(selected_days))
+            {
+                try
+                {
+                    selectedDays = System.Text.Json.JsonSerializer.Deserialize<List<int>>(selected_days);
+                }
+                catch
+                {
+                    throw new ArgumentException("Invalid selected_days JSON format.");
+                }
+            }
+
+            if (selectedDays == null || selectedDays.Count == 0)
+            {
+                return;
+            }
+
+            // ---------------------------
+            // 3. Logic for Periodic Tasks
+            // ---------------------------
+
+
+
+            var tasksRepository = new TasksRepository(_context, _httpContextAccessor);
+            var selectedDaysList = System.Text.Json.JsonSerializer.Deserialize<List<int>>(selected_days ?? "[]");
+            int daysCountInRange = Enumerable.Range(0, (end_date.Value - start_date.Value).Days + 1)
+                      .Count(i => selectedDaysList.Contains((int)start_date.Value.AddDays(i).DayOfWeek));
+
+            if (selectedDaysList != null && start_date.HasValue && end_date.HasValue)
+            {
+
+                int? periodic_tasks_main_task_id = null;
+                int? periodic_tasks_level_1_sub_task_id = null;
+                int? periodic_tasks_level_2_sub_task_id = null;
+                int? category_id = null;
+
+                if (task_level == "tasks_main_task")
+                {
+                    periodic_tasks_main_task_id = createdTaskId;
+                }
+                else if (task_level == "tasks_subtask_level_1_task")
+                {
+                    periodic_tasks_level_1_sub_task_id = createdTaskId;
+
+                    periodic_tasks_main_task_id = await connection.QueryFirstOrDefaultAsync<int?>(@"SELECT tmt.id FROM public.tasks2_main_task tmt
+                                                                                                            Left Join tasks2_level_1_sub_task tl1s ON tmt.id = tl1s.tasks2_main_task_id
+                                                                                                            where tl1s.id = @tasks2_level_1_sub_task_id",
+                                                                                                  new { tasks2_level_1_sub_task_id = createdTaskId }, transaction);
+
+                    category_id = await connection.QueryFirstOrDefaultAsync<int?>(@"SELECT tmt.category_id FROM public.tasks2_main_task tmt
+                                                                                                            Left Join tasks2_level_1_sub_task tl1s ON tmt.id = tl1s.tasks2_main_task_id
+                                                                                                            where tl1s.id = @tasks2_level_1_sub_task_id",
+                                                                                                  new { tasks2_level_1_sub_task_id = createdTaskId }, transaction);
+                }
+                else if (task_level == "tasks_subtask_level_2_task")
+                {
+                    periodic_tasks_level_2_sub_task_id = createdTaskId;
+
+                    periodic_tasks_level_1_sub_task_id = await connection.QueryFirstOrDefaultAsync<int?>(@"SELECT tl1s.id FROM public.tasks2_level_1_sub_task tl1s
+                                                                                                                   Left Join tasks2_level_2_sub_task tl2s ON tl1s.id = tl2s.tasks2_level_1_sub_task_id
+                                                                                                                   where tl2s.id = @tasks2_level_2_sub_task_id",
+                                                                                                  new { tasks2_level_2_sub_task_id = periodic_tasks_level_2_sub_task_id }, transaction);
+
+                    periodic_tasks_main_task_id = await connection.QueryFirstOrDefaultAsync<int?>(@"SELECT tmt.id FROM public.tasks2_main_task tmt
+                                                                                                            Left Join tasks2_level_1_sub_task tl1s ON tmt.id = tl1s.tasks2_main_task_id
+                                                                                                            where tl1s.id = @tasks2_level_1_sub_task_id",
+                                                                                                  new { tasks2_level_1_sub_task_id = periodic_tasks_level_1_sub_task_id }, transaction);
+
+                    category_id = await connection.QueryFirstOrDefaultAsync<int?>(@"SELECT tmt.category_id FROM public.tasks2_main_task tmt
+                                                                                                            Left Join tasks2_level_1_sub_task tl1s ON tmt.id = tl1s.tasks2_main_task_id
+                                                                                                            where tl1s.id = @tasks2_level_1_sub_task_id",
+                                                                                                  new { tasks2_level_1_sub_task_id = periodic_tasks_level_1_sub_task_id }, transaction);
+                }
+
+
+                for (DateTime date = start_date.Value.Date; date <= end_date.Value.Date; date = date.AddDays(1))
+                {
+                    int dayInt = (int)date.DayOfWeek;
+
+                    if (selectedDaysList.Contains(dayInt))
+                    {
+                        // Skip the start date as the initial task is already created
+                        //if (date == start_date.Value.Date) continue;
+                        
+                        string title = null;
+                        string description = null;
+                        int? priority_level_id = null;
+                        int? status_id = null;
+                        int? request_category_id = null;
+                        string start_time = null;
+                        string end_time = null;
+                        decimal? estimated_hours = null;
+                        string remarks = null;
+                        bool important = false;
+                        bool completed = false;
+                        List<int> url_ids = null;
+
+                        if (task_level == "tasks_main_task")
+                        {
+                            var mainRequest = requestObj as AddMainTask2Request;
+                            if (mainRequest != null)
+                            {
+                                title = mainRequest.title;
+                                description = mainRequest.description;
+                                priority_level_id = mainRequest.priority_level_id;
+                                status_id = mainRequest.status_id;
+                                request_category_id = mainRequest.category_id;
+                                start_time = mainRequest.start_time;
+                                end_time = mainRequest.end_time;
+                                estimated_hours = mainRequest.estimated_hours;
+                                remarks = mainRequest.remarks;
+                                important = mainRequest.important;
+                                completed = mainRequest.completed;
+                                url_ids = mainRequest.url_ids;
+                            }
+                        }
+                        else if (task_level == "tasks_subtask_level_1_task")
+                        {
+                            var subRequest = requestObj as AddLevel1Subtask2Request;
+                            if (subRequest != null)
+                            {
+                                title = subRequest.title;
+                                description = subRequest.description;
+                                priority_level_id = subRequest.priority_level_id;
+                                status_id = subRequest.status_id;
+                                start_time = subRequest.start_time;
+                                end_time = subRequest.end_time;
+                                estimated_hours = subRequest.estimated_hours;
+                                important = subRequest.important;
+                                completed = subRequest.completed;
+                            }
+                        }
+                        else if (task_level == "tasks_subtask_level_2_task")
+                        {
+                            var subRequest = requestObj as AddLevel2Subtask2Request;
+                            if (subRequest != null)
+                            {
+                                title = subRequest.title;
+                                description = subRequest.description;
+                                priority_level_id = subRequest.priority_level_id;
+                                status_id = subRequest.status_id;
+                                start_time = subRequest.start_time;
+                                end_time = subRequest.end_time;
+                                estimated_hours = subRequest.estimated_hours;
+                                important = subRequest.important;
+                                completed = subRequest.completed;
+                            }
+                        }
+
+                        if (title != null)
+                        {
+                            decimal? dividedHours = null;
+                            if (estimated_hours.HasValue && daysCountInRange > 0)
+                            {
+                                dividedHours = estimated_hours.Value / daysCountInRange;
+                            }
+
+                            var v1Request = new AddMainTaskRequest
+                            {
+                                title = title,
+                                description = description,
+                                priority_level_id = priority_level_id,
+                                status_id = status_id,
+                                category_id = request_category_id ?? category_id,
+                                task_on_date = date,
+                                start_time = start_time,
+                                end_time = end_time,
+                                estimated_hours = dividedHours,
+                                remarks = remarks,
+                                important = important,
+                                completed = completed,
+                                url_ids = url_ids,
+                                periodic_tasks_main_task_id = periodic_tasks_main_task_id,
+                                periodic_tasks_level_1_sub_task_id = periodic_tasks_level_1_sub_task_id,
+                                periodic_tasks_level_2_sub_task_id = periodic_tasks_level_2_sub_task_id
+                            };
+
+                            await tasksRepository.AddMainTask(v1Request, userId, connection, transaction);
+                        }
+                    }
+                }
             }
         }
 
@@ -784,6 +986,8 @@ namespace OmniPlanner_API.Repository
 
                         // Reorder siblings to maintain non-gapped sequence
                         await ReorderLevel1Subtasks2(connection, request.tasks2_main_task_id, transaction);
+
+                        await ProcessSelectedDates(request.start_date, request.end_date, request.selected_days, "tasks_subtask_level_1_task", connection, transaction, userId, subtaskId, request);
 
                         transaction.Commit();
 
@@ -1548,8 +1752,8 @@ namespace OmniPlanner_API.Repository
                             status_id = request.status_id,
                             start_time = request.start_time,
                             end_time = request.end_time,
-                    start_date = request.start_date,
-                    end_date = request.end_date,
+                            start_date = request.start_date,
+                            end_date = request.end_date,
                             created_by = userId,
                             modified_by = userId,
                             estimated_hours = request.estimated_hours,
@@ -1562,6 +1766,8 @@ namespace OmniPlanner_API.Repository
                         // Reorder siblings to maintain non-gapped sequence
                         await ReorderLevel2Subtasks2(connection, request.tasks2_level_1_sub_task_id, transaction);
 
+                        await ProcessSelectedDates(request.start_date, request.end_date, request.selected_days, "tasks_subtask_level_2_task", connection, transaction, userId, subtaskId, request);
+
                         transaction.Commit();
 
                         //// Get parent Level 1 subtask's taskOnDate to inherit for Level 2 subtask
@@ -1569,7 +1775,7 @@ namespace OmniPlanner_API.Repository
                         //    "SELECT t.task_on_date FROM tasks_main_task t " +
                         //    "INNER JOIN tasks_level_1_sub_task l1 ON l1.tasks_main_task_id = t.id " +
                         //    "WHERE l1.id = @level1_subtask_id",
-                            //new { level1_subtask_id = request.tasks2_level_1_sub_task_id });
+                        //new { level1_subtask_id = request.tasks2_level_1_sub_task_id });
 
                         // Return the created subtask by fetching it
                         var level2Rows = await connection.QueryAsync<dynamic>(Tasks2Queries.GetLevel2Subtasks,
@@ -1698,8 +1904,8 @@ namespace OmniPlanner_API.Repository
                                 status_id = request.status_id,
                                 start_time = request.start_time,
                                 end_time = request.end_time,
-                    start_date = request.start_date,
-                    end_date = request.end_date,
+                                start_date = request.start_date,
+                                end_date = request.end_date,
                                 modified_by = userId,
                                 estimated_hours = request.estimated_hours,
                                 priority_order = priorityOrder,
