@@ -365,6 +365,10 @@ namespace OmniPlanner_API.Queries.Tasks2
             VALUES (@task_id, @url_id, @created_by, @modified_by)
             ON CONFLICT (tasks2_main_task_id, url_id) DO NOTHING";
 
+        public const string DeleteTasks2ReferencesInTasks = @"DELETE FROM public.tasks_main_task where periodic_tasks_main_task_id = @task_id AND periodic_tasks_level_1_sub_task_id IS NULL AND periodic_tasks_level_2_sub_task_id IS NULL";
+        public const string DeleteTasks2ReferencesInTasksLevel1 = @"DELETE FROM public.tasks_main_task where periodic_tasks_level_1_sub_task_id = @task_id AND periodic_tasks_level_2_sub_task_id IS NULL";
+        public const string DeleteTasks2ReferencesInTasksLevel2 = @"DELETE FROM public.tasks_main_task where periodic_tasks_level_2_sub_task_id = @task_id";
+
         // Aliases without "2" suffix for repository compatibility
         public const string GetAllTasks = GetAllTasks2;
         public const string GetTaskById = GetTask2ById;
@@ -386,6 +390,7 @@ namespace OmniPlanner_API.Queries.Tasks2
         public const string DeleteLevel2Subtask = DeleteLevel2Subtask2;
         public const string DeleteTaskUrlMappings = DeleteTask2UrlMappings;
         public const string InsertTaskUrlMapping = InsertTask2UrlMapping;
+        public const string DeleteTasksReferencesInTasks = DeleteTasks2ReferencesInTasks;
 
         //// Periodic Task Queries
         //public const string InsertPeriodicMainTask = @"

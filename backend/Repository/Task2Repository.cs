@@ -806,12 +806,12 @@ namespace OmniPlanner_API.Repository
 
                             // Update main task with all fields EXCEPT priority_order first (to avoid conflicts)
                             await connection.ExecuteAsync(
-                                "UPDATE tasks2_main_task SET " +
+                                @"UPDATE tasks2_main_task SET " +
                                 "title = @title, description = @description, priority_level_id = @priority_level_id, " +
                                 "status_id = @status_id, category_id = @category_id, start_date = @start_date, end_date = @end_date, " +
                                 "start_time = @start_time, end_time = @end_time, modified_on = NOW(), " +
                                 "modified_by = @modified_by, estimated_hours = @estimated_hours, " +
-                                "remarks = @remarks, important = @important, completed = @completed " +
+                                "remarks = @remarks, important = @important, completed = @completed, selected_days = @selected_days " +
                                 "WHERE id = @id",
                                 new
                                 {
@@ -829,8 +829,10 @@ namespace OmniPlanner_API.Repository
                                     estimated_hours = request.estimated_hours,
                                     remarks = request.remarks,
                                     important = request.important,
-                                    completed = request.completed
+                                    completed = request.completed,
+                                    selected_days = request.selected_days
                                 }, transaction);
+
 
                             // Move task to new position on new date (this will update priority_order)
                             await MoveMainTask2ToPosition(connection, request.id, priorityOrder.Value, request.start_date.Value, transaction);
@@ -894,6 +896,28 @@ namespace OmniPlanner_API.Repository
                                 }, transaction);
                             }
                         }
+
+                        await connection.ExecuteAsync(Tasks2Queries.DeleteTasksReferencesInTasks, new { task_id = request.id }, transaction);
+
+
+                        await ProcessSelectedDates(request.start_date, request.end_date, request.selected_days, "tasks_main_task", connection, transaction, userId, request.id, new AddMainTask2Request
+                        {
+                            title = request.title,
+                            description = request.description,
+                            priority_level_id = request.priority_level_id,
+                            status_id = request.status_id,
+                            category_id = request.category_id,
+                            start_date = request.start_date,
+                            end_date = request.end_date,
+                            start_time = request.start_time,
+                            end_time = request.end_time,
+                            estimated_hours = request.estimated_hours,
+                            remarks = request.remarks,
+                            important = request.important,
+                            completed = request.completed,
+                            priority_order = null,
+                            url_ids = request.url_ids
+                        });
 
                         transaction.Commit();
 
@@ -1271,7 +1295,8 @@ namespace OmniPlanner_API.Repository
                                     modified_by = userId,
                                     estimated_hours = request.estimated_hours,
                                     important = request.important,
-                                    completed = request.completed
+                                    completed = request.completed,
+                                    selected_days = request.selected_days
                                 }, transaction);
 
                             // Move subtask to new position (this will update priority_order)
@@ -1305,6 +1330,27 @@ namespace OmniPlanner_API.Repository
                                 await ReorderLevel1Subtasks2(connection, parentTaskId.Value, transaction);
                             }
                         }
+
+                        await connection.ExecuteAsync(Tasks2Queries.DeleteTasks2ReferencesInTasksLevel1, new { task_id = request.id }, transaction);
+
+                        await ProcessSelectedDates(request.start_date, request.end_date, request.selected_days, "tasks_subtask_level_1_task", connection, transaction, userId, request.id, new AddLevel1Subtask2Request
+                        {
+                            tasks2_main_task_id = parentTaskId ?? 0,
+                            title = request.title,
+                            description = request.description,
+                            priority_level_id = request.priority_level_id,
+                            status_id = request.status_id,
+                            start_time = request.start_time,
+                            end_time = request.end_time,
+                            start_date = request.start_date,
+                            end_date = request.end_date,
+                            estimated_hours = request.estimated_hours,
+                            important = request.important,
+                            completed = request.completed,
+                            priority_order = null,
+                            selected_days = request.selected_days
+
+                        });
 
                         transaction.Commit();
 
@@ -1920,6 +1966,27 @@ namespace OmniPlanner_API.Repository
                                 await ReorderLevel2Subtasks2(connection, parentLevel1SubtaskId.Value, transaction);
                             }
                         }
+
+                        await connection.ExecuteAsync(Tasks2Queries.DeleteTasks2ReferencesInTasksLevel2, new { task_id = request.id }, transaction);
+
+                        await ProcessSelectedDates(request.start_date, request.end_date, request.selected_days, "tasks_subtask_level_2_task", connection, transaction, userId, request.id, new AddLevel2Subtask2Request
+                        {
+                            tasks2_level_1_sub_task_id = parentLevel1SubtaskId ?? 0,
+                            title = request.title,
+                            description = request.description,
+                            priority_level_id = request.priority_level_id,
+                            status_id = request.status_id,
+                            start_time = request.start_time,
+                            end_time = request.end_time,
+                            start_date = request.start_date,
+                            end_date = request.end_date,
+                            estimated_hours = request.estimated_hours,
+                            important = request.important,
+                            completed = request.completed,
+                            priority_order = null,
+                            selected_days = request.selected_days
+
+                        });
 
                         transaction.Commit();
 

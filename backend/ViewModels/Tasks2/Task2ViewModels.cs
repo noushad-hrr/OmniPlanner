@@ -20,7 +20,7 @@ namespace OmniPlanner_API.ViewModels.Tasks2
         public List<int>? url_ids { get; set; }
         public string? selected_days { get; set; }
     }
-
+    
     public class UpdateMainTask2Request
     {
         public int id { get; set; }
