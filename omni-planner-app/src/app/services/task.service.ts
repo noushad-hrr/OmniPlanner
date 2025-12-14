@@ -64,6 +64,8 @@ export interface Task {
   important?: boolean; // Field to mark task as important
   completed?: boolean; // Field to mark task as completed
   periodicTask?: PeriodicTaskReference | null; // Reference to periodic task object (nullable)
+  periodicLevel1Task?: PeriodicTaskReference | null;
+  periodicLevel2Task?: PeriodicTaskReference | null;
 }
 
 export interface TaskCategory {
@@ -175,6 +177,26 @@ export class TaskService {
       };
     }
 
+    let periodicLevel1Task: PeriodicTaskReference | null = null;
+    if (task.periodic_level_1_task && task.periodic_level_1_task.id) {
+      periodicLevel1Task = {
+        id: task.periodic_level_1_task.id,
+        title: task.periodic_level_1_task.title || null,
+        startDate: task.periodic_level_1_task.startDate ? new Date(task.periodic_level_1_task.startDate) : null,
+        endDate: task.periodic_level_1_task.endDate ? new Date(task.periodic_level_1_task.endDate) : null
+      };
+    }
+
+    let periodicLevel2Task: PeriodicTaskReference | null = null;
+    if (task.periodic_level_2_task && task.periodic_level_2_task.id) {
+      periodicLevel2Task = {
+        id: task.periodic_level_2_task.id,
+        title: task.periodic_level_2_task.title || null,
+        startDate: task.periodic_level_2_task.startDate ? new Date(task.periodic_level_2_task.startDate) : null,
+        endDate: task.periodic_level_2_task.endDate ? new Date(task.periodic_level_2_task.endDate) : null
+      };
+    }
+
     return {
       id: task.id,
       title: task.title || '',
@@ -197,7 +219,9 @@ export class TaskService {
       urls: task.urls ?? null,
       important: task.important || false,
       completed: task.completed || false,
-      periodicTask: periodicTask
+      periodicTask: periodicTask,
+      periodicLevel1Task: periodicLevel1Task,
+      periodicLevel2Task: periodicLevel2Task
     };
   }
 

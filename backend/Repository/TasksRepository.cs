@@ -275,6 +275,20 @@ namespace OmniPlanner_API.Repository
                                 startDate = GetValue("periodic_start_date") as DateTime?,
                                 endDate = GetValue("periodic_end_date") as DateTime?,
                                 title = GetValue("periodic_main_task_title") as string ?? ""
+                            } : null,
+                            periodic_level_1_task = GetValue("periodic_level_1_task_id") != null ? new PeriodicSubtask
+                            {
+                                id = GetValue("periodic_level_1_task_id") as int? ?? 0,
+                                startDate = GetValue("periodic_level_1_start_date") as DateTime?,
+                                endDate = GetValue("periodic_level_1_end_date") as DateTime?,
+                                title = GetValue("periodic_level_1_task_title") as string ?? ""
+                            } : null,
+                            periodic_level_2_task = GetValue("periodic_level_2_task_id") != null ? new PeriodicSubtask
+                            {
+                                id = GetValue("periodic_level_2_task_id") as int? ?? 0,
+                                startDate = GetValue("periodic_level_2_start_date") as DateTime?,
+                                endDate = GetValue("periodic_level_2_end_date") as DateTime?,
+                                title = GetValue("periodic_level_2_task_title") as string ?? ""
                             } : null
                         };
                         taskIds.Add(taskId);
@@ -546,6 +560,20 @@ namespace OmniPlanner_API.Repository
                     id = taskRow.periodic_task_id,
                     startDate = taskRow.periodic_start_date as DateTime?,
                     endDate = taskRow.periodic_end_date as DateTime?
+                } : null,
+                periodic_level_1_task = taskRow.periodic_level_1_task_id != null ? new PeriodicSubtask
+                {
+                    id = taskRow.periodic_level_1_task_id,
+                    startDate = taskRow.periodic_level_1_start_date as DateTime?,
+                    endDate = taskRow.periodic_level_1_end_date as DateTime?,
+                    title = taskRow.periodic_level_1_task_title ?? ""
+                } : null,
+                periodic_level_2_task = taskRow.periodic_level_2_task_id != null ? new PeriodicSubtask
+                {
+                    id = taskRow.periodic_level_2_task_id,
+                    startDate = taskRow.periodic_level_2_start_date as DateTime?,
+                    endDate = taskRow.periodic_level_2_end_date as DateTime?,
+                    title = taskRow.periodic_level_2_task_title ?? ""
                 } : null
             };
 

@@ -688,7 +688,26 @@
               </span>
             </div>
 
-            <div class="detail-item">
+            <div class="detail-item" *ngIf="selectedTask.periodicTask">
+              <label>Periodic Main Task</label>
+              <span class="text-primary cursor-pointer hover:underline"
+                (click)="navigateToPeriodicTask(selectedTask.periodicTask.id)" title="Click to view periodic task">
+                #{{ selectedTask.periodicTask.id }} {{ selectedTask.periodicTask.title }}
+              </span>
+            </div>
+
+            <div class="detail-item" *ngIf="selectedTask.periodicLevel1Task">
+              <label>Periodic L1 Subtask</label>
+              <span class="text-secondary">
+                #{{ selectedTask.periodicLevel1Task.id }} {{ selectedTask.periodicLevel1Task.title }}
+              </span>
+            </div>
+
+            <div class="detail-item" *ngIf="selectedTask.periodicLevel2Task">
+              <label>Periodic L2 Subtask</label>
+              <span class="text-secondary">
+                #{{ selectedTask.periodicLevel2Task.id }} {{ selectedTask.periodicLevel2Task.title }}
+              </span>
             </div>
 
             <div class="detail-item">
@@ -1553,33 +1572,54 @@
       </div>
 
 
-      <div class="view-info-compact">
-        <i class="fas fa-repeat view-info-icon"></i>
-        <div class="view-info-text">
-          <span class="view-info-label">Periodic Task</span>
-          <span class="view-info-value">
-            <span *ngIf="selectedTask?.periodicTask">
-              <span *ngIf="selectedTask?.periodicTask?.id">ID: {{ selectedTask?.periodicTask?.id }}</span>
-              <span
-                *ngIf="selectedTask?.periodicTask?.id && (selectedTask?.periodicTask?.startDate || selectedTask?.periodicTask?.endDate)">
-                | </span>
+      <div class="view-info-compact" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+        <div style="display: flex; align-items: flex-start; gap: 12px; width: 100%;">
+          <i class="fas fa-repeat view-info-icon" style="margin-top: 4px;"></i>
+          <div class="view-info-text" style="width: 100%;">
+            <span class="view-info-label">Periodic Task Hierarchy</span>
+
+            <!-- Main Task Reference -->
+            <div class="view-info-value" *ngIf="selectedTask?.periodicTask" style="margin-bottom: 4px;">
+              <span class="badge badge-primary-subtle"
+                style="font-size: 0.85em; margin-right: 6px; min-width: 60px; display: inline-block;">MAIN</span>
+              <span>#{{ selectedTask?.periodicTask?.id }}</span>
+              <span *ngIf="selectedTask?.periodicTask?.title"> | {{ selectedTask?.periodicTask?.title }}</span>
               <span *ngIf="selectedTask?.periodicTask?.startDate && selectedTask?.periodicTask?.endDate">
-                {{ selectedTask?.periodicTask?.startDate | date:'MMM dd, yyyy' }} - {{
+                | {{ selectedTask?.periodicTask?.startDate | date:'MMM dd, yyyy' }} - {{
                 selectedTask?.periodicTask?.endDate | date:'MMM dd, yyyy' }}
               </span>
-              <span
-                *ngIf="selectedTask?.periodicTask?.id && !selectedTask?.periodicTask?.startDate && !selectedTask?.periodicTask?.endDate">
-                Active
-              </span>
-              <span *ngIf="selectedTask?.periodicTask?.id && selectedTask?.periodicTask?.title">
-                | {{ selectedTask?.periodicTask?.title }}
-              </span>
-            </span>
-            <span *ngIf="!selectedTask?.periodicTask">
+            </div>
+            <div class="view-info-value" *ngIf="!selectedTask?.periodicTask" style="margin-bottom: 4px;">
               <span><i>On Date Task (non periodic)</i></span>
-              <!-- <span *ngIf="!selectedTask?.taskOnDate">Non Periodic Task</span> -->
-            </span>
-          </span>
+            </div>
+
+            <!-- Level 1 Subtask Reference -->
+            <div class="view-info-value" *ngIf="selectedTask?.periodicLevel1Task" style="margin-bottom: 4px;">
+              <span class="badge badge-secondary-subtle"
+                style="font-size: 0.85em; margin-right: 6px; min-width: 60px; display: inline-block;">Level 1</span>
+              <span>#{{ selectedTask?.periodicLevel1Task?.id }}</span>
+              <span *ngIf="selectedTask?.periodicLevel1Task?.title"> | {{ selectedTask?.periodicLevel1Task?.title
+                }}</span>
+              <span *ngIf="selectedTask?.periodicLevel1Task?.startDate && selectedTask?.periodicLevel1Task?.endDate">
+                | {{ selectedTask?.periodicLevel1Task?.startDate | date:'MMM dd, yyyy' }} - {{
+                selectedTask?.periodicLevel1Task?.endDate | date:'MMM dd, yyyy' }}
+              </span>
+            </div>
+
+            <!-- Level 2 Subtask Reference -->
+            <div class="view-info-value" *ngIf="selectedTask?.periodicLevel2Task" style="margin-bottom: 4px;">
+              <span class="badge badge-secondary-subtle"
+                style="font-size: 0.85em; margin-right: 6px; min-width: 60px; display: inline-block;">Level 2</span>
+              <span>#{{ selectedTask?.periodicLevel2Task?.id }}</span>
+              <span *ngIf="selectedTask?.periodicLevel2Task?.title"> | {{ selectedTask?.periodicLevel2Task?.title
+                }}</span>
+              <span *ngIf="selectedTask?.periodicLevel2Task?.startDate && selectedTask?.periodicLevel2Task?.endDate">
+                | {{ selectedTask?.periodicLevel2Task?.startDate | date:'MMM dd, yyyy' }} - {{
+                selectedTask?.periodicLevel2Task?.endDate | date:'MMM dd, yyyy' }}
+              </span>
+            </div>
+
+          </div>
         </div>
       </div>
 
