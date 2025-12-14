@@ -663,7 +663,8 @@
           <label>Days</label>
           <div class="days-selector">
             <label *ngFor="let day of weekDays" class="day-checkbox">
-              <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)">
+              <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)"
+                [disabled]="isDayDisabled(day.value, 'add-subtask')">
               <span>{{ day.label }}</span>
             </label>
           </div>
@@ -1913,16 +1914,17 @@
         <textarea id="level2SubtaskDescription" [(ngModel)]="newSubtask.description"
           placeholder="Enter subtask description..." class="form-textarea" rows="2" maxlength="2000"></textarea>
       </div>
-        <!-- Days Selector -->
-        <div class="form-group">
-          <label>Days</label>
-          <div class="days-selector">
-            <label *ngFor="let day of weekDays" class="day-checkbox">
-              <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)">
-              <span>{{ day.label }}</span>
-            </label>
-          </div>
+      <!-- Days Selector -->
+      <div class="form-group">
+        <label>Days</label>
+        <div class="days-selector">
+          <label *ngFor="let day of weekDays" class="day-checkbox">
+            <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)"
+              [disabled]="isDayDisabled(day.value, 'add-level2')">
+            <span>{{ day.label }}</span>
+          </label>
         </div>
+      </div>
 
 
       <div class="form-row">
@@ -2110,16 +2112,17 @@
             class="form-input">
         </div>
       </div>
-        <!-- Days Selector -->
-        <div class="form-group">
-          <label>Days</label>
-          <div class="days-selector">
-            <label *ngFor="let day of weekDays" class="day-checkbox">
-              <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)">
-              <span>{{ day.label }}</span>
-            </label>
-          </div>
+      <!-- Days Selector -->
+      <div class="form-group">
+        <label>Days</label>
+        <div class="days-selector">
+          <label *ngFor="let day of weekDays" class="day-checkbox">
+            <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)"
+              [disabled]="isDayDisabled(day.value, 'edit-level1')">
+            <span>{{ day.label }}</span>
+          </label>
         </div>
+      </div>
 
 
       <div class="form-row">
@@ -2411,16 +2414,17 @@
             class="form-input">
         </div>
       </div>
-        <!-- Days Selector -->
-        <div class="form-group">
-          <label>Days</label>
-          <div class="days-selector">
-            <label *ngFor="let day of weekDays" class="day-checkbox">
-              <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)">
-              <span>{{ day.label }}</span>
-            </label>
-          </div>
+      <!-- Days Selector -->
+      <div class="form-group">
+        <label>Days</label>
+        <div class="days-selector">
+          <label *ngFor="let day of weekDays" class="day-checkbox">
+            <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)"
+              [disabled]="isDayDisabled(day.value, 'edit-level2')">
+            <span>{{ day.label }}</span>
+          </label>
         </div>
+      </div>
 
 
       <div class="form-row">

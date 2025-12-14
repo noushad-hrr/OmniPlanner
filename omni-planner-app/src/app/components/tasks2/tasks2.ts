@@ -1358,13 +1358,13 @@ export class Tasks2Component implements OnInit, OnDestroy {
     } else if (this.showEditTaskModal && this.selectedTask) {
       return this.selectedTask.selectedDays?.includes(day) || false;
     } else if (this.showAddSubtaskModal || this.showAddLevel2SubtaskModal) {
-    return this.newSubtask.selectedDays?.includes(day) || false;
-  } else if (this.showEditLevel1SubtaskModal && this.selectedLevel1Subtask) {
-    return (this.selectedLevel1Subtask as any).selectedDays?.includes(day) || false;
-  } else if (this.showEditLevel2SubtaskModal && this.selectedLevel2Subtask) {
-    return (this.selectedLevel2Subtask as any).selectedDays?.includes(day) || false;
-  }
-  return false;
+      return this.newSubtask.selectedDays?.includes(day) || false;
+    } else if (this.showEditLevel1SubtaskModal && this.selectedLevel1Subtask) {
+      return (this.selectedLevel1Subtask as any).selectedDays?.includes(day) || false;
+    } else if (this.showEditLevel2SubtaskModal && this.selectedLevel2Subtask) {
+      return (this.selectedLevel2Subtask as any).selectedDays?.includes(day) || false;
+    }
+    return false;
   }
 
   toggleDay(day: number): void {
@@ -1403,40 +1403,40 @@ export class Tasks2Component implements OnInit, OnDestroy {
         this.selectedTask.selectedDays.sort((a: number, b: number) => a - b);
       }
     } else if (this.showAddSubtaskModal || this.showAddLevel2SubtaskModal) {
-    if (!this.newSubtask.selectedDays) {
-      this.newSubtask.selectedDays = [];
-    }
-    const index = this.newSubtask.selectedDays.indexOf(day);
-    if (index > -1) {
-      this.newSubtask.selectedDays.splice(index, 1);
-    } else {
-      this.newSubtask.selectedDays.push(day);
-      this.newSubtask.selectedDays.sort((a: number, b: number) => a - b);
-    }
-  } else if (this.showEditLevel1SubtaskModal && this.selectedLevel1Subtask) {
-    if (!(this.selectedLevel1Subtask as any).selectedDays) {
-      (this.selectedLevel1Subtask as any).selectedDays = [];
-    }
-    const index = (this.selectedLevel1Subtask as any).selectedDays.indexOf(day);
-    if (index > -1) {
-      (this.selectedLevel1Subtask as any).selectedDays.splice(index, 1);
-    } else {
-      (this.selectedLevel1Subtask as any).selectedDays.push(day);
-      (this.selectedLevel1Subtask as any).selectedDays.sort((a: number, b: number) => a - b);
-    }
-  } else if (this.showEditLevel2SubtaskModal && this.selectedLevel2Subtask) {
-    if (!(this.selectedLevel2Subtask as any).selectedDays) {
-      (this.selectedLevel2Subtask as any).selectedDays = [];
-    }
-    const index = (this.selectedLevel2Subtask as any).selectedDays.indexOf(day);
-    if (index > -1) {
-      (this.selectedLevel2Subtask as any).selectedDays.splice(index, 1);
-    } else {
-      (this.selectedLevel2Subtask as any).selectedDays.push(day);
-      (this.selectedLevel2Subtask as any).selectedDays.sort((a: number, b: number) => a - b);
+      if (!this.newSubtask.selectedDays) {
+        this.newSubtask.selectedDays = [];
+      }
+      const index = this.newSubtask.selectedDays.indexOf(day);
+      if (index > -1) {
+        this.newSubtask.selectedDays.splice(index, 1);
+      } else {
+        this.newSubtask.selectedDays.push(day);
+        this.newSubtask.selectedDays.sort((a: number, b: number) => a - b);
+      }
+    } else if (this.showEditLevel1SubtaskModal && this.selectedLevel1Subtask) {
+      if (!(this.selectedLevel1Subtask as any).selectedDays) {
+        (this.selectedLevel1Subtask as any).selectedDays = [];
+      }
+      const index = (this.selectedLevel1Subtask as any).selectedDays.indexOf(day);
+      if (index > -1) {
+        (this.selectedLevel1Subtask as any).selectedDays.splice(index, 1);
+      } else {
+        (this.selectedLevel1Subtask as any).selectedDays.push(day);
+        (this.selectedLevel1Subtask as any).selectedDays.sort((a: number, b: number) => a - b);
+      }
+    } else if (this.showEditLevel2SubtaskModal && this.selectedLevel2Subtask) {
+      if (!(this.selectedLevel2Subtask as any).selectedDays) {
+        (this.selectedLevel2Subtask as any).selectedDays = [];
+      }
+      const index = (this.selectedLevel2Subtask as any).selectedDays.indexOf(day);
+      if (index > -1) {
+        (this.selectedLevel2Subtask as any).selectedDays.splice(index, 1);
+      } else {
+        (this.selectedLevel2Subtask as any).selectedDays.push(day);
+        (this.selectedLevel2Subtask as any).selectedDays.sort((a: number, b: number) => a - b);
+      }
     }
   }
-}
 
   onRecurrencePatternChange(): void {
     // Reset pattern-specific fields when pattern changes
@@ -1600,6 +1600,77 @@ export class Tasks2Component implements OnInit, OnDestroy {
     } else {
       target.selectedDays.push(day);
     }
+  }
+
+  // Helper to get parent's selected days for restriction
+  getParentSelectedDays(modalType: string): number[] | null {
+    let parent: any = null;
+
+    switch (modalType) {
+      case 'add-subtask':
+        parent = this.parentTaskForSubtask; // Corrected from selectedTask
+        break;
+      case 'edit-level1':
+        parent = this.parentTaskForLevel1Subtask; // Corrected from parentTaskForSubtask
+        break;
+      case 'add-level2':
+        // For adding Level 2, the parent is the Level 1 subtask
+        // logic: addLevel2Subtask(parentLevel1Subtask) -> sets parentLevel1SubtaskForLevel2
+        parent = this.parentLevel1SubtaskForLevel2;
+        break;
+      case 'edit-level2':
+        // For editing Level 2, parent is the Level 1 subtask
+        // logic: editLevel2Subtask(..., parentLevel1Subtask, ...) -> sets parentLevel1SubtaskForLevel2
+        parent = this.parentLevel1SubtaskForLevel2;
+        break;
+    }
+
+    if (!parent) return null;
+
+    // Return the parent's selected days
+    // Ensure we parse it if it's a string (though service should handle it, raw DB data might be string)
+    let days = parent.selectedDays;
+
+    // If parent has NO selected days (empty or null), we assume NO restriction (all days allowed)
+    // UNLESS it's a specific requirement that "no days = no child days".
+    // But typically usually regular tasks don't have selectedDays populated.
+    // If it is a Periodic Task, selectedDays should be populated.
+    // If we return null, it means "no restriction".
+
+    if (!days || (Array.isArray(days) && days.length === 0)) {
+      return null;
+    }
+
+    if (typeof days === 'string') {
+      try {
+        days = JSON.parse(days);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    return Array.isArray(days) ? days : null;
+  }
+
+  // Helper to check if a day should be disabled
+  isDayDisabled(day: number, modalType: string): boolean {
+    const parentDays = this.getParentSelectedDays(modalType);
+
+    // If parentDays is null, it means no restriction (parent accepts all or is not periodic)
+    if (!parentDays) {
+      return false;
+    }
+
+    // If parent has specific days, disable any day NOT in that list
+    return !parentDays.includes(day);
+  }
+
+  getFilteredDefaultDays(modalType: string): number[] {
+    const parentDays = this.getParentSelectedDays(modalType);
+    if (!parentDays) {
+      return [0, 1, 2, 3, 4, 5, 6];
+    }
+    return [...parentDays];
   }
 
   onAddTaskClickedFromFilter(viewMode: string): void {
@@ -2553,6 +2624,13 @@ export class Tasks2Component implements OnInit, OnDestroy {
       return;
     }
 
+    // Filter selected days against parent
+    const parentDays = this.getParentSelectedDays('add-subtask');
+    let finalSelectedDays = this.newSubtask.selectedDays;
+    if (parentDays && finalSelectedDays) {
+      finalSelectedDays = finalSelectedDays.filter((d: number) => parentDays.includes(d));
+    }
+
     // Prepare subtask data matching API structure (Level 1 Subtask)
     // Use nullish coalescing to preserve 0 and empty string values
     const subtaskData: any = {
@@ -2569,7 +2647,7 @@ export class Tasks2Component implements OnInit, OnDestroy {
       priority_order: this.newSubtask.priorityOrder ?? null,
       important: this.newSubtask.important ?? false,
       completed: this.newSubtask.completed ?? false,
-      selected_days: this.newSubtask.selectedDays
+      selected_days: finalSelectedDays
     };
 
     this.task2Service.addLevel1Subtask(subtaskData).subscribe({
@@ -3029,6 +3107,12 @@ export class Tasks2Component implements OnInit, OnDestroy {
     this.parentTaskForLevel1Subtask = task;
     this.parentLevel1SubtaskForLevel2 = level1Subtask;
     this.initializeSubtaskDefaults();
+
+    // Re-filter for Level 2 context specifically if needed (initializeSubtaskDefaults might default to Level 1 context logic)
+    // initializeSubtaskDefaults uses 'add-subtask' logic mostly or generic.
+    // Let's explicitly set selectedDays for Level 2 context here to be safe.
+    this.newSubtask.selectedDays = this.getFilteredDefaultDays('add-level2');
+
     this.showAddLevel2SubtaskModal = true;
   }
 
@@ -3066,22 +3150,29 @@ export class Tasks2Component implements OnInit, OnDestroy {
       important: (level1Subtask as any).important ?? false
     };
 
-  // Parse selectedDays if it's a string
-  if ((level1Subtask as any).selectedDays) {
-    if (typeof (level1Subtask as any).selectedDays === 'string') {
-      try {
-        (this.selectedLevel1Subtask as any).selectedDays = JSON.parse((level1Subtask as any).selectedDays);
-      } catch (e) {
-        (this.selectedLevel1Subtask as any).selectedDays = [];
+    // Parse selectedDays if it's a string
+    if ((level1Subtask as any).selectedDays) {
+      if (typeof (level1Subtask as any).selectedDays === 'string') {
+        try {
+          (this.selectedLevel1Subtask as any).selectedDays = JSON.parse((level1Subtask as any).selectedDays);
+        } catch (e) {
+          (this.selectedLevel1Subtask as any).selectedDays = [];
+        }
+      } else {
+        (this.selectedLevel1Subtask as any).selectedDays = (level1Subtask as any).selectedDays;
       }
     } else {
-      (this.selectedLevel1Subtask as any).selectedDays = (level1Subtask as any).selectedDays;
+      (this.selectedLevel1Subtask as any).selectedDays = [];
     }
-  } else {
-    (this.selectedLevel1Subtask as any).selectedDays = [];
-  }
 
-  // Debug: Log the values after processing
+    // Filter days against parent
+    const parentDays1 = this.getParentSelectedDays('edit-level1');
+    if (parentDays1) {
+      // Filter existing selections to remove invalid ones
+      (this.selectedLevel1Subtask as any).selectedDays = (this.selectedLevel1Subtask as any).selectedDays.filter((d: number) => parentDays1.includes(d));
+    }
+
+    // Debug: Log the values after processing
     console.log('Editing level 1 subtask - processed values:', {
       startTime: this.selectedLevel1Subtask.startTime,
       endTime: this.selectedLevel1Subtask.endTime,
@@ -3209,9 +3300,15 @@ export class Tasks2Component implements OnInit, OnDestroy {
       return;
     }
 
-    // Get priority ID and status ID from masters
     const priorityId = this.priorities.find(p => p.priority === this.selectedLevel1Subtask?.priority?.name)?.id || null;
     const statusId = this.statuses.find(s => s.status === this.selectedLevel1Subtask?.status?.name)?.id || null;
+
+    // Filter selected days against parent
+    const parentDays = this.getParentSelectedDays('edit-level1');
+    let finalSelectedDays = (this.selectedLevel1Subtask as any).selectedDays;
+    if (parentDays && finalSelectedDays) {
+      finalSelectedDays = finalSelectedDays.filter((d: number) => parentDays.includes(d));
+    }
 
     // Prepare subtask data matching API structure
     // Use nullish coalescing to preserve 0 and empty string values
@@ -3229,7 +3326,7 @@ export class Tasks2Component implements OnInit, OnDestroy {
       priority_order: this.selectedLevel1Subtask.priorityOrder ?? null,
       important: (this.selectedLevel1Subtask as any).important ?? false,
       completed: this.selectedLevel1Subtask.completed ?? false,
-      selected_days: (this.selectedLevel1Subtask as any).selectedDays
+      selected_days: finalSelectedDays
     };
 
     console.log('Updating level 1 subtask with data:', subtaskData);
@@ -3344,22 +3441,28 @@ export class Tasks2Component implements OnInit, OnDestroy {
     (this.selectedLevel2Subtask as any).completed = this.selectedLevel2Subtask.completed ?? false;
     (this.selectedLevel2Subtask as any).important = (this.selectedLevel2Subtask as any).important ?? false;
 
-  // Parse selectedDays if it's a string
-  if ((level2Subtask as any).selectedDays) {
-    if (typeof (level2Subtask as any).selectedDays === 'string') {
-      try {
-        (this.selectedLevel2Subtask as any).selectedDays = JSON.parse((level2Subtask as any).selectedDays);
-      } catch (e) {
-        (this.selectedLevel2Subtask as any).selectedDays = [];
+    // Parse selectedDays if it's a string
+    if ((level2Subtask as any).selectedDays) {
+      if (typeof (level2Subtask as any).selectedDays === 'string') {
+        try {
+          (this.selectedLevel2Subtask as any).selectedDays = JSON.parse((level2Subtask as any).selectedDays);
+        } catch (e) {
+          (this.selectedLevel2Subtask as any).selectedDays = [];
+        }
+      } else {
+        (this.selectedLevel2Subtask as any).selectedDays = (level2Subtask as any).selectedDays;
       }
     } else {
-      (this.selectedLevel2Subtask as any).selectedDays = (level2Subtask as any).selectedDays;
+      (this.selectedLevel2Subtask as any).selectedDays = [];
     }
-  } else {
-    (this.selectedLevel2Subtask as any).selectedDays = [];
-  }
 
-  // Match status and priority to master list objects for proper dropdown binding
+    // Filter days against parent
+    const parentDays2 = this.getParentSelectedDays('edit-level2');
+    if (parentDays2) {
+      (this.selectedLevel2Subtask as any).selectedDays = (this.selectedLevel2Subtask as any).selectedDays.filter((d: number) => parentDays2.includes(d));
+    }
+
+    // Match status and priority to master list objects for proper dropdown binding
     // Angular [ngValue] uses reference equality, so we need to match the exact objects from master lists
     if (this.selectedLevel2Subtask.status?.name) {
       const matchedStatus = this.statuses.find(s =>
@@ -3402,9 +3505,15 @@ export class Tasks2Component implements OnInit, OnDestroy {
       return;
     }
 
-    // Get priority ID and status ID from masters
     const priorityId = this.priorities.find(p => p.priority === this.selectedLevel2Subtask?.priority?.name)?.id || null;
     const statusId = this.statuses.find(s => s.status === this.selectedLevel2Subtask?.status?.name)?.id || null;
+
+    // Filter selected days against parent
+    const parentDays = this.getParentSelectedDays('edit-level2');
+    let finalSelectedDays = (this.selectedLevel2Subtask as any).selectedDays;
+    if (parentDays && finalSelectedDays) {
+      finalSelectedDays = finalSelectedDays.filter((d: number) => parentDays.includes(d));
+    }
 
     // Prepare subtask data matching API structure
     // Use nullish coalescing to preserve 0, false, and empty string values
@@ -3423,7 +3532,7 @@ export class Tasks2Component implements OnInit, OnDestroy {
       priority_order: this.selectedLevel2Subtask.priorityOrder ?? null,
       important: (this.selectedLevel2Subtask as any).important ?? false,
       completed: this.selectedLevel2Subtask.completed ?? false,
-      selected_days: (this.selectedLevel2Subtask as any).selectedDays
+      selected_days: finalSelectedDays
     };
 
     if (this.viewMode === 'periodic-tasks') {
@@ -3584,6 +3693,13 @@ export class Tasks2Component implements OnInit, OnDestroy {
     // estimated_hours now supports decimals
     const estimatedHours = this.newSubtask.estimatedHours;
 
+    // Filter selected days against parent
+    const parentDays = this.getParentSelectedDays('add-level2');
+    let finalSelectedDays = this.newSubtask.selectedDays;
+    if (parentDays && finalSelectedDays) {
+      finalSelectedDays = finalSelectedDays.filter((d: number) => parentDays.includes(d));
+    }
+
     // Prepare subtask data matching API structure (Level 2 Subtask)
     // Use nullish coalescing to preserve 0 and empty string values
     const subtaskData: any = {
@@ -3600,7 +3716,7 @@ export class Tasks2Component implements OnInit, OnDestroy {
       priority_order: this.newSubtask.priorityOrder ?? null,
       important: this.newSubtask.important ?? false,
       completed: this.newSubtask.completed ?? false,
-      selected_days: this.newSubtask.selectedDays
+      selected_days: finalSelectedDays
     };
 
     if (this.viewMode === 'periodic-tasks') {
