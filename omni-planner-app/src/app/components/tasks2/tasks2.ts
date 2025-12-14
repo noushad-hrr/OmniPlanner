@@ -2668,6 +2668,112 @@ export class Tasks2Component implements OnInit, OnDestroy {
     });
   }
 
+  // Get the earliest start date among all subtasks (Level 1 and Level 2)
+  getMinChildStartDate(): string | null {
+    if (!this.selectedTask || !this.selectedTask.subtasks || this.selectedTask.subtasks.length === 0) {
+      return null;
+    }
+
+    const allSubtasks = this.getAllSubtasksFlat(this.selectedTask.subtasks);
+    let minDate: Date | null = null;
+
+    for (const subtask of allSubtasks) {
+      if (subtask.startDate) {
+        const date = new Date(subtask.startDate);
+        if (!minDate || date < minDate) {
+          minDate = date;
+        }
+      }
+    }
+
+    if (minDate) {
+      const year = minDate.getFullYear();
+      const month = String(minDate.getMonth() + 1).padStart(2, '0');
+      const day = String(minDate.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    return null;
+  }
+
+  // Get the latest end date among all subtasks (Level 1 and Level 2)
+  getMaxChildEndDate(): string | null {
+    if (!this.selectedTask || !this.selectedTask.subtasks || this.selectedTask.subtasks.length === 0) {
+      return null;
+    }
+
+    const allSubtasks = this.getAllSubtasksFlat(this.selectedTask.subtasks);
+    let maxDate: Date | null = null;
+
+    for (const subtask of allSubtasks) {
+      if (subtask.endDate) {
+        const date = new Date(subtask.endDate);
+        if (!maxDate || date > maxDate) {
+          maxDate = date;
+        }
+      }
+    }
+
+    if (maxDate) {
+      const year = maxDate.getFullYear();
+      const month = String(maxDate.getMonth() + 1).padStart(2, '0');
+      const day = String(maxDate.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    return null;
+  }
+
+  // Get the earliest start date among all Level 2 subtasks of the selected Level 1 subtask
+  getMinLevel2ChildStartDate(): string | null {
+    if (!this.selectedLevel1Subtask || !this.selectedLevel1Subtask.subtasks || this.selectedLevel1Subtask.subtasks.length === 0) {
+      return null;
+    }
+
+    let minDate: Date | null = null;
+
+    for (const subtask of this.selectedLevel1Subtask.subtasks) {
+      if (subtask.startDate) {
+        const date = new Date(subtask.startDate);
+        if (!minDate || date < minDate) {
+          minDate = date;
+        }
+      }
+    }
+
+    if (minDate) {
+      const year = minDate.getFullYear();
+      const month = String(minDate.getMonth() + 1).padStart(2, '0');
+      const day = String(minDate.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    return null;
+  }
+
+  // Get the latest end date among all Level 2 subtasks of the selected Level 1 subtask
+  getMaxLevel2ChildEndDate(): string | null {
+    if (!this.selectedLevel1Subtask || !this.selectedLevel1Subtask.subtasks || this.selectedLevel1Subtask.subtasks.length === 0) {
+      return null;
+    }
+
+    let maxDate: Date | null = null;
+
+    for (const subtask of this.selectedLevel1Subtask.subtasks) {
+      if (subtask.endDate) {
+        const date = new Date(subtask.endDate);
+        if (!maxDate || date > maxDate) {
+          maxDate = date;
+        }
+      }
+    }
+
+    if (maxDate) {
+      const year = maxDate.getFullYear();
+      const month = String(maxDate.getMonth() + 1).padStart(2, '0');
+      const day = String(maxDate.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    return null;
+  }
+
   validateSubtaskForm(): boolean {
     let isValid = true;
 
@@ -2773,6 +2879,37 @@ export class Tasks2Component implements OnInit, OnDestroy {
         this.subtaskStartDateError = 'Start Date must be less than or equal to End Date';
         this.subtaskEndDateError = 'End Date must be greater than or equal to Start Date';
         isValid = false;
+      }
+    }
+
+    // Validate Level 1 dates against Level 2 subtasks
+    if (this.selectedLevel1Subtask?.startDate) {
+      const minChildStart = this.getMinLevel2ChildStartDate();
+      if (minChildStart) {
+        const startDate = new Date(this.selectedLevel1Subtask.startDate);
+        const minDate = new Date(minChildStart);
+        startDate.setHours(0, 0, 0, 0);
+        minDate.setHours(0, 0, 0, 0);
+
+        if (startDate > minDate) {
+          this.subtaskStartDateError = `Start Date cannot be later than earliest Level 2 subtask start (${minChildStart})`;
+          isValid = false;
+        }
+      }
+    }
+
+    if (this.selectedLevel1Subtask?.endDate) {
+      const maxChildEnd = this.getMaxLevel2ChildEndDate();
+      if (maxChildEnd) {
+        const endDate = new Date(this.selectedLevel1Subtask.endDate);
+        const maxDate = new Date(maxChildEnd);
+        endDate.setHours(0, 0, 0, 0);
+        maxDate.setHours(0, 0, 0, 0);
+
+        if (endDate < maxDate) {
+          this.subtaskEndDateError = `End Date cannot be earlier than latest Level 2 subtask end (${maxChildEnd})`;
+          isValid = false;
+        }
       }
     }
 
@@ -4362,6 +4499,39 @@ export class Tasks2Component implements OnInit, OnDestroy {
         this.startDateError = 'Start Date must be less than or equal to End Date';
         this.endDateError = 'End Date must be greater than or equal to Start Date';
         isValid = false;
+      }
+    }
+
+    // Validate parent dates against subtasks
+    if (this.selectedTask.startDate) {
+      const minChildStart = this.getMinChildStartDate();
+      if (minChildStart) {
+        const startDate = new Date(this.selectedTask.startDate);
+        const minDate = new Date(minChildStart);
+        // Compare dates (normalize to midnight to avoid time issues)
+        startDate.setHours(0, 0, 0, 0);
+        minDate.setHours(0, 0, 0, 0);
+
+        if (startDate > minDate) {
+          this.startDateError = `Start Date cannot be later than earliest subtask start (${minChildStart})`;
+          isValid = false;
+        }
+      }
+    }
+
+    if (this.selectedTask.endDate) {
+      const maxChildEnd = this.getMaxChildEndDate();
+      if (maxChildEnd) {
+        const endDate = new Date(this.selectedTask.endDate);
+        const maxDate = new Date(maxChildEnd);
+        // Compare dates
+        endDate.setHours(0, 0, 0, 0);
+        maxDate.setHours(0, 0, 0, 0);
+
+        if (endDate < maxDate) {
+          this.endDateError = `End Date cannot be earlier than latest subtask end (${maxChildEnd})`;
+          isValid = false;
+        }
       }
     }
 
