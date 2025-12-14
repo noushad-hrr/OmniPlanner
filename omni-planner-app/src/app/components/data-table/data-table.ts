@@ -132,7 +132,7 @@ export class DataTableComponent implements OnInit, OnChanges, AfterViewInit {
     filterable: true,
     resizable: true,
     pagination: true,
-    pageSize: 10,
+    pageSize: 8,
     pageSizeOptions: [5, 10, 25, 50, 100],
     exportable: true,
     searchable: true,

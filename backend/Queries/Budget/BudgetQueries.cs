@@ -23,20 +23,20 @@ namespace OmniPlanner_API.Queries.Budget
 
         // Budget Credits
         public const string GetCreditsByMonthId = @"
-            SELECT id, month_id, source, amount_estimated, amount_actual, is_last_month_balance, created_at, updated_at
+            SELECT id, month_id, source, amount_estimated, amount_actual, is_last_month_balance, is_credited, created_at, updated_at
             FROM budget_credits
             WHERE month_id = @monthId
             ORDER BY is_last_month_balance DESC, id;";
 
         public const string GetCreditById = @"
-            SELECT id, month_id, source, amount_estimated, amount_actual, is_last_month_balance, created_at, updated_at
+            SELECT id, month_id, source, amount_estimated, amount_actual, is_last_month_balance, is_credited, created_at, updated_at
             FROM budget_credits
             WHERE id = @id;";
 
         public const string AddCredit = @"
-            INSERT INTO budget_credits (month_id, source, amount_estimated, amount_actual, is_last_month_balance, created_at, updated_at)
-            VALUES (@monthId, @source, @amountEstimated, @amountActual, @isLastMonthBalance, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            RETURNING id, month_id, source, amount_estimated, amount_actual, is_last_month_balance, created_at, updated_at;";
+            INSERT INTO budget_credits (month_id, source, amount_estimated, amount_actual, is_last_month_balance, is_credited, created_at, updated_at)
+            VALUES (@monthId, @source, @amountEstimated, @amountActual, @isLastMonthBalance, @isCredited, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            RETURNING id, month_id, source, amount_estimated, amount_actual, is_last_month_balance, is_credited, created_at, updated_at;";
 
         public const string UpdateCredit = @"
             UPDATE budget_credits
@@ -44,44 +44,46 @@ namespace OmniPlanner_API.Queries.Budget
                 amount_estimated = @amountEstimated,
                 amount_actual = @amountActual,
                 is_last_month_balance = @isLastMonthBalance,
+                is_credited = @isCredited,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = @id
-            RETURNING id, month_id, source, amount_estimated, amount_actual, is_last_month_balance, created_at, updated_at;";
+            RETURNING id, month_id, source, amount_estimated, amount_actual, is_last_month_balance, is_credited, created_at, updated_at;";
 
         public const string DeleteCredit = @"
             DELETE FROM budget_credits WHERE id = @id;";
 
         public const string GetLastMonthBalanceCredit = @"
-            SELECT id, month_id, source, amount_estimated, amount_actual, is_last_month_balance, created_at, updated_at
+            SELECT id, month_id, source, amount_estimated, amount_actual, is_last_month_balance, is_credited, created_at, updated_at
             FROM budget_credits
             WHERE month_id = @monthId AND is_last_month_balance = true
             LIMIT 1;";
 
         // Budget Debits
         public const string GetDebitsByMonthId = @"
-            SELECT id, month_id, target, amount_estimated, amount_actual, created_at, updated_at
+            SELECT id, month_id, target, amount_estimated, amount_actual, is_debited, created_at, updated_at
             FROM budget_debits
             WHERE month_id = @monthId
             ORDER BY id;";
 
         public const string GetDebitById = @"
-            SELECT id, month_id, target, amount_estimated, amount_actual, created_at, updated_at
+            SELECT id, month_id, target, amount_estimated, amount_actual, is_debited, created_at, updated_at
             FROM budget_debits
             WHERE id = @id;";
 
         public const string AddDebit = @"
-            INSERT INTO budget_debits (month_id, target, amount_estimated, amount_actual, created_at, updated_at)
-            VALUES (@monthId, @target, @amountEstimated, @amountActual, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            RETURNING id, month_id, target, amount_estimated, amount_actual, created_at, updated_at;";
+            INSERT INTO budget_debits (month_id, target, amount_estimated, amount_actual, is_debited, created_at, updated_at)
+            VALUES (@monthId, @target, @amountEstimated, @amountActual, @isDebited, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            RETURNING id, month_id, target, amount_estimated, amount_actual, is_debited, created_at, updated_at;";
 
         public const string UpdateDebit = @"
             UPDATE budget_debits
             SET target = @target,
                 amount_estimated = @amountEstimated,
                 amount_actual = @amountActual,
+                is_debited = @isDebited,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = @id
-            RETURNING id, month_id, target, amount_estimated, amount_actual, created_at, updated_at;";
+            RETURNING id, month_id, target, amount_estimated, amount_actual, is_debited, created_at, updated_at;";
 
         public const string DeleteDebit = @"
             DELETE FROM budget_debits WHERE id = @id;";

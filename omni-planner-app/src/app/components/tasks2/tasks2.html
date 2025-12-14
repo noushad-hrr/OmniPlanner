@@ -1,0 +1,2626 @@
+<div class="tasks-container">
+  <!-- Header Section -->
+  <!-- <div class="tasks-header">
+    <h2 class="tasks-title">Tasks Management</h2>
+  </div> -->
+
+  <!-- Task Filters Component -->
+  <app-task-filters [filterOptions]="filterOptions" [initialFilters]="currentFilters"
+    [isStatsPanelCollapsed]="isStatsPanelCollapsed" [controlBarTheme]="controlBarTheme"
+    [addTaskLabel]="'Add Periodic Task'" [PeriodicTaskMenu]="true" (filtersChanged)="onFiltersChanged($event)"
+    (filtersCleared)="onFiltersCleared()" (viewModeChanged)="onViewModeChanged($event)"
+    (addTaskClicked)="onAddTaskClickedFromFilter($event)" (statsPanelToggled)="toggleStatsPanel()"></app-task-filters>
+
+  <!-- Stats Overview -->
+  <div class="stats-overview-container" [class.collapsed]="isStatsPanelCollapsed">
+    <div class="stats-overview" [class.collapsed]="isStatsPanelCollapsed">
+      <!-- Section I: Today's Stats -->
+      <div class="stats-section">
+        <div class="section-header">
+          <h4 class="section-title">
+            <i class="fas fa-calendar-day"></i>
+            Today's
+          </h4>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">{{ getTodaysStats().total }}</div>
+              <div class="stat-label">Total</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">{{ getTodaysStats().completed }}</div>
+              <div class="stat-label">Completed</div>
+            </div>
+          </div>
+          <div class="stat-card" [class.siren-alert]="getTodaysStats().pending > 0">
+            <div class="stat-icon"><i class="fas fa-clock"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">{{ getTodaysStats().pending }}</div>
+              <div class="stat-label">Pending</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section II: Total Stats -->
+      <div class="stats-section">
+        <div class="section-header">
+          <h4 class="section-title">
+            <i class="fas fa-database"></i>
+            Total
+          </h4>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">{{ getTotalStats().total }}</div>
+              <div class="stat-label">Total Tasks</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">{{ getTotalStats().completed }}</div>
+              <div class="stat-label">Completed</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">{{ getTotalStats().pending }}</div>
+              <div class="stat-label">Pending</div>
+            </div>
+          </div>
+          <div class="stat-card" [class.siren-alert]="getTotalStats().overdue > 0">
+            <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">{{ getTotalStats().overdue }}</div>
+              <div class="stat-label">Overdue</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section III: Filtered Stats -->
+      <div class="stats-section">
+        <div class="section-header">
+          <h4 class="section-title">
+            <i class="fas fa-filter"></i>
+            Filtered
+          </h4>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">{{ getFilteredStats().total }}</div>
+              <div class="stat-label">Total Tasks</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">{{ getFilteredStats().completed }}</div>
+              <div class="stat-label">Completed</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">{{ getFilteredStats().pending }}</div>
+              <div class="stat-label">Pending</div>
+            </div>
+          </div>
+          <div class="stat-card" [class.siren-alert]="getFilteredStats().overdue > 0">
+            <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">{{ getFilteredStats().overdue }}</div>
+              <div class="stat-label">Overdue</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <!-- Kanban View -->
+    <div *ngIf="viewMode === 'kanban'" class="kanban-board">
+      <div class="kanban-column" *ngFor="let status of ['todo', 'in-progress', 'review', 'done']">
+        <div class="column-header">
+          <h3 class="column-title">
+            <span *ngIf="status === 'todo'">📝</span>
+            <span *ngIf="status === 'in-progress'">⏳</span>
+            <span *ngIf="status === 'review'">👀</span>
+            <span *ngIf="status === 'done'">✅</span>
+            {{ status | titlecase }}
+          </h3>
+          <span class="task-count">{{ getTasksByStatus(status).length }}</span>
+        </div>
+
+        <div class="column-content" (dragover)="onDragOver($event)" (drop)="onDrop($event, status)">
+          <div *ngFor="let task of getTasksByStatus(status)" class="task-card" [class.overdue]="isOverdue(task)"
+            [class.dragging]="draggedTask?.id === task.id" draggable="true" (dragstart)="onDragStart($event, task)"
+            (dragend)="onDragEnd()" (click)="viewTaskDetails(task)">
+            <div class="task-header">
+              <div class="task-priority" [style.background-color]="getPriorityColor(task.priorityLevel)"></div>
+              <div class="task-actions">
+                <div class="action-menu">
+                  <button class="action-btn" (click)="editTask(task); $event.stopPropagation()" title="Edit">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="action-btn" (click)="duplicateTask(task); $event.stopPropagation()"
+                    title="Duplicate">📋</button>
+                  <button class="action-btn" (click)="startTimeTracking(task.id); $event.stopPropagation()"
+                    title="Start Timer">⏱️</button>
+                  <button class="action-btn" (click)="deleteTask(task.id); $event.stopPropagation()" title="Delete">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="task-content">
+              <h4 class="task-title">{{ task.title }}</h4>
+              <p class="task-description">{{ task.description }}</p>
+
+              <div class="task-meta">
+                <div class="task-category" *ngIf="task.category">
+                  <span class="category-icon">{{ getCategoryIcon(task.category.name) }}</span>
+                  {{ task.category.name }}
+                </div>
+              </div>
+
+              <div class="task-progress" *ngIf="task.estimatedHours && task.estimatedHours > 0">
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width.%]="getProgressPercentage(task)"></div>
+                </div>
+                <span class="progress-text">{{ task.estimatedHours }}h</span>
+              </div>
+
+              <div class="task-due-date" *ngIf="task.startDate || task.endDate">
+                <span class="due-icon">📅</span>
+                <span *ngIf="task.startDate">{{ task.startDate | date:'MMM dd, yyyy' }}</span>
+                <span *ngIf="task.startDate && task.endDate"> - </span>
+                <span *ngIf="task.endDate">{{ task.endDate | date:'MMM dd, yyyy' }}</span>
+              </div>
+            </div>
+
+            <div class="task-footer">
+              <select class="status-select" [value]="task.status" (change)="onStatusChange(task.id, $event)">
+                <option value="todo">📝 To Do</option>
+                <option value="in-progress">⏳ In Progress</option>
+                <option value="review">👀 Review</option>
+                <option value="done">✅ Done</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tasks Table View - On Day-->
+    <div *ngIf="viewMode === 'list'" class="smart-table-view">
+      <app-data-table [columns]="tableColumns" [data]="getTableData()" [config]="tableConfig" [actions]="tableActions"
+        [loading]="false" emptyMessage="No tasks found" searchPlaceholder="Search tasks..."
+        [externalSearch]="currentFilters.searchQuery" (rowClick)="onTableRowClick($event)"
+        (rowSelect)="onTableRowSelect($event)" (actionClick)="onTableActionClick($event)"
+        (sortChange)="onTableSortChange($event)" (filterChange)="onTableFilterChange($event)"
+        (pageChange)="onTablePageChange($event)"></app-data-table>
+    </div>
+
+    <!-- Periodic Tasks View (exact replica of List/Tasks) -->
+    <div *ngIf="viewMode === 'periodic-tasks'" class="smart-table-view">
+      <app-data-table [columns]="tableColumns" [data]="getTableData()" [config]="tableConfig" [actions]="tableActions"
+        [loading]="false" [isPeriodicTasks]="true" emptyMessage="No periodic tasks found"
+        searchPlaceholder="Search periodic tasks..." [externalSearch]="currentFilters.searchQuery"
+        (rowClick)="onTableRowClick($event)" (rowSelect)="onTableRowSelect($event)"
+        (actionClick)="onTableActionClick($event)" (sortChange)="onTableSortChange($event)"
+        (filterChange)="onTableFilterChange($event)" (pageChange)="onTablePageChange($event)"></app-data-table>
+    </div>
+
+    <!-- Calendar View -->
+    <div *ngIf="viewMode === 'calendar'" class="calendar-view">
+      <div class="calendar-header">
+        <button class="nav-btn" (click)="previousMonth()">‹</button>
+        <h2 class="month-title">{{ getMonthName() }}</h2>
+        <button class="nav-btn" (click)="nextMonth()">›</button>
+      </div>
+
+      <div class="calendar-grid">
+        <div class="calendar-day-header" *ngFor="let day of ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']">
+          {{ day }}
+        </div>
+
+        <div *ngFor="let date of getCalendarDays()" class="calendar-day" [class.current-month]="isCurrentMonth(date)"
+          [class.today]="isToday(date)" [class.selected]="isSelectedDate(date)" (click)="selectDate(date)">
+          <div class="day-number">{{ date.getDate() }}</div>
+          <div class="day-tasks">
+            <div *ngFor="let task of getTasksForCalendarDate(date)" class="calendar-task"
+              [style.background-color]="getPriorityColor(task.priorityLevel)"
+              (click)="viewTaskDetails(task); $event.stopPropagation()">
+              <span class="task-title">{{ task.title }}</span>
+              <span class="task-time" *ngIf="task.endTime">
+                {{ task.endTime }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="calendar-sidebar" *ngIf="getTasksForCalendarDate(selectedDate).length > 0">
+        <h3>Tasks for {{ selectedDate | date:'MMM dd, yyyy' }}</h3>
+        <div class="selected-date-tasks">
+          <div *ngFor="let task of getTasksForCalendarDate(selectedDate)" class="sidebar-task"
+            (click)="viewTaskDetails(task)">
+            <div class="task-priority-indicator" [style.background-color]="getPriorityColor(task.priorityLevel)"></div>
+            <div class="task-info">
+              <h4>{{ task.title }}</h4>
+              <p>{{ task.description }}</p>
+              <div class="task-meta">
+                <span class="category" *ngIf="task.category">{{ getCategoryIcon(task.category.name) }} {{
+                  task.category.name }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics View -->
+    <div *ngIf="viewMode === 'analytics'" class="analytics-view">
+      <div class="analytics-grid">
+        <!-- Performance Metrics -->
+        <div class="analytics-card">
+          <h3>Performance Metrics</h3>
+          <div class="metrics-grid">
+            <div class="metric-item">
+              <div class="metric-value">{{ getTaskCompletionRate() }}%</div>
+              <div class="metric-label">Completion Rate</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-value">{{ getAverageTaskDuration() }}h</div>
+              <div class="metric-label">Avg Duration</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-value">{{ tasks.length }}</div>
+              <div class="metric-label">Total Tasks</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-value">{{ getTasksByStatus('done').length }}</div>
+              <div class="metric-label">Completed</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Priority Distribution -->
+        <div class="analytics-card">
+          <h3>Priority Distribution</h3>
+          <div class="priority-chart">
+            <div class="priority-item" *ngFor="let priority of priorities">
+              <div class="priority-bar" [class]="'priority-' + priority.priority.toLowerCase()"
+                [style.width.%]="tasks.length > 0 ? (getTasksByPriority(getPriorityObjectByName(priority.priority)).length / tasks.length) * 100 : 0"
+                [style.background-color]="priority.color"></div>
+              <span>{{ priority.priority | titlecase }}: {{
+                getTasksByPriority(getPriorityObjectByName(priority.priority)).length }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category Breakdown -->
+        <div class="analytics-card">
+          <h3>Category Breakdown</h3>
+          <div class="category-chart">
+            <div *ngFor="let category of categories" class="category-item">
+              <div class="category-info">
+                <span class="category-icon">{{ category.icon }}</span>
+                <span class="category-name">{{ category.name }}</span>
+              </div>
+              <div class="category-count">{{ getTasksByCategory(category.name).length }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Team Performance -->
+        <div class="analytics-card">
+          <h3>Team Performance</h3>
+          <div class="team-chart">
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="analytics-card">
+          <h3>Recent Activity</h3>
+          <div class="activity-list">
+            <div *ngFor="let task of getRecentTasks()" class="activity-item">
+              <div class="activity-icon">📝</div>
+              <div class="activity-content">
+                <div class="activity-title">{{ task.title }}</div>
+                <div class="activity-meta">
+                  {{ task.status?.name | titlecase }} • {{ task.updatedAt | date:'MMM dd, HH:mm' }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming Deadlines -->
+        <div class="analytics-card">
+          <h3>Upcoming Deadlines</h3>
+          <div class="deadline-list">
+            <div *ngFor="let task of getUpcomingTasks(7)" class="deadline-item">
+              <div class="deadline-date">{{ task.endDate | date:'MMM dd' }}</div>
+              <div class="deadline-content">
+                <div class="deadline-title">{{ task.title }}</div>
+              </div>
+              <div class="deadline-priority" [style.background-color]="getPriorityColor(task.priorityLevel)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Task Modal -->
+  <div class="modal-overlay" *ngIf="showAddTaskModal" (click)="closeAddTaskModal()">
+    <div class="modal-content task-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Add New Task</h3>
+        <button class="btn-icon" (click)="closeAddTaskModal()" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="taskTitle">Task Title <span class="required">*</span></label>
+          <div class="task-title-input-wrapper">
+            <input type="text" id="taskTitle" [(ngModel)]="newTask.title" (input)="onInput('title')"
+              placeholder="Enter task title..." class="form-input" [class.error]="titleError" maxlength="500">
+            <button type="button" class="star-icon-form" [class.important]="newTask.important"
+              (click)="newTask.important = !newTask.important"
+              [title]="newTask.important ? 'Mark as not important' : 'Mark as important'">
+              {{ newTask.important ? '★' : '☆' }}
+            </button>
+          </div>
+          <div class="error-message" *ngIf="titleError">{{ titleError }}</div>
+        </div>
+
+        <div class="form-row form-row-2">
+          <div class="form-group">
+            <label for="taskDescription">Description</label>
+            <textarea id="taskDescription" [(ngModel)]="newTask.description" placeholder="Enter task description..."
+              class="form-textarea" rows="2" maxlength="2000"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="taskRemarks">Remarks</label>
+            <textarea id="taskRemarks" [(ngModel)]="newTask.remarks"
+              placeholder="Enter remarks or notes... (add full stop, for bullet points)" class="form-textarea" rows="2"
+              maxlength="1000"></textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="taskCategory">Category <span class="required">*</span></label>
+            <select id="taskCategory" [(ngModel)]="newTask.category" (change)="onInput('category')" class="form-select"
+              [class.error]="categoryError">
+              <option [ngValue]="null">Select category</option>
+              <option *ngFor="let category of categoryMasters"
+                [ngValue]="{ name: category.category, icon: category.icon }">
+                {{ category.icon }} {{ category.category }}
+              </option>
+            </select>
+            <div class="error-message" *ngIf="categoryError">{{ categoryError }}</div>
+          </div>
+
+          <div class="form-group">
+            <label for="taskStatus">Status <span class="required">*</span></label>
+            <select id="taskStatus" [(ngModel)]="newTask.status" (change)="onInput('status')" class="form-select"
+              [class.error]="statusError" [compareWith]="compareStatus">
+              <option [ngValue]="null">Select status</option>
+              <option *ngFor="let status of statuses" [ngValue]="{ name: status.status, color: status.color }">
+                {{ status.status | titlecase }}
+              </option>
+            </select>
+            <div class="error-message" *ngIf="statusError">{{ statusError }}</div>
+          </div>
+
+          <div class="form-group">
+            <label for="taskPriority">Priority <span class="required">*</span></label>
+            <select id="taskPriority" [(ngModel)]="newTask.priorityLevel" (change)="onInput('priority')"
+              class="form-select" [class.error]="priorityError" [compareWith]="comparePriority">
+              <option [ngValue]="null">Select priority</option>
+              <option *ngFor="let priority of priorities"
+                [ngValue]="{ name: priority.priority, color: priority.color }">
+                {{ priority.priority | titlecase }}
+              </option>
+            </select>
+            <div class="error-message" *ngIf="priorityError">{{ priorityError }}</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="taskDate">Start Date <span class="required">*</span></label>
+            <input type="date" id="taskDate" [(ngModel)]="newTask.startDate" (input)="onInput('startDate')"
+              class="form-input" [class.error]="startDateError" [attr.max]="newTask.endDate">
+            <div class="error-message" *ngIf="startDateError">{{ startDateError }}</div>
+          </div>
+
+          <div class="form-group">
+            <label for="taskEndDate">End Date <span class="required">*</span></label>
+            <input type="date" id="taskEndDate" [(ngModel)]="newTask.endDate" (input)="onInput('endDate')"
+              class="form-input" [class.error]="endDateError" [attr.min]="newTask.startDate">
+            <div class="error-message" *ngIf="endDateError">{{ endDateError }}</div>
+          </div>
+
+          <div class="form-group">
+            <label for="taskStartTime">Start Time</label>
+            <input type="time" id="taskStartTime" [(ngModel)]="newTask.startTime" class="form-input">
+          </div>
+
+          <div class="form-group">
+            <label for="taskEndTime">End Time</label>
+            <input type="time" id="taskEndTime" [(ngModel)]="newTask.endTime" class="form-input">
+          </div>
+        </div>
+
+
+        <!-- Days Selector -->
+        <div class="form-group">
+          <label>Days</label>
+          <div class="days-selector">
+            <label *ngFor="let day of weekDays" class="day-checkbox">
+              <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)">
+              <span>{{ day.label }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Days Selector -->
+        <!-- <div class="form-group">
+          <label>Days</label>
+          <div class="days-selector">
+            <label *ngFor="let day of weekDays" class="day-checkbox">
+              <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)">
+              <span>{{ day.label }}</span>
+            </label>
+          </div>
+        </div> -->
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="taskEstimatedHours">Estimated Hours</label>
+            <input type="number" id="taskEstimatedHours" [(ngModel)]="newTask.estimatedHours" placeholder="0"
+              class="form-input" min="0" step="0.1">
+          </div>
+
+          <!-- <div class="form-group">
+            <label for="taskPriorityOrder">Priority Order</label>
+            <input 
+              type="number" 
+              id="taskPriorityOrder"
+              [(ngModel)]="newTask.priorityOrder" 
+              placeholder="Order"
+              class="form-input"
+              min="0"
+            >
+          </div> -->
+        </div>
+
+        <!-- URLs Section -->
+        <div class="form-group">
+          <label>URLs/Documents</label>
+          <div class="urls-container">
+            <div class="urls-list">
+              <div *ngFor="let url of newTask.urls; let i = index" class="url-row">
+                <span class="url-label-display">{{ url.label }}</span>
+                <span class="url-value-display">{{ url.url }}</span>
+                <button class="btn-icon btn-remove-url" (click)="removeUrl(i); loadAvailableUrls()" title="Remove URL">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+            <div class="add-url-wrapper">
+              <button type="button" class="btn btn-secondary btn-sm" (click)="toggleAddUrlDropdown()"
+                [disabled]="!newTask.category" title="Add URL from master">
+                <i class="fas fa-plus"></i> Add URL
+              </button>
+              <div class="add-url-dropdown" *ngIf="showAddUrlDropdown && newTask.category"
+                (click)="$event.stopPropagation()">
+                <div class="dropdown-header">Select URL to add</div>
+                <div class="dropdown-content" *ngIf="availableUrls.length > 0; else noUrlsTemplate">
+                  <div class="url-option" *ngFor="let url of availableUrls"
+                    (click)="selectedUrlId = url.url_id; addUrlFromMaster()">
+                    <span class="url-icon" *ngIf="url.category_icon">{{ url.category_icon }}</span>
+                    <span class="url-label">{{ url.label }}</span>
+                    <span class="url-url">{{ url.url }}</span>
+                  </div>
+                </div>
+                <ng-template #noUrlsTemplate>
+                  <div class="dropdown-empty">
+                    {{ loadingUrls ? 'Loading URLs...' : 'No available URLs for this category' }}
+                  </div>
+                </ng-template>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeAddTaskModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="addTask()">Add Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Sub Task Modal -->
+  <div class="modal-overlay" *ngIf="showAddSubtaskModal" (click)="closeAddSubtaskModal()">
+    <div class="modal-content task-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Add New Sub Task</h3>
+        <button class="btn-icon" (click)="closeAddSubtaskModal()" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="subtaskTitle">Subtask Title <span class="required">*</span></label>
+          <input type="text" id="subtaskTitle" [(ngModel)]="newSubtask.title" (input)="onSubtaskInput('title')"
+            placeholder="Enter subtask title..." class="form-input" [class.error]="subtaskTitleError" maxlength="500">
+          <div class="error-message" *ngIf="subtaskTitleError">{{ subtaskTitleError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="subtaskDescription">Description</label>
+          <textarea id="subtaskDescription" [(ngModel)]="newSubtask.description"
+            placeholder="Enter subtask description..." class="form-textarea" rows="2" maxlength="2000"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="subtaskCategory">Category</label>
+            <select id="subtaskCategory" [(ngModel)]="newSubtask.category" class="form-select"
+              [compareWith]="compareCategory" [disabled]="true">
+              <option [ngValue]="null">Select category</option>
+              <option *ngFor="let category of categoryMasters"
+                [ngValue]="{ name: category.category, icon: category.icon }">
+                {{ category.icon }} {{ category.category }}
+              </option>
+            </select>
+            <div class="error-message" *ngIf="subtaskCategoryError">{{ subtaskCategoryError }}</div>
+          </div>
+
+          <div class="form-group">
+            <label for="subtaskStatus">Status <span class="required">*</span></label>
+            <select id="subtaskStatus" [(ngModel)]="newSubtask.status" (change)="onSubtaskInput('status')"
+              class="form-select" [class.error]="subtaskStatusError" [compareWith]="compareStatusOption">
+              <option [ngValue]="null">Select status</option>
+              <option *ngFor="let status of statuses" [ngValue]="{ name: status.status, color: status.color }">
+                {{ status.status | titlecase }}
+              </option>
+            </select>
+            <div class="error-message" *ngIf="subtaskStatusError">{{ subtaskStatusError }}</div>
+          </div>
+
+          <div class="form-group">
+            <label for="subtaskPriority">Priority <span class="required">*</span></label>
+            <select id="subtaskPriority" [(ngModel)]="newSubtask.priority" (change)="onSubtaskInput('priority')"
+              class="form-select" [class.error]="subtaskPriorityError" [compareWith]="comparePriorityOption">
+              <option [ngValue]="null">Select priority</option>
+              <option *ngFor="let priority of priorities"
+                [ngValue]="{ name: priority.priority, color: priority.color }">
+                {{ priority.priority | titlecase }}
+              </option>
+            </select>
+            <div class="error-message" *ngIf="subtaskPriorityError">{{ subtaskPriorityError }}</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="subtaskDate">Start Date <span class="required">*</span></label>
+            <input type="date" id="subtaskDate" [(ngModel)]="newSubtask.startDate" class="form-input"
+              (input)="onSubtaskInput('startDate')" [class.error]="subtaskStartDateError"
+              [attr.max]="newSubtask.endDate || getMainTaskEndDate()" [attr.min]="getMainTaskStartDate()">
+            <div class="error-message" *ngIf="subtaskStartDateError">{{ subtaskStartDateError }}</div>
+          </div>
+
+          <div class="form-group">
+            <label for="subtaskEndDate">End Date <span class="required">*</span></label>
+            <input type="date" id="subtaskEndDate" [(ngModel)]="newSubtask.endDate" (input)="onSubtaskInput('endDate')"
+              class="form-input" [class.error]="subtaskEndDateError"
+              [attr.min]="newSubtask.startDate || getMainTaskStartDate()" [attr.max]="getMainTaskEndDate()">
+            <div class="error-message" *ngIf="subtaskEndDateError">{{ subtaskEndDateError }}</div>
+          </div>
+
+          <div class="form-group">
+            <label for="subtaskStartTime">Start Time</label>
+            <input type="time" id="subtaskStartTime" [(ngModel)]="newSubtask.startTime" class="form-input">
+          </div>
+
+          <div class="form-group">
+            <label for="subtaskEndTime">End Time</label>
+            <input type="time" id="subtaskEndTime" [(ngModel)]="newSubtask.endTime" class="form-input">
+          </div>
+        </div>
+
+        <!-- Days Selector -->
+        <div class="form-group">
+          <label>Days</label>
+          <div class="days-selector">
+            <label *ngFor="let day of weekDays" class="day-checkbox">
+              <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)"
+                [disabled]="isDayDisabled(day.value, 'add-subtask')">
+              <span>{{ day.label }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="subtaskEstimatedHours">Estimated Hours</label>
+            <input type="number" id="subtaskEstimatedHours" [(ngModel)]="newSubtask.estimatedHours" placeholder="0"
+              class="form-input" min="0" step="0.1">
+          </div>
+
+          <!-- <div class="form-group">
+            <label for="subtaskPriorityOrder">Priority Order</label>
+            <input 
+              type="number" 
+              id="subtaskPriorityOrder"
+              [(ngModel)]="newSubtask.priorityOrder" 
+              placeholder="Order"
+              class="form-input"
+              min="0"
+            >
+          </div> -->
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeAddSubtaskModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="addSubtask()">Add Sub Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task Details Modal -->
+  <div class="modal-overlay" *ngIf="showTaskDetailsModal" (click)="showTaskDetailsModal = false">
+    <div class="modal-content task-details-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Task Details</h2>
+        <button class="btn-icon" (click)="showTaskDetailsModal = false" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body" *ngIf="selectedTask">
+        <div class="task-details-content">
+          <div class="detail-section">
+            <h3>{{ selectedTask.title }}</h3>
+            <p class="task-description">{{ selectedTask.description }}</p>
+          </div>
+
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>Status</label>
+              <span class="status-badge" [style.background-color]="getStatusColor(selectedTask.status)">
+                {{ selectedTask.status?.name | titlecase }}
+              </span>
+            </div>
+
+            <div class="detail-item">
+              <label>Priority</label>
+              <span class="priority-badge" [style.background-color]="getPriorityColor(selectedTask.priorityLevel)">
+                {{ selectedTask.priorityLevel?.name | titlecase }}
+              </span>
+            </div>
+
+            <div class="detail-item">
+              <label>Category</label>
+              <span class="category-badge">
+                <span *ngIf="selectedTask.category">{{ getCategoryIcon(selectedTask.category.name) }} {{
+                  selectedTask.category.name }}</span>
+              </span>
+            </div>
+
+            <div class="detail-item">
+            </div>
+
+            <div class="detail-item">
+              <label>Start Date</label>
+              <span>{{ selectedTask?.startDate ? (selectedTask?.startDate | date:'MMM dd, yyyy') : 'No date' }}</span>
+            </div>
+            <div class="detail-item">
+              <label>End Date</label>
+              <span>{{ selectedTask?.endDate ? (selectedTask?.endDate | date:'MMM dd, yyyy') : 'No date' }}</span>
+            </div>
+
+            <div class="detail-item">
+              <label>Progress</label>
+              <div class="progress-info">
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width.%]="getProgressPercentage(selectedTask)"></div>
+                </div>
+                <span>{{ selectedTask.estimatedHours }}h</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subtasks Section -->
+          <div class="detail-section">
+            <div class="subtasks-header">
+              <label>Subtasks ({{ getSubtaskProgress(selectedTask).completed }}/{{
+                getSubtaskProgress(selectedTask).total }})</label>
+              <button type="button" class="btn btn-sm btn-secondary" (click)="addSubtaskToTask(selectedTask.id)">
+                + Add Subtask
+              </button>
+            </div>
+
+            <div class="subtasks-list" *ngIf="selectedTask.subtasks && selectedTask.subtasks.length > 0">
+              <div class="subtask-item" *ngFor="let subtask of selectedTask.subtasks">
+                <div class="subtask-content">
+                  <div class="subtask-header">
+                    <h4>{{ subtask.title }}</h4>
+                    <span class="subtask-status" [style.background-color]="getSubtaskStatusColor(subtask.status)">
+                      {{ subtask.status.name | titlecase }}
+                    </span>
+                  </div>
+                  <p class="subtask-description" *ngIf="subtask.description">{{ subtask.description }}</p>
+                  <div class="subtask-meta">
+                    <span class="subtask-priority" [style.background-color]="getSubtaskPriorityColor(subtask.priority)">
+                      {{ subtask.priority.name | titlecase }}
+                    </span>
+                    <span class="subtask-hours">⏱️ {{ subtask.estimatedHours }}h</span>
+                  </div>
+                </div>
+                <div class="subtask-actions">
+                  <button class="btn btn-sm btn-primary"
+                    (click)="updateSubtaskStatus(selectedTask.id, subtask.id, getStatusObjectByName('in-progress')!)"
+                    *ngIf="subtask.status.name === 'todo' || subtask.status.name === 'open'">Start</button>
+                  <button class="btn btn-sm btn-success"
+                    (click)="updateSubtaskStatus(selectedTask.id, subtask.id, getStatusObjectByName('done')!)"
+                    *ngIf="subtask.status.name === 'in-progress'">Complete</button>
+                  <button class="btn btn-sm btn-danger"
+                    (click)="deleteSubtask(selectedTask.id, subtask.id)">Delete</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="no-subtasks" *ngIf="!selectedTask.subtasks || selectedTask.subtasks.length === 0">
+              <p>No subtasks yet. Click "Add Subtask" to create one.</p>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <label>Created</label>
+            <span>{{ selectedTask.createdAt | date:'MMM dd, yyyy HH:mm' }}</span>
+          </div>
+
+          <div class="detail-section">
+            <label>Last Updated</label>
+            <span>{{ selectedTask.updatedAt | date:'MMM dd, yyyy HH:mm' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showTaskDetailsModal = false">Close</button>
+        <button class="btn btn-primary" (click)="editTask(selectedTask!); showTaskDetailsModal = false">Edit
+          Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Periodic Task Modal -->
+  <div class="modal-overlay" *ngIf="showAddPeriodicTaskModal || showEditPeriodicTaskModal"
+    (click)="closePeriodicTaskModal()">
+    <div class="modal-content task-modal periodic-task-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ showAddPeriodicTaskModal ? 'Add Periodic Task' : 'Edit Periodic Task' }}</h3>
+        <button class="btn-icon" (click)="closePeriodicTaskModal()" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Basic Information -->
+        <div class="form-section">
+          <!-- <h4 class="section-title">Basic Information</h4> -->
+
+          <div class="form-group">
+            <label for="periodicTaskTitle">Title <span class="required">*</span></label>
+            <input type="text" id="periodicTaskTitle" [(ngModel)]="newPeriodicTask.title"
+              placeholder="Enter task title..." class="form-input" [class.error]="periodicTaskTitleError"
+              maxlength="500">
+            <div class="error-message" *ngIf="periodicTaskTitleError">{{ periodicTaskTitleError }}</div>
+          </div>
+
+          <div class="form-group">
+            <label for="periodicTaskDescription">Description</label>
+            <textarea id="periodicTaskDescription" [(ngModel)]="newPeriodicTask.description"
+              placeholder="Enter task description..." class="form-input" rows="3"></textarea>
+          </div>
+        </div>
+        <!-- Recurrence Pattern -->
+        <div class="form-section">
+          <h4 class="section-title">Recurrence Pattern</h4>
+
+          <div class="form-group">
+            <label for="recurrencePattern">Repeat <span class="required">*</span></label>
+            <select id="recurrencePattern" [(ngModel)]="newPeriodicTask.recurrence_pattern"
+              (change)="onRecurrencePatternChange()" class="form-input">
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="recurrenceInterval">Repeat Every</label>
+            <div class="input-with-label">
+              <input type="number" id="recurrenceInterval" [(ngModel)]="newPeriodicTask.recurrence_interval" min="1"
+                class="form-input" style="width: 100px;">
+              <span class="input-suffix">{{ getIntervalLabel() }}</span>
+            </div>
+          </div>
+
+          <!-- Weekly: Days of Week -->
+          <div class="form-group" *ngIf="newPeriodicTask.recurrence_pattern === 'weekly'">
+            <label>Repeat On</label>
+            <div class="days-selector">
+              <label *ngFor="let day of weekDays" class="day-checkbox">
+                <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)">
+                <span>{{ day.label }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Monthly: Day of Month or Week -->
+          <div *ngIf="newPeriodicTask.recurrence_pattern === 'monthly'">
+            <div class="form-group">
+              <label>Repeat By</label>
+              <select [(ngModel)]="monthlyRepeatType" class="form-input">
+                <option value="day">Day of Month</option>
+                <option value="week">Week of Month</option>
+              </select>
+            </div>
+
+            <div *ngIf="monthlyRepeatType === 'day'" class="form-group">
+              <label for="monthDay">Day</label>
+              <input type="number" id="monthDay" [(ngModel)]="newPeriodicTask.recurrence_month_day" min="1" max="31"
+                class="form-input" style="width: 100px;">
+            </div>
+
+            <div *ngIf="monthlyRepeatType === 'week'" class="form-row">
+              <div class="form-group">
+                <label for="weekOfMonth">Week</label>
+                <select id="weekOfMonth" [(ngModel)]="newPeriodicTask.recurrence_week_of_month" class="form-input">
+                  <option [value]="1">First</option>
+                  <option [value]="2">Second</option>
+                  <option [value]="3">Third</option>
+                  <option [value]="4">Fourth</option>
+                  <option [value]="-1">Last</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="dayOfWeek">Day</label>
+                <select id="dayOfWeek" [(ngModel)]="newPeriodicTask.recurrence_day_of_week" class="form-input">
+                  <option [value]="0">Sunday</option>
+                  <option [value]="1">Monday</option>
+                  <option [value]="2">Tuesday</option>
+                  <option [value]="3">Wednesday</option>
+                  <option [value]="4">Thursday</option>
+                  <option [value]="5">Friday</option>
+                  <option [value]="6">Saturday</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Yearly: Month -->
+          <div class="form-group" *ngIf="newPeriodicTask.recurrence_pattern === 'yearly'">
+            <label for="recurrenceMonth">Month</label>
+            <select id="recurrenceMonth" [(ngModel)]="newPeriodicTask.recurrence_month" class="form-input">
+              <option [value]="1">January</option>
+              <option [value]="2">February</option>
+              <option [value]="3">March</option>
+              <option [value]="4">April</option>
+              <option [value]="5">May</option>
+              <option [value]="6">June</option>
+              <option [value]="7">July</option>
+              <option [value]="8">August</option>
+              <option [value]="9">September</option>
+              <option [value]="10">October</option>
+              <option [value]="11">November</option>
+              <option [value]="12">December</option>
+            </select>
+          </div>
+
+
+        </div>
+
+
+        <!-- Date & Time -->
+        <div class="form-section">
+          <h4 class="section-title">Date & Time</h4>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="periodicStartDate">Start Date <span class="required">*</span></label>
+              <input type="date" id="periodicStartDate" [(ngModel)]="newPeriodicTask.startDate" class="form-input"
+                [class.error]="periodicTaskStartDateError">
+              <div class="error-message" *ngIf="periodicTaskStartDateError">{{ periodicTaskStartDateError }}</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="recurrenceEndType">Recurrence Ends <span class="required">*</span></label>
+              <select id="recurrenceEndType" [(ngModel)]="newPeriodicTask.recurrence_end_type"
+                (change)="onRecurrenceEndTypeChange()" class="form-input">
+                <option value="">Select End Type</option>
+                <option value="on_date">On Date</option>
+                <option value="after_occurrences">After Occurrences</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="periodicStartTime">Start Time</label>
+              <input type="time" id="periodicStartTime" [(ngModel)]="newPeriodicTask.startTime" class="form-input">
+            </div>
+
+            <div class="form-group">
+              <label for="periodicEndTime">End Time</label>
+              <input type="time" id="periodicEndTime" [(ngModel)]="newPeriodicTask.endTime" class="form-input">
+            </div>
+
+            <div class="form-group">
+              <label for="periodicEstimatedHours">Estimated Hours</label>
+              <input type="number" id="periodicEstimatedHours" [(ngModel)]="newPeriodicTask.estimatedHours"
+                placeholder="0" class="form-input" min="0" step="0.1">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="recurrenceEndDate">End Date <span class="required">*</span></label>
+              <input type="date" id="recurrenceEndDate" [(ngModel)]="newPeriodicTask.recurrence_end_date"
+                [disabled]="newPeriodicTask.recurrence_end_type === 'after_occurrences'" class="form-input"
+                [class.error]="periodicTaskEndDateError">
+              <div class="error-message"
+                *ngIf="periodicTaskEndDateError && newPeriodicTask.recurrence_end_type === 'on_date'">{{
+                periodicTaskEndDateError }}</div>
+            </div>
+
+            <div *ngIf="newPeriodicTask.recurrence_end_type === 'after_occurrences'" class="form-group">
+              <label for="recurrenceOccurrences">Occurrences</label>
+              <input type="number" id="recurrenceOccurrences" [(ngModel)]="newPeriodicTask.recurrence_occurrences"
+                min="1" (change)="onRecurrenceOccurrencesChange()" class="form-input" style="width: 150px;">
+            </div>
+          </div>
+
+        </div>
+
+
+        <!-- Task Details -->
+        <div class="form-section">
+          <h4 class="section-title">Task Details</h4>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="periodicPriority">Priority <span class="required">*</span></label>
+              <select id="periodicPriority" [(ngModel)]="newPeriodicTask.priorityLevel" [compareWith]="compareObjects"
+                class="form-input" [class.error]="periodicTaskPriorityError">
+                <option [ngValue]="null">Select Priority</option>
+                <option *ngFor="let priority of priorities"
+                  [ngValue]="{ name: priority.priority, color: priority.color }">
+                  {{ priority.priority }}
+                </option>
+              </select>
+              <div class="error-message" *ngIf="periodicTaskPriorityError">{{ periodicTaskPriorityError }}</div>
+            </div>
+
+            <div class="form-group">
+              <label for="periodicStatus">Status <span class="required">*</span></label>
+              <select id="periodicStatus" [(ngModel)]="newPeriodicTask.status" class="form-input"
+                [class.error]="periodicTaskStatusError">
+                <option [ngValue]="null">Select Status</option>
+                <option *ngFor="let status of statuses" [ngValue]="{ name: status.status, color: status.color }">
+                  {{ status.status }}
+                </option>
+              </select>
+              <div class="error-message" *ngIf="periodicTaskStatusError">{{ periodicTaskStatusError }}</div>
+            </div>
+
+            <div class="form-group">
+              <label for="periodicCategory">Category <span class="required">*</span></label>
+              <select id="periodicCategory" [(ngModel)]="newPeriodicTask.category" class="form-input"
+                [class.error]="periodicTaskCategoryError">
+                <option [ngValue]="null">Select Category</option>
+                <option *ngFor="let category of categoryMasters"
+                  [ngValue]="{ name: category.category, icon: category.icon }">
+                  {{ category.category }}
+                </option>
+              </select>
+              <div class="error-message" *ngIf="periodicTaskCategoryError">{{ periodicTaskCategoryError }}</div>
+            </div>
+          </div>
+
+          <!-- div class="form-group">
+            <span>Mark as Important</span>
+            <input type="checkbox" [(ngModel)]="newPeriodicTask.important">
+          </div -->
+        </div>
+
+        <!-- URLs Section -->
+        <div class="form-group">
+          <label>URLs/Documents</label>
+          <div class="urls-container">
+            <div class="urls-list">
+              <div *ngFor="let url of newPeriodicTask.urls; let i = index" class="url-row">
+                <span class="url-label-display">{{ url.label }}</span>
+                <span class="url-value-display">{{ url.url }}</span>
+                <button class="btn-icon btn-remove-url"
+                  (click)="removePeriodicTaskUrl(i); loadAvailableUrlsForPeriodicTask()" title="Remove URL">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+            <div class="add-url-wrapper">
+              <button type="button" class="btn btn-secondary btn-sm" (click)="toggleAddPeriodicTaskUrlDropdown()"
+                [disabled]="!newPeriodicTask.category" title="Add URL from master">
+                <i class="fas fa-plus"></i> Add URL
+              </button>
+              <div class="add-url-dropdown" *ngIf="showAddPeriodicTaskUrlDropdown && newPeriodicTask.category"
+                (click)="$event.stopPropagation()">
+                <div class="dropdown-header">Select URL to add</div>
+                <div class="dropdown-content" *ngIf="availableUrls.length > 0; else noUrlsTemplate">
+                  <div class="url-option" *ngFor="let url of availableUrls"
+                    (click)="selectedUrlId = url.url_id; addUrlFromMasterToPeriodicTask()">
+                    <span class="url-icon" *ngIf="url.category_icon">{{ url.category_icon }}</span>
+                    <span class="url-label">{{ url.label }}</span>
+                    <span class="url-url">{{ url.url }}</span>
+                  </div>
+                </div>
+                <ng-template #noUrlsTemplate>
+                  <div class="dropdown-empty">
+                    {{ loadingUrls ? 'Loading URLs...' : 'No available URLs for this category' }}
+                  </div>
+                </ng-template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closePeriodicTaskModal()">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+        <button class="btn btn-primary" (click)="savePeriodicTask()">
+          <i class="fas fa-save"></i> {{ showAddPeriodicTaskModal ? 'Add Task' : 'Update Task' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Periodic Task Modal -->
+  <div class="modal-overlay" *ngIf="showViewPeriodicTaskModal" (click)="closeViewPeriodicTaskModal()">
+    <div class="modal-content task-view-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header view-header">
+        <div class="view-header-left">
+          <h2 class="view-title">
+            <span class="view-task-id" *ngIf="selectedPeriodicTask?.id">#{{ selectedPeriodicTask?.id }}</span>
+            <span *ngIf="selectedPeriodicTask?.important" class="important-star-view">★</span>
+            {{ selectedPeriodicTask?.title }}
+          </h2>
+        </div>
+        <button class="btn-icon" (click)="closeViewPeriodicTaskModal()" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body view-body" *ngIf="selectedPeriodicTask">
+        <!-- First Row: Category, Status, Priority -->
+        <div class="view-top-row">
+          <div class="view-info-compact">
+            <span class="view-info-icon" *ngIf="selectedPeriodicTask.category">{{ selectedPeriodicTask.category?.icon
+              }}</span>
+            <div class="view-info-text">
+              <span class="view-info-label">Category</span>
+              <span class="view-info-value">
+                <span *ngIf="selectedPeriodicTask.category">{{ selectedPeriodicTask.category?.name }}</span>
+                <span *ngIf="!selectedPeriodicTask.category">ND</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="view-info-compact">
+            <span class="view-info-dot" *ngIf="selectedPeriodicTask.status"
+              [style.background-color]="getStatusColor(selectedPeriodicTask.status)"></span>
+            <div class="view-info-text">
+              <span class="view-info-label">Status</span>
+              <span class="view-info-value">
+                <span *ngIf="selectedPeriodicTask.status">{{ selectedPeriodicTask.status?.name | titlecase }}</span>
+                <span *ngIf="!selectedPeriodicTask.status">ND</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="view-info-compact">
+            <span class="view-info-dot" *ngIf="selectedPeriodicTask.priorityLevel"
+              [style.background-color]="getPriorityColor(selectedPeriodicTask.priorityLevel)"></span>
+            <div class="view-info-text">
+              <span class="view-info-label">Priority</span>
+              <span class="view-info-value">
+                <span *ngIf="selectedPeriodicTask.priorityLevel">{{ selectedPeriodicTask.priorityLevel?.name | titlecase
+                  }}</span>
+                <span *ngIf="!selectedPeriodicTask.priorityLevel">ND</span>
+                <span *ngIf="selectedPeriodicTask?.important" class="important-star-view"
+                  style="margin-left: 5px;">★</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Second Row: Dates, Times, Hours -->
+        <div class="view-second-row">
+          <div class="view-info-compact">
+            <i class="fas fa-calendar view-info-icon"></i>
+            <div class="view-info-text">
+              <span class="view-info-label">Start Date</span>
+              <span class="view-info-value">
+                <span *ngIf="selectedPeriodicTask?.startDate">{{ selectedPeriodicTask.startDate | date:'MMM dd, yyyy'
+                  }}</span>
+                <span *ngIf="!selectedPeriodicTask?.startDate">ND</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="view-info-compact">
+            <i class="fas fa-calendar view-info-icon"></i>
+            <div class="view-info-text">
+              <span class="view-info-label">End Date</span>
+              <span class="view-info-value">
+                <span *ngIf="selectedPeriodicTask?.recurrence_end_date">{{ selectedPeriodicTask.recurrence_end_date |
+                  date:'MMM dd, yyyy' }}</span>
+                <span *ngIf="!selectedPeriodicTask?.recurrence_end_date">ND</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="view-info-compact">
+            <i class="fas fa-clock view-info-icon"></i>
+            <div class="view-info-text">
+              <span class="view-info-label">Time</span>
+              <span class="view-info-value">
+                <span *ngIf="selectedPeriodicTask?.startTime && selectedPeriodicTask?.endTime">
+                  {{ selectedPeriodicTask.startTime }} - {{ selectedPeriodicTask.endTime }}
+                </span>
+                <span *ngIf="!selectedPeriodicTask?.startTime || !selectedPeriodicTask?.endTime">ND</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="view-info-compact">
+            <i class="fas fa-hourglass-half view-info-icon"></i>
+            <div class="view-info-text">
+              <span class="view-info-label">Estimated Hours</span>
+              <span class="view-info-value">
+                <span *ngIf="(selectedPeriodicTask?.estimatedHours ?? 0) > 0">{{ selectedPeriodicTask?.estimatedHours
+                  }}h</span>
+                <span *ngIf="(selectedPeriodicTask?.estimatedHours ?? 0) === 0">ND</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recurrence Information -->
+        <div class="view-content-item">
+          <div class="view-content-header">
+            <i class="fas fa-repeat"></i>
+            <span>Recurrence Pattern</span>
+          </div>
+          <div class="view-content-body">
+            <div class="recurrence-info">
+              <span><strong>Pattern:</strong> {{ selectedPeriodicTask?.recurrence_pattern | titlecase }}</span>
+              <span><strong>Interval:</strong> Every {{ selectedPeriodicTask?.recurrence_interval }} {{
+                getIntervalLabel() }}</span>
+              <span
+                *ngIf="selectedPeriodicTask?.recurrence_pattern === 'weekly' && selectedPeriodicTask?.recurrence_days">
+                <strong>Days:</strong>
+                <span *ngFor="let day of getSelectedDaysLabel(selectedPeriodicTask.recurrence_days); let last = last">
+                  {{ day }}<span *ngIf="!last">, </span>
+                </span>
+              </span>
+              <span *ngIf="selectedPeriodicTask?.recurrence_end_type">
+                <strong>Ends:</strong>
+                <span *ngIf="selectedPeriodicTask.recurrence_end_type === 'on_date'">On {{
+                  selectedPeriodicTask.recurrence_end_date | date:'MMM dd, yyyy' }}</span>
+                <span *ngIf="selectedPeriodicTask.recurrence_end_type === 'after_occurrences'">After {{
+                  selectedPeriodicTask.recurrence_occurrences }} occurrences</span>
+                <span *ngIf="selectedPeriodicTask.recurrence_end_type === 'never'">Never</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description Section -->
+        <div class="view-content-item" *ngIf="hasDescription(selectedPeriodicTask)">
+          <div class="view-content-header">
+            <i class="fas fa-align-left"></i>
+            <span>Description</span>
+          </div>
+          <div class="view-content-body">
+            {{ selectedPeriodicTask?.description }}
+          </div>
+        </div>
+
+        <!-- Remarks Section -->
+        <div class="view-content-item" *ngIf="hasRemarks(selectedPeriodicTask)">
+          <div class="view-content-header">
+            <i class="fas fa-sticky-note"></i>
+            <span>Remarks</span>
+          </div>
+          <div class="view-content-body">
+            {{ selectedPeriodicTask?.remarks }}
+          </div>
+        </div>
+
+        <!-- URLs Section -->
+        <div class="view-content-item" *ngIf="selectedPeriodicTask?.urls && selectedPeriodicTask.urls.length > 0">
+          <div class="view-content-header">
+            <i class="fas fa-link"></i>
+            <span>URLs/Documents ({{ selectedPeriodicTask.urls.length }})</span>
+          </div>
+          <div class="view-content-body">
+            <div *ngFor="let url of selectedPeriodicTask.urls" class="url-display">
+              <a [href]="url.url" target="_blank" rel="noopener noreferrer" class="url-link">
+                {{ url.label || url.url }}
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metadata Footer -->
+        <div class="view-metadata-compact">
+          <span *ngIf="selectedPeriodicTask?.createdAt"><i class="fas fa-plus-circle"></i> Created: {{
+            selectedPeriodicTask.createdAt | date:'MMM dd, yyyy HH:mm' }}</span>
+          <span *ngIf="selectedPeriodicTask?.updatedAt"><i class="fas fa-edit"></i> Updated: {{
+            selectedPeriodicTask.updatedAt | date:'MMM dd, yyyy HH:mm' }}</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeViewPeriodicTaskModal()">Close</button>
+        <button class="btn btn-primary" (click)="openEditPeriodicTaskFromView()">
+          <i class="fas fa-edit"></i>
+          Edit Periodic Task
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Task Modal -->
+  <div class="modal-overlay" *ngIf="showEditTaskModal" (click)="showEditTaskModal = false">
+    <div class="modal-content task-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Edit Task</h3>
+        <button class="btn-icon" (click)="showEditTaskModal = false" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body" *ngIf="selectedTask">
+        <div class="form-group">
+          <label for="editTaskTitle">Task Title <span class="required">*</span></label>
+          <div class="task-title-input-wrapper">
+            <input type="text" id="editTaskTitle" [(ngModel)]="selectedTask.title" placeholder="Enter task title..."
+              class="form-input" maxlength="500">
+            <button type="button" class="star-icon-form" [class.important]="selectedTask.important"
+              (click)="selectedTask.important = !selectedTask.important"
+              [title]="selectedTask.important ? 'Mark as not important' : 'Mark as important'">
+              {{ selectedTask.important ? '★' : '☆' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="form-row form-row-2">
+          <div class="form-group">
+            <label for="editTaskDescription">Description</label>
+            <textarea id="editTaskDescription" [(ngModel)]="selectedTask.description"
+              placeholder="Enter task description..." class="form-textarea" rows="2" maxlength="2000"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="editTaskRemarks">Remarks</label>
+            <textarea id="editTaskRemarks" [(ngModel)]="selectedTask.remarks"
+              placeholder="Enter remarks or notes... (add full stop, for bullet points)" class="form-textarea" rows="2"
+              maxlength="1000"></textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editTaskCategory">Category <span class="required">*</span></label>
+            <select id="editTaskCategory" [(ngModel)]="selectedTask.category" [compareWith]="compareCategory"
+              class="form-select">
+              <option [ngValue]="null">Select category</option>
+              <option *ngFor="let category of categoryMasters"
+                [ngValue]="{ name: category.category, icon: category.icon }">
+                {{ category.icon }} {{ category.category }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="editTaskStatus">Status <span class="required">*</span></label>
+            <select id="editTaskStatus" [(ngModel)]="selectedTask.status" [compareWith]="compareStatus"
+              class="form-select">
+              <option [ngValue]="null">Select status</option>
+              <option *ngFor="let status of statuses" [ngValue]="{ name: status.status, color: status.color }">
+                {{ status.status | titlecase }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="editTaskPriority">Priority <span class="required">*</span></label>
+            <select id="editTaskPriority" [(ngModel)]="selectedTask.priorityLevel" [compareWith]="comparePriority"
+              class="form-select">
+              <option [ngValue]="null">Select priority</option>
+              <option *ngFor="let priority of priorities"
+                [ngValue]="{ name: priority.priority, color: priority.color }">
+                {{ priority.priority | titlecase }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editTaskStartDate">Start Date <span class="required">*</span></label>
+            <input type="date" id="editTaskStartDate" [(ngModel)]="selectedTask.startDate"
+              [attr.max]="getMinChildStartDate() || selectedTask.endDate" (input)="onInput('startDate')"
+              class="form-input" [class.error]="startDateError">
+            <div class="error-message" *ngIf="startDateError">{{ startDateError }}</div>
+          </div>
+
+          <div class="form-group">
+            <label for="editTaskEndDate">End Date <span class="required">*</span></label>
+            <input type="date" id="editTaskEndDate" [(ngModel)]="selectedTask.endDate"
+              [attr.min]="getMaxChildEndDate() || selectedTask.startDate" (input)="onInput('endDate')"
+              class="form-input" [class.error]="endDateError">
+            <div class="error-message" *ngIf="endDateError">{{ endDateError }}</div>
+          </div>
+
+          <div class="form-group">
+            <label for="editTaskStartTime">Start Time</label>
+            <input type="time" id="editTaskStartTime" [(ngModel)]="selectedTask.startTime" class="form-input">
+          </div>
+
+          <div class="form-group">
+            <label for="editTaskEndTime">End Time</label>
+            <input type="time" id="editTaskEndTime" [(ngModel)]="selectedTask.endTime" class="form-input">
+          </div>
+        </div>
+
+        <!-- Days Selector -->
+        <div class="form-group">
+          <label>Days</label>
+          <div class="days-selector">
+            <label *ngFor="let day of weekDays" class="day-checkbox">
+              <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)">
+              <span>{{ day.label }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editTaskEstimatedHours">Estimated Hours</label>
+            <input type="number" id="editTaskEstimatedHours" [(ngModel)]="selectedTask.estimatedHours" placeholder="0"
+              class="form-input" min="0" step="0.1">
+          </div>
+
+          <div class="form-group">
+            <label for="editTaskPriorityOrder">Priority Order</label>
+            <input type="number" id="editTaskPriorityOrder" [(ngModel)]="selectedTask.priorityOrder" placeholder="Order"
+              class="form-input" min="0">
+          </div>
+        </div>
+
+        <!-- URLs Section -->
+        <div class="form-group">
+          <label>URLs/Documents</label>
+          <div class="urls-container">
+            <div class="urls-list">
+              <div *ngFor="let url of selectedTask.urls; let i = index" class="url-row">
+                <span class="url-label-display">{{ url.label }}</span>
+                <span class="url-value-display">{{ url.url }}</span>
+                <button class="btn-icon btn-remove-url" (click)="removeUrlFromSelectedTask(i)" title="Remove URL">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+            <div class="add-url-wrapper">
+              <button type="button" class="btn btn-secondary btn-sm" (click)="toggleAddUrlDropdown()"
+                [disabled]="!selectedTask.category" title="Add URL from master">
+                <i class="fas fa-plus"></i> Add URL
+              </button>
+              <div class="add-url-dropdown" *ngIf="showAddUrlDropdown && selectedTask.category"
+                (click)="$event.stopPropagation()">
+                <div class="dropdown-header">Select URL to add</div>
+                <div class="dropdown-content" *ngIf="availableUrls.length > 0; else noUrlsTemplate">
+                  <div class="url-option" *ngFor="let url of availableUrls"
+                    (click)="selectedUrlId = url.url_id; addUrlFromMaster()">
+                    <span class="url-icon" *ngIf="url.category_icon">{{ url.category_icon }}</span>
+                    <span class="url-label">{{ url.label }}</span>
+                    <span class="url-url">{{ url.url }}</span>
+                  </div>
+                </div>
+                <ng-template #noUrlsTemplate>
+                  <div class="dropdown-empty">
+                    {{ loadingUrls ? 'Loading URLs...' : 'No available URLs for this category' }}
+                  </div>
+                </ng-template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showEditTaskModal = false">Cancel</button>
+        <button class="btn btn-primary" (click)="updateTask()">Update Task</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Task Modal -->
+<div class="modal-overlay" *ngIf="showViewTaskModal" (click)="showViewTaskModal = false">
+  <div class="modal-content task-view-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header view-header">
+      <div class="view-header-left">
+        <h2 class="view-title">
+          <span class="view-task-id" *ngIf="selectedTask?.id">#{{ selectedTask?.id }}</span>
+          <span *ngIf="selectedTask?.important" class="important-star-view">★</span>
+          {{ selectedTask?.title }}
+        </h2>
+      </div>
+      <button class="btn-icon" (click)="showViewTaskModal = false" title="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body view-body" *ngIf="selectedTask">
+      <!-- First Row: Category, Status, Priority, Periodic Task -->
+      <div class="view-top-row">
+        <div class="view-info-compact">
+          <span class="view-info-icon" *ngIf="selectedTask.category">{{ selectedTask.category.icon }}</span>
+          <div class="view-info-text">
+            <span class="view-info-label">Category</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedTask.category">{{ selectedTask.category.name }}</span>
+              <span *ngIf="!selectedTask.category">ND</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="view-info-compact">
+          <span class="view-info-dot" *ngIf="selectedTask.status"
+            [style.background-color]="getStatusColor(selectedTask.status)"></span>
+          <div class="view-info-text">
+            <span class="view-info-label">Status</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedTask.status">{{ selectedTask.status.name | titlecase }}</span>
+              <span *ngIf="!selectedTask.status">ND</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="view-info-compact">
+          <span class="view-info-dot" *ngIf="selectedTask.priorityLevel"
+            [style.background-color]="getPriorityColor(selectedTask.priorityLevel)"></span>
+          <div class="view-info-text">
+            <span class="view-info-label">Priority</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedTask.priorityLevel">{{ selectedTask.priorityLevel.name | titlecase }}</span>
+              <span *ngIf="!selectedTask.priorityLevel">ND</span>
+              <span *ngIf="selectedTask.important" class="important-star-view" style="margin-left: 5px;">★</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="view-info-compact">
+          <i class="fas fa-repeat view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Periodic Task</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedTask?.periodicTask">
+                <span *ngIf="selectedTask?.periodicTask?.id">ID: {{ selectedTask?.periodicTask?.id }}</span>
+                <span
+                  *ngIf="selectedTask?.periodicTask?.id && (selectedTask?.periodicTask?.startDate || selectedTask?.periodicTask?.endDate)">
+                  | </span>
+                <span *ngIf="selectedTask?.periodicTask?.startDate && selectedTask?.periodicTask?.endDate">
+                  {{ selectedTask?.periodicTask?.startDate | date:'MMM dd, yyyy' }} - {{
+                  selectedTask?.periodicTask?.endDate | date:'MMM dd, yyyy' }}
+                </span>
+                <span
+                  *ngIf="selectedTask?.periodicTask?.id && !selectedTask?.periodicTask?.startDate && !selectedTask?.periodicTask?.endDate">
+                  Active
+                </span>
+              </span>
+              <span *ngIf="!selectedTask?.periodicTask">
+                <span><i>On Date Task (non periodic)</i></span>
+                <!-- <span *ngIf="!selectedTask?.taskOnDate">Non Periodic Task</span> -->
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Second Row: Date, Time, Estimated Hours, Priority Order, Progress, Subtasks -->
+      <div class="view-second-row">
+        <div class="view-info-compact">
+          <i class="fas fa-calendar view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Start Date</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedTask?.startDate">{{ selectedTask.startDate | date:'EEE, MMM dd, yyyy' }}</span>
+              <span *ngIf="!selectedTask?.startDate">ND</span>
+            </span>
+          </div>
+        </div>
+        <div class="view-info-compact">
+          <i class="fas fa-calendar view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">End Date</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedTask?.endDate">{{ selectedTask.endDate | date:'EEE, MMM dd, yyyy' }}</span>
+              <span *ngIf="!selectedTask?.endDate">ND</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="view-info-compact">
+          <i class="fas fa-clock view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Time</span>
+            <span class="view-info-value">
+              <span
+                *ngIf="(selectedTask?.startTime || selectedTask?.endTime) && !(selectedTask?.startTime === '00:00' && selectedTask?.endTime === '00:00')">
+                <span *ngIf="selectedTask.startTime">{{ selectedTask.startTime }}</span>
+                <span *ngIf="selectedTask.startTime && selectedTask.endTime"> - </span>
+                <span *ngIf="selectedTask.endTime">{{ selectedTask.endTime }}</span>
+              </span>
+              <span *ngIf="!selectedTask?.startTime && !selectedTask?.endTime" class="nd-value">ND</span>
+              <span *ngIf="selectedTask?.startTime === '00:00' && selectedTask?.endTime === '00:00'"
+                class="nd-value">ND</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="view-info-compact">
+          <i class="fas fa-hourglass-half view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Estimated Hours</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedTask?.estimatedHours">{{ selectedTask.estimatedHours }}h</span>
+              <span *ngIf="!selectedTask?.estimatedHours" class="nd-value">ND</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="view-info-compact" *ngIf="selectedTask?.selectedDays?.length">
+          <i class="fas fa-calendar-week view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Selected Days</span>
+            <span class="view-info-value">
+              <span *ngFor="let dayIndex of selectedTask.selectedDays; let last = last">
+                {{ weekDays[dayIndex]?.label }}<span *ngIf="!last">, </span>
+              </span>
+            </span>
+          </div>
+        </div>
+
+
+        <div class="view-info-compact">
+          <i class="fas fa-sort-numeric-down view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Priority Order</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedTask?.priorityOrder !== null && selectedTask?.priorityOrder !== undefined">{{
+                selectedTask.priorityOrder }}</span>
+              <span *ngIf="selectedTask?.priorityOrder === null || selectedTask?.priorityOrder === undefined"
+                class="nd-value">ND</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="view-info-compact"
+          *ngIf="selectedTask?.progress !== null && selectedTask?.progress !== undefined && getSubtaskCount(selectedTask) > 0">
+          <i class="fas fa-chart-line view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Progress</span>
+            <span class="view-info-value">{{ selectedTask.progress }}%</span>
+          </div>
+        </div>
+
+        <div class="view-info-compact" *ngIf="getSubtaskCount(selectedTask) > 0">
+          <i class="fas fa-tasks view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Subtasks</span>
+            <span class="view-info-value">{{ getSubtaskCount(selectedTask) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description and Remarks Row -->
+      <div class="view-content-row">
+        <div class="view-content-item">
+          <div class="view-content-header">
+            <i class="fas fa-align-left"></i>
+            <span>Description</span>
+          </div>
+          <div class="view-content-body">
+            <span *ngIf="hasDescription(selectedTask)">{{ selectedTask?.description }}</span>
+            <span *ngIf="!hasDescription(selectedTask)"><i>No description</i></span>
+          </div>
+        </div>
+
+        <div class="view-content-item">
+          <div class="view-content-header">
+            <i class="fas fa-sticky-note"></i>
+            <span>Remarks</span>
+          </div>
+          <div class="view-content-body">
+            <ul class="view-remarks-list" *ngIf="hasRemarks(selectedTask)">
+              <li *ngFor="let remark of getRemarksList(selectedTask?.remarks)">{{ remark }}</li>
+            </ul>
+            <span *ngIf="!hasRemarks(selectedTask)"><i>No remarks</i></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- URLs Section -->
+      <div class="view-content-item view-urls-section" *ngIf="hasUrls(selectedTask)">
+        <div class="view-content-header">
+          <i class="fas fa-link"></i>
+          <span>URLs/Documents</span>
+        </div>
+        <div class="view-content-body">
+          <div class="bookshelf-container">
+            <div class="bookshelf-grid">
+              <div *ngFor="let url of selectedTask?.urls; let i = index" class="book-item" [attr.data-index]="i">
+                <div class="book-spine"></div>
+                <div class="book-cover">
+                  <div class="book-title">{{ url.label }}</div>
+                  <div class="book-url" *ngIf="url.url">
+                    <a [href]="url.url" target="_blank" class="book-link">
+                      <i class="fas fa-external-link-alt"></i>
+                      <span>Open</span>
+                    </a>
+                  </div>
+                  <div class="book-url-empty" *ngIf="!url.url">
+                    <span>No URL</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="bookshelf-base"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metadata Footer -->
+      <div class="view-metadata-compact">
+        <span><i class="fas fa-plus-circle"></i> Created: {{ selectedTask.createdAt | date:'MMM dd, yyyy HH:mm'
+          }}</span>
+        <span><i class="fas fa-edit"></i> Updated: {{ selectedTask.updatedAt | date:'MMM dd, yyyy HH:mm' }}</span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="showViewTaskModal = false">Close</button>
+      <button class="btn btn-primary" (click)="editTask(selectedTask!); showViewTaskModal = false">
+        <i class="fas fa-edit"></i>
+        Edit Task
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Subtask Detail Modal -->
+<div class="modal-overlay" *ngIf="showSubtaskModal" (click)="closeSubtaskModal()">
+  <div class="modal-content subtask-detail-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ selectedSubtask?.title }}</h2>
+      <button class="btn-icon" (click)="closeSubtaskModal()" title="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Subtask Information -->
+      <div class="subtask-info-section">
+        <div class="subtask-meta">
+          <div class="meta-item">
+            <span class="meta-label">Status:</span>
+            <span class="status-badge"
+              [style.background-color]="getStatusColor(selectedSubtask?.status || getStatusObjectByName(statuses[0]?.status || 'open') || { name: 'open', color: '#64748B' })">
+              {{ selectedSubtask?.status?.name | titlecase }}
+            </span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Priority:</span>
+            <span class="priority-badge"
+              [style.background-color]="getSubtaskPriorityColor(selectedSubtask?.priority || getPriorityObjectByName(priorities[0]?.priority || 'normal') || { name: 'normal', color: '#F97316' })">
+              {{ selectedSubtask?.priority?.name | titlecase }}
+            </span>
+          </div>
+          <!-- Category removed from subtasks - only main tasks have categories -->
+        </div>
+
+        <div class="subtask-dates">
+          <div class="date-item" *ngIf="selectedSubtask?.startDate || selectedSubtask?.endDate">
+            <span class="date-label">Dates:</span>
+            <span class="date-value">
+              <span *ngIf="selectedSubtask?.startDate">{{ selectedSubtask?.startDate | date:'MMM dd, yyyy' }}</span>
+              <span *ngIf="selectedSubtask?.startDate && selectedSubtask?.endDate"> - </span>
+              <span *ngIf="selectedSubtask?.endDate">{{ selectedSubtask?.endDate | date:'MMM dd, yyyy' }}</span>
+            </span>
+          </div>
+          <div class="date-item" *ngIf="selectedSubtask?.createdAt">
+            <span class="date-label">Created:</span>
+            <span class="date-value">{{ selectedSubtask?.createdAt | date:'MMM dd, yyyy' }}</span>
+          </div>
+          <div class="date-item" *ngIf="selectedSubtask?.updatedAt">
+            <span class="date-label">Updated:</span>
+            <span class="date-value">{{ selectedSubtask?.updatedAt | date:'MMM dd, yyyy' }}</span>
+          </div>
+        </div>
+
+        <div class="subtask-times">
+          <div class="time-item">
+            <span class="time-label">Start Time:</span>
+            <span class="time-value">{{ selectedSubtask?.startTime || '09:00' }}</span>
+          </div>
+          <div class="time-item">
+            <span class="time-label">End Time:</span>
+            <span class="time-value">{{ selectedSubtask?.endTime || '17:00' }}</span>
+          </div>
+        </div>
+
+        <div class="subtask-hours">
+          <div class="hours-item">
+            <span class="hours-label">Estimated:</span>
+            <span class="hours-value">{{ selectedSubtask?.estimatedHours || 0 }}h</span>
+          </div>
+          <div class="hours-item">
+          </div>
+        </div>
+
+        <div class="subtask-progress">
+          <div class="progress-info">
+            <span class="progress-label">Progress:</span>
+            <span class="progress-percentage">{{ selectedSubtask ? getSubtaskProgressPercentage(selectedSubtask) : 0
+              }}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill"
+              [style.width.%]="selectedSubtask ? getSubtaskProgressPercentage(selectedSubtask) : 0"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Subtask Description -->
+      <div class="subtask-description-section" *ngIf="selectedSubtask?.description">
+        <h3>Description</h3>
+        <p class="subtask-description">{{ selectedSubtask?.description }}</p>
+      </div>
+
+      <!-- Nested Subtasks Section -->
+      <div class="nested-subtasks-section">
+        <div class="section-header">
+          <h3>Nested Subtasks</h3>
+          <button class="btn btn-primary btn-sm" (click)="addSubtaskToSubtask()">
+            <i class="fas fa-plus"></i>
+            Add Nested Subtask
+          </button>
+        </div>
+
+        <div class="nested-subtasks-list" *ngIf="hasSubtaskSubtasks()">
+          <div class="nested-subtask-item"
+            *ngFor="let nestedSubtask of selectedSubtask?.subtasks; trackBy: trackBySubtaskId">
+            <div class="nested-subtask-content" (click)="openSubtaskModal(selectedSubtaskParent!, nestedSubtask)">
+              <div class="nested-subtask-checkbox" (click)="$event.stopPropagation()">
+                <input type="checkbox" [checked]="nestedSubtask.status.name === 'done'"
+                  (change)="updateSubtaskModalStatus(nestedSubtask.id, $event.target.checked ? (getStatusObjectByName('done') || { name: 'done', color: '#059669' }) : (getStatusObjectByName('open') || { name: 'open', color: '#64748B' }))">
+              </div>
+              <div class="nested-subtask-info">
+                <div class="nested-subtask-title">{{ nestedSubtask.title }}</div>
+                <div class="nested-subtask-meta">
+                  <span class="nested-subtask-priority" [style.color]="getSubtaskPriorityColor(nestedSubtask.priority)">
+                    {{ nestedSubtask.priority.name | titlecase }}
+                  </span>
+                </div>
+              </div>
+              <div class="nested-subtask-actions">
+                <button class="btn-icon" (click)="editSubtaskModal(nestedSubtask.id)" title="Edit nested subtask">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn-icon" (click)="deleteSubtaskModal(nestedSubtask.id)" title="Delete nested subtask">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="no-nested-subtasks" *ngIf="!hasSubtaskSubtasks()">
+          <p>No nested subtasks yet. Click "Add Nested Subtask" to get started.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeSubtaskModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Level 2 Sub Task Modal -->
+<div class="modal-overlay" *ngIf="showAddLevel2SubtaskModal" (click)="closeAddLevel2SubtaskModal()">
+  <div class="modal-content task-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Add Level 2 Sub Task</h3>
+      <button class="btn-icon" (click)="closeAddLevel2SubtaskModal()" title="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="level2SubtaskTitle">Subtask Title <span class="required">*</span></label>
+        <input type="text" id="level2SubtaskTitle" [(ngModel)]="newSubtask.title" (input)="onSubtaskInput('title')"
+          placeholder="Enter subtask title..." class="form-input" [class.error]="subtaskTitleError" maxlength="500">
+        <div class="error-message" *ngIf="subtaskTitleError">{{ subtaskTitleError }}</div>
+      </div>
+
+      <div class="form-group">
+        <label for="level2SubtaskDescription">Description</label>
+        <textarea id="level2SubtaskDescription" [(ngModel)]="newSubtask.description"
+          placeholder="Enter subtask description..." class="form-textarea" rows="2" maxlength="2000"></textarea>
+      </div>
+      <!-- Days Selector -->
+      <div class="form-group">
+        <label>Days</label>
+        <div class="days-selector">
+          <label *ngFor="let day of weekDays" class="day-checkbox">
+            <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)"
+              [disabled]="isDayDisabled(day.value, 'add-level2')">
+            <span>{{ day.label }}</span>
+          </label>
+        </div>
+      </div>
+
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="level2SubtaskCategory">Category</label>
+          <select id="level2SubtaskCategory" [(ngModel)]="newSubtask.category" class="form-select"
+            [compareWith]="compareCategory" [disabled]="true">
+            <option [ngValue]="null">Select category</option>
+            <option *ngFor="let category of categoryMasters"
+              [ngValue]="{ name: category.category, icon: category.icon }">
+              {{ category.icon }} {{ category.category }}
+            </option>
+          </select>
+          <div class="error-message" *ngIf="subtaskCategoryError">{{ subtaskCategoryError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="level2SubtaskStatus">Status <span class="required">*</span></label>
+          <select id="level2SubtaskStatus" [(ngModel)]="newSubtask.status" (change)="onSubtaskInput('status')"
+            class="form-select" [class.error]="subtaskStatusError" [compareWith]="compareStatusOption">
+            <option [ngValue]="null">Select status</option>
+            <option *ngFor="let status of statuses" [ngValue]="{ name: status.status, color: status.color }">
+              {{ status.status | titlecase }}
+            </option>
+          </select>
+          <div class="error-message" *ngIf="subtaskStatusError">{{ subtaskStatusError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="level2SubtaskPriority">Priority <span class="required">*</span></label>
+          <select id="level2SubtaskPriority" [(ngModel)]="newSubtask.priority" (change)="onSubtaskInput('priority')"
+            class="form-select" [class.error]="subtaskPriorityError" [compareWith]="comparePriorityOption">
+            <option [ngValue]="null">Select priority</option>
+            <option *ngFor="let priority of priorities" [ngValue]="{ name: priority.priority, color: priority.color }">
+              {{ priority.priority | titlecase }}
+            </option>
+          </select>
+          <div class="error-message" *ngIf="subtaskPriorityError">{{ subtaskPriorityError }}</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="level2SubtaskDate">Start Date <span class="required">*</span></label>
+          <input type="date" id="level2SubtaskDate" [(ngModel)]="newSubtask.startDate"
+            [attr.max]="newSubtask.endDate || getLevel1SubtaskEndDate()" [attr.min]="getLevel1SubtaskStartDate()"
+            class="form-input" (input)="onSubtaskInput('startDate')" [class.error]="subtaskStartDateError">
+
+          <div class="error-message" *ngIf="subtaskStartDateError">{{ subtaskStartDateError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="level2SubtaskEndDate">End Date <span class="required">*</span></label>
+          <input type="date" id="level2SubtaskEndDate" [(ngModel)]="newSubtask.endDate"
+            [attr.min]="newSubtask.startDate || getLevel1SubtaskStartDate()" [attr.max]="getLevel1SubtaskEndDate()"
+            (input)="onSubtaskInput('endDate')" class="form-input" [class.error]="subtaskEndDateError">
+          <div class="error-message" *ngIf="subtaskEndDateError">{{ subtaskEndDateError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="level2SubtaskStartTime">Start Time</label>
+          <input type="time" id="level2SubtaskStartTime" [(ngModel)]="newSubtask.startTime" class="form-input">
+        </div>
+
+        <div class="form-group">
+          <label for="level2SubtaskEndTime">End Time</label>
+          <input type="time" id="level2SubtaskEndTime" [(ngModel)]="newSubtask.endTime" class="form-input">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="level2SubtaskEstimatedHours">Estimated Hours</label>
+          <input type="number" id="level2SubtaskEstimatedHours" [(ngModel)]="newSubtask.estimatedHours" placeholder="0"
+            class="form-input" min="0" step="0.1">
+        </div>
+
+        <!-- <div class="form-group">
+            <label for="level2SubtaskPriorityOrder">Priority Order</label>
+            <input 
+              type="number" 
+              id="level2SubtaskPriorityOrder"
+              [(ngModel)]="newSubtask.priorityOrder" 
+              placeholder="Order"
+              class="form-input"
+              min="0"
+            >
+          </div> -->
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeAddLevel2SubtaskModal()">Cancel</button>
+      <button class="btn btn-primary" (click)="addLevel2Subtask()">Add Level 2 Sub Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Level 1 Sub Task Modal -->
+<div class="modal-overlay" *ngIf="showEditLevel1SubtaskModal" (click)="closeEditLevel1SubtaskModal()">
+  <div class="modal-content task-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Edit Level 1 Sub Task</h3>
+      <button class="btn-icon" (click)="closeEditLevel1SubtaskModal()" title="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="selectedLevel1Subtask">
+      <div class="form-group">
+        <label for="editLevel1SubtaskTitle">Subtask Title <span class="required">*</span></label>
+        <input type="text" id="editLevel1SubtaskTitle" [(ngModel)]="selectedLevel1Subtask.title"
+          placeholder="Enter subtask title..." class="form-input" maxlength="500">
+      </div>
+
+      <div class="form-group">
+        <label for="editLevel1SubtaskDescription">Description</label>
+        <textarea id="editLevel1SubtaskDescription" [(ngModel)]="selectedLevel1Subtask.description"
+          placeholder="Enter subtask description..." class="form-textarea" rows="2" maxlength="2000"></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="editLevel1SubtaskCategory">Category</label>
+          <select id="editLevel1SubtaskCategory" [ngModel]="getLevel1SubtaskCategory()" class="form-select"
+            [compareWith]="compareCategory" [disabled]="true">
+            <option [ngValue]="null">Select category</option>
+            <option *ngFor="let category of categoryMasters"
+              [ngValue]="{ name: category.category, icon: category.icon }">
+              {{ category.icon }} {{ category.category }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="editLevel1SubtaskStatus">Status <span class="required">*</span></label>
+          <select id="editLevel1SubtaskStatus" [(ngModel)]="selectedLevel1Subtask.status" class="form-select"
+            [compareWith]="compareStatusOption">
+            <option [ngValue]="null">Select status</option>
+            <option *ngFor="let status of statuses" [ngValue]="{ name: status.status, color: status.color }">
+              {{ status.status | titlecase }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="editLevel1SubtaskPriority">Priority <span class="required">*</span></label>
+          <select id="editLevel1SubtaskPriority" [(ngModel)]="selectedLevel1Subtask.priority" class="form-select"
+            [compareWith]="comparePriorityOption">
+            <option [ngValue]="null">Select priority</option>
+            <option *ngFor="let priority of priorities" [ngValue]="{ name: priority.priority, color: priority.color }">
+              {{ priority.priority | titlecase }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="editLevel1SubtaskDate">Start Date <span class="required">*</span></label>
+          <input type="date" id="editLevel1SubtaskDate" [(ngModel)]="selectedLevel1Subtask.startDate"
+            [attr.max]="getMinLevel2ChildStartDate() || selectedLevel1Subtask.endDate || getMainTaskEndDate()"
+            [attr.min]="getMainTaskStartDate()" (input)="onSubtaskInput('startDate')" class="form-input"
+            [class.error]="subtaskStartDateError">
+
+          <div class="error-message" *ngIf="subtaskStartDateError">{{ subtaskStartDateError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="editLevel1SubtaskEndDate">End Date <span class="required">*</span></label>
+          <input type="date" id="editLevel1SubtaskEndDate" [(ngModel)]="selectedLevel1Subtask.endDate"
+            [attr.min]="getMaxLevel2ChildEndDate() || selectedLevel1Subtask.startDate || getMainTaskStartDate()"
+            [attr.max]="getMainTaskEndDate()" (input)="onSubtaskInput('endDate')" class="form-input"
+            [class.error]="subtaskEndDateError">
+          <div class="error-message" *ngIf="subtaskEndDateError">{{ subtaskEndDateError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="editLevel1SubtaskStartTime">Start Time</label>
+          <input type="time" id="editLevel1SubtaskStartTime" [(ngModel)]="selectedLevel1Subtask.startTime"
+            class="form-input">
+        </div>
+
+        <div class="form-group">
+          <label for="editLevel1SubtaskEndTime">End Time</label>
+          <input type="time" id="editLevel1SubtaskEndTime" [(ngModel)]="selectedLevel1Subtask.endTime"
+            class="form-input">
+        </div>
+      </div>
+      <!-- Days Selector -->
+      <div class="form-group">
+        <label>Days</label>
+        <div class="days-selector">
+          <label *ngFor="let day of weekDays" class="day-checkbox">
+            <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)"
+              [disabled]="isDayDisabled(day.value, 'edit-level1')">
+            <span>{{ day.label }}</span>
+          </label>
+        </div>
+      </div>
+
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="editLevel1SubtaskEstimatedHours">Estimated Hours</label>
+          <input type="number" id="editLevel1SubtaskEstimatedHours" [(ngModel)]="selectedLevel1Subtask.estimatedHours"
+            placeholder="0" class="form-input" min="0" step="0.1">
+        </div>
+
+        <div class="form-group">
+          <label for="editLevel1SubtaskPriorityOrder">Priority Order</label>
+          <input type="number" id="editLevel1SubtaskPriorityOrder" [(ngModel)]="selectedLevel1Subtask.priorityOrder"
+            placeholder="Order" class="form-input" min="0">
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeEditLevel1SubtaskModal()">Cancel</button>
+      <button class="btn btn-primary" (click)="updateLevel1Subtask()">Update Level 1 Sub Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Level 1 Sub Task Modal -->
+<div class="modal-overlay" *ngIf="showViewLevel1SubtaskModal" (click)="closeViewLevel1SubtaskModal()">
+  <div class="modal-content task-view-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header view-header">
+      <div class="view-header-left">
+        <h2 class="view-title">
+          <span class="view-task-id" *ngIf="selectedLevel1Subtask?.id">#{{ selectedLevel1Subtask?.id }}</span>
+          <span *ngIf="selectedLevel1Subtask?.important" class="important-star-view">★</span>
+          {{ selectedLevel1Subtask?.title }}
+        </h2>
+      </div>
+      <button class="btn-icon" (click)="closeViewLevel1SubtaskModal()" title="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body view-body" *ngIf="selectedLevel1Subtask">
+      <!-- First Row: Category, Status, Priority -->
+      <div class="view-top-row">
+        <div class="view-info-compact">
+          <span class="view-info-icon" *ngIf="getLevel1SubtaskCategory()">{{ getLevel1SubtaskCategory()?.icon }}</span>
+          <div class="view-info-text">
+            <span class="view-info-label">Category</span>
+            <span class="view-info-value">
+              <span *ngIf="getLevel1SubtaskCategory()">{{ getLevel1SubtaskCategory()?.name }}</span>
+              <span *ngIf="!getLevel1SubtaskCategory()">ND</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="view-info-compact">
+          <span class="view-info-dot" *ngIf="selectedLevel1Subtask.status"
+            [style.background-color]="getStatusColor(selectedLevel1Subtask.status)"></span>
+          <div class="view-info-text">
+            <span class="view-info-label">Status</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedLevel1Subtask.status">{{ selectedLevel1Subtask.status.name | titlecase }}</span>
+              <span *ngIf="!selectedLevel1Subtask.status">ND</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="view-info-compact">
+          <span class="view-info-dot" *ngIf="selectedLevel1Subtask.priority"
+            [style.background-color]="getPriorityColor(selectedLevel1Subtask.priority)"></span>
+          <div class="view-info-text">
+            <span class="view-info-label">Priority</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedLevel1Subtask.priority">{{ selectedLevel1Subtask.priority.name | titlecase }}</span>
+              <span *ngIf="!selectedLevel1Subtask.priority">ND</span>
+              <span *ngIf="selectedLevel1Subtask?.important" class="important-star-view"
+                style="margin-left: 5px;">★</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Second Row: Date, Time, Estimated Hours, Priority Order, Level 2 Subtasks -->
+      <div class="view-second-row">
+        <div class="view-info-compact">
+          <i class="fas fa-calendar view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Start Date</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedLevel1Subtask?.startDate">{{ selectedLevel1Subtask.startDate | date:'MMM dd, yyyy'
+                }}</span>
+              <span *ngIf="!selectedLevel1Subtask?.startDate" class="nd-value">ND</span>
+            </span>
+          </div>
+          <div class="view-info-compact">
+            <i class="fas fa-calendar view-info-icon"></i>
+            <div class="view-info-text">
+              <span class="view-info-label">End Date</span>
+              <span class="view-info-value">
+                <span *ngIf="selectedLevel1Subtask?.endDate">{{ selectedLevel1Subtask.endDate | date:'MMM dd, yyyy'
+                  }}</span>
+                <span *ngIf="!selectedLevel1Subtask?.endDate" class="nd-value">ND</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="view-info-compact">
+          <i class="fas fa-clock view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Time</span>
+            <span class="view-info-value">
+              <span
+                *ngIf="(selectedLevel1Subtask?.startTime || selectedLevel1Subtask?.endTime) && !(selectedLevel1Subtask?.startTime === '00:00' && selectedLevel1Subtask?.endTime === '00:00')">
+                <span *ngIf="selectedLevel1Subtask.startTime">{{ selectedLevel1Subtask.startTime }}</span>
+                <span *ngIf="selectedLevel1Subtask.startTime && selectedLevel1Subtask.endTime"> - </span>
+                <span *ngIf="selectedLevel1Subtask.endTime">{{ selectedLevel1Subtask.endTime }}</span>
+              </span>
+              <span *ngIf="!selectedLevel1Subtask?.startTime && !selectedLevel1Subtask?.endTime"
+                class="nd-value">ND</span>
+              <span *ngIf="selectedLevel1Subtask?.startTime === '00:00' && selectedLevel1Subtask?.endTime === '00:00'"
+                class="nd-value">ND</span>
+            </span>
+          </div>
+        </div>
+        <div class="view-info-compact" *ngIf="selectedLevel1Subtask?.selectedDays?.length">
+          <i class="fas fa-calendar-week view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Selected Days</span>
+            <span class="view-info-value">
+              <span *ngFor="let dayIndex of selectedLevel1Subtask.selectedDays; let last = last">
+                {{ weekDays[dayIndex]?.label }}<span *ngIf="!last">, </span>
+              </span>
+            </span>
+          </div>
+        </div>
+
+
+        <div class="view-info-compact">
+          <i class="fas fa-hourglass-half view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Estimated Hours</span>
+            <span class="view-info-value">
+              <span *ngIf="(selectedLevel1Subtask?.estimatedHours ?? 0) > 0">{{ selectedLevel1Subtask?.estimatedHours
+                }}h</span>
+              <span *ngIf="(selectedLevel1Subtask?.estimatedHours ?? 0) === 0" class="nd-value">ND</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="view-info-compact">
+          <i class="fas fa-sort-numeric-down view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Priority Order</span>
+            <span class="view-info-value">
+              <span *ngIf="(selectedLevel1Subtask?.priorityOrder ?? 0) > 0">{{ selectedLevel1Subtask?.priorityOrder
+                }}</span>
+              <span *ngIf="(selectedLevel1Subtask?.priorityOrder ?? 0) === 0" class="nd-value">ND</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="view-info-compact" *ngIf="(selectedLevel1Subtask?.subtasks?.length ?? 0) > 0">
+          <i class="fas fa-tasks view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Subtasks</span>
+            <span class="view-info-value">{{ selectedLevel1Subtask?.subtasks?.length }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description Section (Full Width) -->
+      <div class="view-content-item">
+        <div class="view-content-header">
+          <i class="fas fa-align-left"></i>
+          <span>Description</span>
+        </div>
+        <div class="view-content-body">
+          <span *ngIf="hasDescription(selectedLevel1Subtask)">{{ selectedLevel1Subtask?.description }}</span>
+          <span *ngIf="!hasDescription(selectedLevel1Subtask)"><i>No description</i></span>
+        </div>
+      </div>
+
+      <!-- Metadata Footer -->
+      <div class="view-metadata-compact">
+        <span><i class="fas fa-plus-circle"></i> Created: {{ selectedLevel1Subtask.createdAt | date:'MMM dd, yyyy HH:mm'
+          }}</span>
+        <span><i class="fas fa-edit"></i> Updated: {{ selectedLevel1Subtask.updatedAt | date:'MMM dd, yyyy HH:mm'
+          }}</span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeViewLevel1SubtaskModal()">Close</button>
+      <button class="btn btn-primary" (click)="openEditLevel1SubtaskFromView()">
+        <i class="fas fa-edit"></i>
+        Edit Level 1 Sub Task
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Level 2 Sub Task Modal -->
+<div class="modal-overlay" *ngIf="showEditLevel2SubtaskModal" (click)="closeEditLevel2SubtaskModal()">
+  <div class="modal-content task-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Edit Level 2 Sub Task</h3>
+      <button class="btn-icon" (click)="closeEditLevel2SubtaskModal()" title="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="selectedLevel2Subtask">
+      <div class="form-group">
+        <label for="editLevel2SubtaskTitle">Subtask Title <span class="required">*</span></label>
+        <input type="text" id="editLevel2SubtaskTitle" [(ngModel)]="selectedLevel2Subtask.title"
+          placeholder="Enter subtask title..." class="form-input" maxlength="500">
+      </div>
+
+      <div class="form-group">
+        <label for="editLevel2SubtaskDescription">Description</label>
+        <textarea id="editLevel2SubtaskDescription" [(ngModel)]="selectedLevel2Subtask.description"
+          placeholder="Enter subtask description..." class="form-textarea" rows="2" maxlength="2000"></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="editLevel2SubtaskCategory">Category</label>
+          <select id="editLevel2SubtaskCategory" [ngModel]="getLevel2SubtaskCategory()" class="form-select"
+            [compareWith]="compareCategory" [disabled]="true">
+            <option [ngValue]="null">Select category</option>
+            <option *ngFor="let category of categoryMasters"
+              [ngValue]="{ name: category.category, icon: category.icon }">
+              {{ category.icon }} {{ category.category }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="editLevel2SubtaskStatus">Status <span class="required">*</span></label>
+          <select id="editLevel2SubtaskStatus" [(ngModel)]="selectedLevel2Subtask.status" class="form-select"
+            [compareWith]="compareStatusOption">
+            <option [ngValue]="null">Select status</option>
+            <option *ngFor="let status of statuses" [ngValue]="{ name: status.status, color: status.color }">
+              {{ status.status | titlecase }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="editLevel2SubtaskPriority">Priority <span class="required">*</span></label>
+          <select id="editLevel2SubtaskPriority" [(ngModel)]="selectedLevel2Subtask.priority" class="form-select"
+            [compareWith]="comparePriorityOption">
+            <option [ngValue]="null">Select priority</option>
+            <option *ngFor="let priority of priorities" [ngValue]="{ name: priority.priority, color: priority.color }">
+              {{ priority.priority | titlecase }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="editLevel2SubtaskDate">Start Date <span class="required">*</span></label>
+          <input type="date" id="editLevel2SubtaskDate" [(ngModel)]="selectedLevel2Subtask.startDate"
+            [attr.max]="selectedLevel2Subtask.endDate || getLevel1SubtaskEndDate()"
+            [attr.min]="getLevel1SubtaskStartDate()" (input)="onSubtaskInput('startDate')" class="form-input"
+            [class.error]="subtaskStartDateError">
+          <div class="error-message" *ngIf="subtaskStartDateError">{{ subtaskStartDateError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="editLevel2SubtaskEndDate">End Date <span class="required">*</span></label>
+          <input type="date" id="editLevel2SubtaskEndDate" [(ngModel)]="selectedLevel2Subtask.endDate"
+            [attr.min]="selectedLevel2Subtask.startDate || getLevel1SubtaskStartDate()"
+            [attr.max]="getLevel1SubtaskEndDate()" (input)="onSubtaskInput('endDate')" class="form-input"
+            [class.error]="subtaskEndDateError">
+          <div class="error-message" *ngIf="subtaskEndDateError">{{ subtaskEndDateError }}</div>
+        </div>
+
+        <div class="form-group">
+          <label for="editLevel2SubtaskStartTime">Start Time</label>
+          <input type="time" id="editLevel2SubtaskStartTime" [(ngModel)]="selectedLevel2Subtask.startTime"
+            class="form-input">
+        </div>
+
+        <div class="form-group">
+          <label for="editLevel2SubtaskEndTime">End Time</label>
+          <input type="time" id="editLevel2SubtaskEndTime" [(ngModel)]="selectedLevel2Subtask.endTime"
+            class="form-input">
+        </div>
+      </div>
+      <!-- Days Selector -->
+      <div class="form-group">
+        <label>Days</label>
+        <div class="days-selector">
+          <label *ngFor="let day of weekDays" class="day-checkbox">
+            <input type="checkbox" [checked]="isDaySelected(day.value)" (change)="toggleDay(day.value)"
+              [disabled]="isDayDisabled(day.value, 'edit-level2')">
+            <span>{{ day.label }}</span>
+          </label>
+        </div>
+      </div>
+
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="editLevel2SubtaskEstimatedHours">Estimated Hours</label>
+          <input type="number" id="editLevel2SubtaskEstimatedHours" [(ngModel)]="selectedLevel2Subtask.estimatedHours"
+            placeholder="0" class="form-input" min="0" step="0.1">
+        </div>
+
+        <div class="form-group">
+          <label for="editLevel2SubtaskPriorityOrder">Priority Order</label>
+          <input type="number" id="editLevel2SubtaskPriorityOrder" [(ngModel)]="selectedLevel2Subtask.priorityOrder"
+            placeholder="Order" class="form-input" min="0">
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeEditLevel2SubtaskModal()">Cancel</button>
+      <button class="btn btn-primary" (click)="updateLevel2Subtask()">Update Level 2 Sub Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Level 2 Sub Task Modal -->
+<div class="modal-overlay" *ngIf="showViewLevel2SubtaskModal" (click)="closeViewLevel2SubtaskModal()">
+  <div class="modal-content task-view-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header view-header">
+      <div class="view-header-left">
+        <h2 class="view-title">
+          <span class="view-task-id" *ngIf="selectedLevel2Subtask?.id">#{{ selectedLevel2Subtask?.id }}</span>
+          <span *ngIf="selectedLevel2Subtask?.important" class="important-star-view">★</span>
+          {{ selectedLevel2Subtask?.title }}
+        </h2>
+      </div>
+      <button class="btn-icon" (click)="closeViewLevel2SubtaskModal()" title="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body view-body" *ngIf="selectedLevel2Subtask">
+      <!-- First Row: Category, Status, Priority -->
+      <div class="view-top-row">
+        <div class="view-info-compact">
+          <span class="view-info-icon" *ngIf="getLevel2SubtaskCategory()">{{ getLevel2SubtaskCategory()?.icon
+            }}</span>
+          <div class="view-info-text">
+            <span class="view-info-label">Category</span>
+            <span class="view-info-value">
+              <span *ngIf="getLevel2SubtaskCategory()">{{ getLevel2SubtaskCategory()?.name }}</span>
+              <span *ngIf="!getLevel2SubtaskCategory()">ND</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="view-info-compact">
+          <span class="view-info-dot" *ngIf="selectedLevel2Subtask.status"
+            [style.background-color]="getStatusColor(selectedLevel2Subtask.status)"></span>
+          <div class="view-info-text">
+            <span class="view-info-label">Status</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedLevel2Subtask.status">{{ selectedLevel2Subtask.status.name | titlecase }}</span>
+              <span *ngIf="!selectedLevel2Subtask.status" class="nd-value">ND</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="view-info-compact">
+          <span class="view-info-dot" *ngIf="selectedLevel2Subtask.priority"
+            [style.background-color]="getPriorityColor(selectedLevel2Subtask.priority)"></span>
+          <div class="view-info-text">
+            <span class="view-info-label">Priority</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedLevel2Subtask.priority">{{ selectedLevel2Subtask.priority.name | titlecase
+                }}</span>
+              <span *ngIf="!selectedLevel2Subtask.priority" class="nd-value">ND</span>
+              <span *ngIf="selectedLevel2Subtask?.important" class="important-star-view"
+                style="margin-left: 5px;">★</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Second Row: Date, Time, Estimated Hours, Priority Order -->
+      <div class="view-second-row">
+        <div class="view-info-compact">
+          <i class="fas fa-calendar view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Start Date</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedLevel2Subtask?.startDate">{{ selectedLevel2Subtask.startDate | date:'MMM dd, yyyy'
+                }}</span>
+
+
+              <span *ngIf="!selectedLevel2Subtask?.startDate" class="nd-value">ND</span>
+            </span>
+          </div>
+        </div>
+        <div class="view-info-compact">
+          <i class="fas fa-calendar view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">End Date</span>
+            <span class="view-info-value">
+              <span *ngIf="selectedLevel2Subtask?.endDate">{{ selectedLevel2Subtask.endDate | date:'MMM dd, yyyy'
+                }}</span>
+              <span *ngIf="!selectedLevel2Subtask?.endDate" class="nd-value">ND</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="view-info-compact">
+          <i class="fas fa-clock view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Time</span>
+            <span class="view-info-value">
+              <span
+                *ngIf="(selectedLevel2Subtask?.startTime || selectedLevel2Subtask?.endTime) && !(selectedLevel2Subtask?.startTime === '00:00' && selectedLevel2Subtask?.endTime === '00:00')">
+                <span *ngIf="selectedLevel2Subtask.startTime">{{ selectedLevel2Subtask.startTime }}</span>
+                <span *ngIf="selectedLevel2Subtask.startTime && selectedLevel2Subtask.endTime"> - </span>
+                <span *ngIf="selectedLevel2Subtask.endTime">{{ selectedLevel2Subtask.endTime }}</span>
+              </span>
+              <span *ngIf="!selectedLevel2Subtask?.startTime && !selectedLevel2Subtask?.endTime"
+                class="nd-value">ND</span>
+              <span *ngIf="selectedLevel2Subtask?.startTime === '00:00' && selectedLevel2Subtask?.endTime === '00:00'"
+                class="nd-value">ND</span>
+            </span>
+          </div>
+        </div>
+        <div class="view-info-compact" *ngIf="selectedLevel2Subtask?.selectedDays?.length">
+          <i class="fas fa-calendar-week view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Selected Days</span>
+            <span class="view-info-value">
+              <span *ngFor="let dayIndex of selectedLevel2Subtask.selectedDays; let last = last">
+                {{ weekDays[dayIndex]?.label }}<span *ngIf="!last">, </span>
+              </span>
+            </span>
+          </div>
+        </div>
+
+
+        <div class="view-info-compact">
+          <i class="fas fa-hourglass-half view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Estimated Hours</span>
+            <span class="view-info-value">
+              <span *ngIf="(selectedLevel2Subtask?.estimatedHours ?? 0) > 0">{{ selectedLevel2Subtask?.estimatedHours
+                }}h</span>
+              <span *ngIf="(selectedLevel2Subtask?.estimatedHours ?? 0) === 0" class="nd-value">ND</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="view-info-compact">
+          <i class="fas fa-sort-numeric-down view-info-icon"></i>
+          <div class="view-info-text">
+            <span class="view-info-label">Priority Order</span>
+            <span class="view-info-value">
+              <span *ngIf="(selectedLevel2Subtask?.priorityOrder ?? 0) > 0">{{ selectedLevel2Subtask?.priorityOrder
+                }}</span>
+              <span *ngIf="(selectedLevel2Subtask?.priorityOrder ?? 0) === 0" class="nd-value">ND</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description Section (Full Width) -->
+      <div class="view-content-item">
+        <div class="view-content-header">
+          <i class="fas fa-align-left"></i>
+          <span>Description</span>
+        </div>
+        <div class="view-content-body">
+          <span *ngIf="hasDescription(selectedLevel2Subtask)">{{ selectedLevel2Subtask?.description }}</span>
+          <span *ngIf="!hasDescription(selectedLevel2Subtask)"><i>No description</i></span>
+        </div>
+      </div>
+
+      <!-- Metadata Footer -->
+      <div class="view-metadata-compact">
+        <span><i class="fas fa-plus-circle"></i> Created: {{ selectedLevel2Subtask.createdAt | date:'MMM dd, yyyy
+          HH:mm'
+          }}</span>
+        <span><i class="fas fa-edit"></i> Updated: {{ selectedLevel2Subtask.updatedAt | date:'MMM dd, yyyy HH:mm'
+          }}</span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeViewLevel2SubtaskModal()">Close</button>
+      <button class="btn btn-primary" (click)="openEditLevel2SubtaskFromView()">
+        <i class="fas fa-edit"></i>
+        Edit Level 2 Sub Task
+      </button>
+    </div>
+  </div>
+</div>

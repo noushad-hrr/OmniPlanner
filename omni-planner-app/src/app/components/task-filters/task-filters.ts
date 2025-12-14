@@ -43,11 +43,13 @@ export class TaskFiltersComponent implements OnInit, AfterViewInit {
   @Input() initialFilters: Partial<FilterState> = {};
   @Input() isStatsPanelCollapsed: boolean = false;
   @Input() controlBarTheme: string = 'dark'; // Control bar theme: 'standard', 'dark', 'chrome-windows11'
+  @Input() addTaskLabel: string = 'Add Task';
+  @Input() PeriodicTaskMenu: boolean = false;
 
   @Output() filtersChanged = new EventEmitter<FilterState>();
   @Output() filtersCleared = new EventEmitter<void>();
   @Output() viewModeChanged = new EventEmitter<string>();
-  @Output() addTaskClicked = new EventEmitter<void>();
+  @Output() addTaskClicked = new EventEmitter<string>();
   @Output() statsPanelToggled = new EventEmitter<void>();
 
   filters: FilterState = {
@@ -65,7 +67,7 @@ export class TaskFiltersComponent implements OnInit, AfterViewInit {
   isAddingTask: boolean = false;
   taskAddedSuccessfully: boolean = false;
   showAttention: boolean = false;
-  
+
   // Dropdown states
   categoryDropdownOpen: boolean = false;
   statusDropdownOpen: boolean = false;
@@ -214,7 +216,7 @@ export class TaskFiltersComponent implements OnInit, AfterViewInit {
     today.setHours(0, 0, 0, 0);
     const selected = new Date(this.selectedDate);
     selected.setHours(0, 0, 0, 0);
-    
+
     if (selected.getTime() === today.getTime()) {
       return 'Today';
     }
@@ -269,16 +271,16 @@ export class TaskFiltersComponent implements OnInit, AfterViewInit {
 
   onAddTaskClick(): void {
     if (this.isAddingTask) return;
-    
+
     this.isAddingTask = true;
     this.taskAddedSuccessfully = false;
-    
+
     // Simulate a brief loading state for better UX
     setTimeout(() => {
-      this.addTaskClicked.emit();
+      this.addTaskClicked.emit(this.viewMode);
       this.isAddingTask = false;
       this.taskAddedSuccessfully = true;
-      
+
       // Reset success state after animation
       setTimeout(() => {
         this.taskAddedSuccessfully = false;
@@ -399,7 +401,7 @@ export class TaskFiltersComponent implements OnInit, AfterViewInit {
     const categoryArray = Array.isArray(this.filters.category) ? this.filters.category : [this.filters.category];
     const statusArray = Array.isArray(this.filters.status) ? this.filters.status : [this.filters.status];
     const priorityArray = Array.isArray(this.filters.priority) ? this.filters.priority : [this.filters.priority];
-    
+
     if (categoryArray.length > 0 && !categoryArray.includes('all')) count++;
     if (statusArray.length > 0 && !statusArray.includes('all')) count++;
     if (priorityArray.length > 0 && !priorityArray.includes('all')) count++;
@@ -414,7 +416,7 @@ export class TaskFiltersComponent implements OnInit, AfterViewInit {
   calculateDropdownPosition(triggerId: string): any {
     const trigger = document.querySelector(`[data-dropdown-trigger="${triggerId}"]`);
     if (!trigger) return {};
-    
+
     const rect = trigger.getBoundingClientRect();
     return {
       top: `${rect.bottom + 4}px`,

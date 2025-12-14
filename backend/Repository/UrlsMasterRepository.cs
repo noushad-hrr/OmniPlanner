@@ -24,7 +24,10 @@ namespace OmniPlanner_API.Repository
         private void GetUserId()
         {
             if (_httpContextAccessor.HttpContext == null)
+            {
                 UserID = null;
+                return;
+            }
             var claimsIdentity = _httpContextAccessor.HttpContext.User.Identity as ClaimsIdentity;
             UserID = claimsIdentity?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         }

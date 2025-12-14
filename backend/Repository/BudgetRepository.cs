@@ -74,7 +74,8 @@ namespace OmniPlanner_API.Repository
                     source = request.source,
                     amountEstimated = request.amountEstimated,
                     amountActual = request.amountActual,
-                    isLastMonthBalance = request.isLastMonthBalance
+                    isLastMonthBalance = request.isLastMonthBalance,
+                    isCredited = request.isCredited
                 });
         }
 
@@ -89,7 +90,8 @@ namespace OmniPlanner_API.Repository
                     source = request.source,
                     amountEstimated = request.amountEstimated,
                     amountActual = request.amountActual,
-                    isLastMonthBalance = request.isLastMonthBalance
+                    isLastMonthBalance = request.isLastMonthBalance,
+                    isCredited = request.isCredited
                 });
         }
 
@@ -137,7 +139,8 @@ namespace OmniPlanner_API.Repository
                     monthId = request.monthId,
                     target = request.target,
                     amountEstimated = request.amountEstimated,
-                    amountActual = request.amountActual
+                    amountActual = request.amountActual,
+                    isDebited = request.isDebited
                 });
         }
 
@@ -151,7 +154,8 @@ namespace OmniPlanner_API.Repository
                     id = debitId,
                     target = request.target,
                     amountEstimated = request.amountEstimated,
-                    amountActual = request.amountActual
+                    amountActual = request.amountActual,
+                    isDebited = request.isDebited
                 });
         }
 

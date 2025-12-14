@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OmniPlanner_API.Queries;
 using System.Security.Claims;
+using System.Linq;
+using System.Collections.Generic;
 using Task = OmniPlanner_API.Models.Tasks.Task;
 
 namespace OmniPlanner_API.Controllers
@@ -17,7 +19,7 @@ namespace OmniPlanner_API.Controllers
     {
         private readonly ITasksRepository _taskRepository;
 
-        public TaskController(ITasksRepository taskRepository)  
+        public TaskController(ITasksRepository taskRepository)
         {
             _taskRepository = taskRepository;
         }
@@ -36,7 +38,55 @@ namespace OmniPlanner_API.Controllers
             var response = new ServiceResponse<IEnumerable<Task>>();
             try
             {
-                response.Data = await _taskRepository.GetTasks();
+                var tasks = await _taskRepository.GetTasks();
+
+                if (tasks != null && tasks.Any())
+                {
+                    // Filter out shadowed periodic tasks
+                    // Logic: L2 > L1 > Main for the same Date and Periodic Main Task ID
+                    var tasksToRemove = new HashSet<int>();
+                    var periodicTasks = tasks.Where(t => t.periodic_task != null && t.taskOnDate.HasValue).ToList();
+
+                    var groupedTasks = periodicTasks.GroupBy(t => new { Date = t.taskOnDate.Value.Date, PeriodicId = t.periodic_task.id });
+
+                    foreach (var group in groupedTasks)
+                    {
+                        var hasLevel2 = group.Any(t => t.periodic_level_2_task != null);
+                        var hasLevel1 = group.Any(t => t.periodic_level_1_task != null);
+
+                        if (hasLevel1)
+                        {
+                            // If L1 exists (and no L2), remove anything that is NOT L1 (i.e. remove Main)
+                            foreach (var task in group.Where(t => t.periodic_level_1_task == null))
+                            {
+                                tasksToRemove.Add(task.id);
+                            }
+                        }
+
+                        if (hasLevel2)
+                        {
+                            foreach (var task_ref_1 in group.Where(t => t.periodic_level_2_task != null))
+                            {
+                                //remove A B null by A B C
+                                foreach (var task in group.Where(t => t.periodic_level_2_task == null && t.periodic_level_1_task != null))
+                                {
+                                    if (task.periodic_task.id == task_ref_1.periodic_task.id && task.periodic_level_1_task.id == task_ref_1.periodic_level_1_task.id && task.periodic_level_2_task == null)
+                                    {
+                                        tasksToRemove.Add(task.id);
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+
+                    if (tasksToRemove.Any())
+                    {
+                        tasks = tasks.Where(t => !tasksToRemove.Contains(t.id));
+                    }
+                }
+
+                response.Data = tasks ?? new List<Task>();
                 if (response.Data == null || !response.Data.Any())
                 {
                     response.Data = new List<Task>();

@@ -25,6 +25,7 @@ export interface PeriodicSubtask {
   parentId?: number;
   level: number;
   isExpanded?: boolean;
+  important?: boolean;
   completed?: boolean;
 }
 
@@ -71,6 +72,10 @@ export class PeriodicTaskService {
     this.loadTasksFromAPI();
   }
 
+  public refreshTasks(): void {
+    this.loadTasksFromAPI();
+  }
+
   private loadTasksFromAPI(): void {
     this.http.get<any>(API_CONFIG.periodicTasks.getAll)
       .pipe(
@@ -111,6 +116,7 @@ export class PeriodicTaskService {
       parentId: subtask.parentId,
       level: subtask.level || 1,
       isExpanded: subtask.isExpanded || false,
+      important: subtask.important || false,
       completed: subtask.completed || false
     };
   }
@@ -150,133 +156,241 @@ export class PeriodicTaskService {
     return this.tasksSubject.value.find(task => task.id === id);
   }
 
-  createTask(taskData: Partial<PeriodicTask>): PeriodicTask {
-    const task: PeriodicTask = {
-      id: this.generateId(),
+  createTask(taskData: Partial<PeriodicTask> & any): Observable<PeriodicTask> {
+    const requestBody = {
       title: taskData.title || '',
-      description: taskData.description || '',
-      priorityLevel: taskData.priorityLevel || { name: 'medium', color: '#F97316' },
-      status: taskData.status || { name: 'todo', color: '#64748B' },
-      category: taskData.category || { name: 'General', icon: '📋' },
-      startDate: taskData.startDate || null,
-      endDate: taskData.endDate || null,
-      startTime: taskData.startTime || '09:00',
-      endTime: taskData.endTime || '17:00',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      estimatedHours: taskData.estimatedHours || 0,
-      priorityOrder: taskData.priorityOrder ?? null,
-      subtasks: [],
-      progress: 0,
-      isExpanded: false,
+      description: taskData.description || null,
+      priority_level_id: taskData.priority_level_id || null,
+      status_id: taskData.status_id || null,
+      category_id: taskData.category_id || null,
+      start_date: taskData.startDate || null,
+      end_date: taskData.endDate || null,
+      start_time: taskData.startTime || '09:00',
+      end_time: taskData.endTime || '17:00',
+      recurrence_pattern: taskData.recurrence_pattern || 'daily',
+      recurrence_interval: taskData.recurrence_interval || 1,
+      recurrence_days: taskData.recurrence_days || null,
+      recurrence_month_day: taskData.recurrence_month_day || null,
+      recurrence_week_of_month: taskData.recurrence_week_of_month || null,
+      recurrence_day_of_week: taskData.recurrence_day_of_week || null,
+      recurrence_month: taskData.recurrence_month || null,
+      recurrence_end_type: taskData.recurrence_end_type || 'never',
+      recurrence_end_date: taskData.recurrence_end_date || null,
+      recurrence_occurrences: taskData.recurrence_occurrences || null,
+      estimated_hours: taskData.estimatedHours || null,
+      priority_order: taskData.priorityOrder ?? null,
+      remarks: taskData.remarks || null,
       important: taskData.important || false,
-      completed: taskData.completed || false
+      active: true,
+      url_ids: taskData.url_ids || []
     };
 
-    const tasks = [...this.tasksSubject.value, task];
-    this.tasksSubject.next(tasks);
-    return task;
+    return this.http.post<any>(API_CONFIG.periodicTasks.add, requestBody)
+      .pipe(
+        map(response => {
+          if (response.success && response.data) {
+            const newTask = this.normalizeTask(response.data);
+            const tasks = [...this.tasksSubject.value, newTask];
+            this.tasksSubject.next(tasks);
+            return newTask;
+          }
+          throw new Error(response.message || 'Failed to create periodic task');
+        })
+      );
   }
 
-  updateTask(id: number, updates: Partial<PeriodicTask>): PeriodicTask | null {
-    const tasks = this.tasksSubject.value;
-    const taskIndex = tasks.findIndex(task => task.id === id);
-    
-    if (taskIndex === -1) return null;
-
-    const updatedTask = {
-      ...tasks[taskIndex],
-      ...updates,
-      updatedAt: new Date()
-    };
-
-    if (updates.subtasks !== undefined) {
-      updatedTask.progress = this.calculateTaskProgress(updatedTask);
+  updateTask(id: number, updates: Partial<PeriodicTask> & any): Observable<PeriodicTask> {
+    const task = this.getTask(id);
+    if (!task) {
+      throw new Error('Task not found');
     }
 
-    tasks[taskIndex] = updatedTask;
-    this.tasksSubject.next([...tasks]);
-    return updatedTask;
+    const requestBody = {
+      id: id,
+      title: updates.title ?? task.title,
+      description: updates.description ?? task.description,
+      priority_level_id: updates.priority_level_id ?? null,
+      status_id: updates.status_id ?? null,
+      category_id: updates.category_id ?? null,
+      start_date: updates.startDate ?? task.startDate,
+      end_date: updates.endDate ?? task.endDate,
+      start_time: updates.startTime ?? task.startTime,
+      end_time: updates.endTime ?? task.endTime,
+      recurrence_pattern: updates.recurrence_pattern ?? (task as any).recurrence_pattern ?? 'daily',
+      recurrence_interval: updates.recurrence_interval ?? (task as any).recurrence_interval ?? 1,
+      recurrence_days: updates.recurrence_days ?? (task as any).recurrence_days ?? null,
+      recurrence_month_day: updates.recurrence_month_day ?? (task as any).recurrence_month_day ?? null,
+      recurrence_week_of_month: updates.recurrence_week_of_month ?? (task as any).recurrence_week_of_month ?? null,
+      recurrence_day_of_week: updates.recurrence_day_of_week ?? (task as any).recurrence_day_of_week ?? null,
+      recurrence_month: updates.recurrence_month ?? (task as any).recurrence_month ?? null,
+      recurrence_end_type: updates.recurrence_end_type ?? (task as any).recurrence_end_type ?? 'never',
+      recurrence_end_date: updates.recurrence_end_date ?? (task as any).recurrence_end_date ?? null,
+      recurrence_occurrences: updates.recurrence_occurrences ?? (task as any).recurrence_occurrences ?? null,
+      estimated_hours: updates.estimatedHours ?? task.estimatedHours,
+      priority_order: updates.priorityOrder ?? task.priorityOrder,
+      remarks: updates.remarks ?? task.remarks,
+      important: updates.important ?? task.important,
+      active: true,
+      url_ids: updates.url_ids || []
+    };
+
+    return this.http.put<any>(API_CONFIG.periodicTasks.update, requestBody)
+      .pipe(
+        map(response => {
+          if (response.success && response.data) {
+            const updatedTask = this.normalizeTask(response.data);
+            const tasks = this.tasksSubject.value.map(t =>
+              t.id === id ? updatedTask : t
+            );
+            this.tasksSubject.next(tasks);
+            return updatedTask;
+          }
+          throw new Error(response.message || 'Failed to update periodic task');
+        })
+      );
   }
 
-  deleteTask(id: number): boolean {
-    const tasks = this.tasksSubject.value.filter(task => task.id !== id);
-    this.tasksSubject.next(tasks);
-    return true;
+  deleteTask(id: number): Observable<boolean> {
+    return this.http.delete<any>(`${API_CONFIG.periodicTasks.delete}/${id}`)
+      .pipe(
+        map(response => {
+          if (response.success) {
+            const tasks = this.tasksSubject.value.filter(task => task.id !== id);
+            this.tasksSubject.next(tasks);
+            return true;
+          }
+          throw new Error(response.message || 'Failed to delete periodic task');
+        })
+      );
   }
 
   // Subtask Operations
-  addSubtask(taskId: number, subtaskData: Partial<PeriodicSubtask>, parentSubtaskId?: number): PeriodicSubtask | null {
-    const task = this.getTask(taskId);
-    if (!task) return null;
+  addSubtask(taskId: number, subtaskData: Partial<PeriodicSubtask>, parentSubtaskId?: number): Observable<PeriodicSubtask> {
+    const level = parentSubtaskId ? 2 : 1;
 
-    const level = parentSubtaskId ? this.getSubtaskLevel(task, parentSubtaskId) + 1 : 1;
-    
-    const subtask: PeriodicSubtask = {
-      id: this.generateId(),
+    const requestBody = level === 1 ? {
+      periodic_tasks_main_task_id: taskId,
       title: subtaskData.title || '',
-      description: subtaskData.description || '',
-      status: subtaskData.status || { name: 'todo', color: '#64748B' },
-      priority: subtaskData.priority || { name: 'medium', color: '#F97316' },
-      category: subtaskData.category || task.category || { name: 'General', icon: '📋' },
-      startDate: subtaskData.startDate || null,
-      endDate: subtaskData.endDate || null,
-      startTime: subtaskData.startTime || '09:00',
-      endTime: subtaskData.endTime || '17:00',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      estimatedHours: subtaskData.estimatedHours || 0,
-      priorityOrder: subtaskData.priorityOrder ?? null,
-      subtasks: [],
-      parentId: parentSubtaskId,
-      level: level,
-      isExpanded: false
+      description: subtaskData.description || null,
+      priority_level_id: null,
+      status_id: null,
+      start_time: subtaskData.startTime || '09:00',
+      end_time: subtaskData.endTime || '17:00',
+      estimated_hours: subtaskData.estimatedHours || null,
+      priority_order: subtaskData.priorityOrder ?? null,
+      important: subtaskData.completed || false,
+      completed: subtaskData.completed || false
+    } : {
+      periodic_tasks_level_1_sub_task_id: parentSubtaskId,
+      title: subtaskData.title || '',
+      description: subtaskData.description || null,
+      priority_level_id: null,
+      status_id: null,
+      start_time: subtaskData.startTime || '09:00',
+      end_time: subtaskData.endTime || '17:00',
+      estimated_hours: subtaskData.estimatedHours || null,
+      priority_order: subtaskData.priorityOrder ?? null,
+      important: subtaskData.completed || false,
+      completed: subtaskData.completed || false
     };
 
-    if (parentSubtaskId) {
-      this.addSubtaskToParent(task, parentSubtaskId, subtask);
-    } else {
-      if (!task.subtasks) {
-        task.subtasks = [];
-      }
-      task.subtasks.push(subtask);
-    }
+    const endpoint = level === 1 ? API_CONFIG.periodicTasks.addLevel1Subtask : API_CONFIG.periodicTasks.addLevel2Subtask;
 
-    task.progress = this.calculateTaskProgress(task);
-    task.updatedAt = new Date();
-
-    this.tasksSubject.next([...this.tasksSubject.value]);
-    return subtask;
+    return this.http.post<any>(endpoint, requestBody)
+      .pipe(
+        map(response => {
+          if (response.success && response.data) {
+            // Reload tasks to get updated data
+            this.loadTasksFromAPI();
+            return this.normalizeSubtask(response.data);
+          }
+          throw new Error(response.message || 'Failed to add subtask');
+        })
+      );
   }
 
-  updateSubtask(taskId: number, subtaskId: number, updates: Partial<PeriodicSubtask>): PeriodicSubtask | null {
+  updateSubtask(taskId: number, subtaskId: number, updates: Partial<PeriodicSubtask>): Observable<PeriodicSubtask> {
     const task = this.getTask(taskId);
-    if (!task) return null;
+    if (!task) {
+      throw new Error('Task not found');
+    }
 
     const subtask = this.findSubtask(task, subtaskId);
-    if (!subtask) return null;
-
-    Object.assign(subtask, updates, { updatedAt: new Date() });
-
-    task.progress = this.calculateTaskProgress(task);
-    task.updatedAt = new Date();
-
-    this.tasksSubject.next([...this.tasksSubject.value]);
-    return subtask;
-  }
-
-  deleteSubtask(taskId: number, subtaskId: number): boolean {
-    const task = this.getTask(taskId);
-    if (!task) return false;
-
-    const removed = this.removeSubtaskFromTask(task, subtaskId);
-    if (removed) {
-      task.progress = this.calculateTaskProgress(task);
-      task.updatedAt = new Date();
-      this.tasksSubject.next([...this.tasksSubject.value]);
+    if (!subtask) {
+      throw new Error('Subtask not found');
     }
 
-    return removed;
+    const level = subtask.level;
+    const requestBody = level === 1 ? {
+      id: subtaskId,
+      periodic_tasks_main_task_id: taskId,
+      title: updates.title ?? subtask.title,
+      description: updates.description ?? subtask.description,
+      priority_level_id: null,
+      status_id: null,
+      start_time: updates.startTime ?? subtask.startTime,
+      end_time: updates.endTime ?? subtask.endTime,
+      estimated_hours: updates.estimatedHours ?? subtask.estimatedHours,
+      priority_order: updates.priorityOrder ?? subtask.priorityOrder,
+      important: updates.completed ?? subtask.completed,
+      completed: updates.completed ?? subtask.completed
+    } : {
+      id: subtaskId,
+      periodic_tasks_level_1_sub_task_id: subtask.parentId,
+      title: updates.title ?? subtask.title,
+      description: updates.description ?? subtask.description,
+      priority_level_id: null,
+      status_id: null,
+      start_time: updates.startTime ?? subtask.startTime,
+      end_time: updates.endTime ?? subtask.endTime,
+      estimated_hours: updates.estimatedHours ?? subtask.estimatedHours,
+      priority_order: updates.priorityOrder ?? subtask.priorityOrder,
+      important: updates.completed ?? subtask.completed,
+      completed: updates.completed ?? subtask.completed
+    };
+
+    const endpoint = level === 1 ? API_CONFIG.periodicTasks.updateLevel1Subtask : API_CONFIG.periodicTasks.updateLevel2Subtask;
+
+    return this.http.put<any>(endpoint, requestBody)
+      .pipe(
+        map(response => {
+          if (response.success && response.data) {
+            // Reload tasks to get updated data
+            this.loadTasksFromAPI();
+            return this.normalizeSubtask(response.data);
+          }
+          throw new Error(response.message || 'Failed to update subtask');
+        })
+      );
+  }
+
+  deleteSubtask(taskId: number, subtaskId: number): Observable<boolean> {
+    const task = this.getTask(taskId);
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    const subtask = this.findSubtask(task, subtaskId);
+    if (!subtask) {
+      throw new Error('Subtask not found');
+    }
+
+    const level = subtask.level;
+    const endpoint = level === 1
+      ? `${API_CONFIG.periodicTasks.deleteLevel1Subtask}/level1/${subtaskId}`
+      : `${API_CONFIG.periodicTasks.deleteLevel2Subtask}/level2/${subtaskId}`;
+
+    return this.http.delete<any>(endpoint)
+      .pipe(
+        map(response => {
+          if (response.success) {
+            // Reload tasks to get updated data
+            this.loadTasksFromAPI();
+            return true;
+          }
+          throw new Error(response.message || 'Failed to delete subtask');
+        })
+      );
   }
 
   // Progress Calculation
@@ -306,7 +420,7 @@ export class PeriodicTaskService {
     if (!task || !task.subtasks || task.subtasks.length === 0) return false;
 
     const reorderedSubtasks: PeriodicSubtask[] = [];
-    
+
     subtaskIds.forEach(id => {
       const subtask = task.subtasks!.find(s => s.id === id);
       if (subtask) {
@@ -339,7 +453,7 @@ export class PeriodicTaskService {
           }
         }
       }
-      
+
       // Case-insensitive comparison for status (array or string)
       if (filters.status) {
         const statusArray = Array.isArray(filters.status) ? filters.status : [filters.status];
@@ -351,7 +465,7 @@ export class PeriodicTaskService {
           }
         }
       }
-      
+
       // Case-insensitive comparison for priority (array or string)
       if (filters.priority) {
         const priorityArray = Array.isArray(filters.priority) ? filters.priority : [filters.priority];
@@ -368,25 +482,25 @@ export class PeriodicTaskService {
         const matchesTitle = task.title?.toLowerCase().includes(query) || false;
         const matchesDescription = task.description?.toLowerCase().includes(query) || false;
         const matchesSubtasks = task.subtasks ? this.searchInSubtasks(task.subtasks, query) : false;
-        
+
         if (!matchesTitle && !matchesDescription && !matchesSubtasks) {
           return false;
         }
       }
-      
+
       // Date filtering: Applied on startDate and endDate columns
       // Logic: ((startDate <= givenEndDate OR null) AND (endDate >= givenStartDate OR null))
       // Also accept tasks where both startDate and endDate are null
       const taskStartDate = task.startDate;
       const taskEndDate = task.endDate;
-      
+
       // If both startDate and endDate filters are provided
       if (filters.startDate && filters.endDate) {
         const filterStartDate = new Date(filters.startDate);
         const filterEndDate = new Date(filters.endDate);
         filterStartDate.setHours(0, 0, 0, 0);
         filterEndDate.setHours(23, 59, 59, 999);
-        
+
         // If both task dates are null, include the task
         if ((!taskStartDate || taskStartDate === null) && (!taskEndDate || taskEndDate === null)) {
           // Include task - both dates are null
@@ -394,7 +508,7 @@ export class PeriodicTaskService {
           // Check: (startDate <= givenEndDate OR null) AND (endDate >= givenStartDate OR null)
           const condition1 = !taskStartDate || taskStartDate === null || new Date(taskStartDate) <= filterEndDate;
           const condition2 = !taskEndDate || taskEndDate === null || new Date(taskEndDate) >= filterStartDate;
-          
+
           if (!condition1 || !condition2) {
             return false;
           }
@@ -428,7 +542,7 @@ export class PeriodicTaskService {
           }
         }
       }
-      
+
       return true;
     });
   }
@@ -441,7 +555,7 @@ export class PeriodicTaskService {
     const inProgress = tasks.filter(t => t.status?.name === 'in-progress').length;
     const overdue = tasks.filter(t => this.isOverdue(t)).length;
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-    
+
     const averageDuration = 0;
 
     return {
@@ -478,7 +592,7 @@ export class PeriodicTaskService {
   private getAllSubtasksFlat(subtasks: PeriodicSubtask[]): PeriodicSubtask[] {
     if (!subtasks || subtasks.length === 0) return [];
     const flat: PeriodicSubtask[] = [];
-    
+
     const addSubtasks = (subs: PeriodicSubtask[]) => {
       subs.forEach(sub => {
         flat.push(sub);
@@ -487,7 +601,7 @@ export class PeriodicTaskService {
         }
       });
     };
-    
+
     addSubtasks(subtasks);
     return flat;
   }
@@ -502,23 +616,23 @@ export class PeriodicTaskService {
 
   getAllSubtasks(subtasks: any[]): any[] {
     const flattenedSubtasks: any[] = [];
-    
+
     const addSubtasksWithLevel = (subtasks: any[], level: number = 1) => {
       const sortedSubtasks = this.sortSubtasksByPriorityOrder(subtasks);
-      
+
       sortedSubtasks.forEach(subtask => {
         flattenedSubtasks.push({
           ...subtask,
           level: level
         });
-        
+
         if (subtask.subtasks && subtask.subtasks.length > 0 && subtask.isExpanded) {
           subtask.subtasks = this.sortSubtasksByPriorityOrder(subtask.subtasks);
           addSubtasksWithLevel(subtask.subtasks, level + 1);
         }
       });
     };
-    
+
     addSubtasksWithLevel(subtasks);
     return flattenedSubtasks;
   }
@@ -526,7 +640,7 @@ export class PeriodicTaskService {
   toggleTaskExpansion(taskId: number): boolean {
     const task = this.getTask(taskId);
     if (!task) return false;
-    
+
     task.isExpanded = !task.isExpanded;
     this.tasksSubject.next([...this.tasksSubject.value]);
     return task.isExpanded;
@@ -535,10 +649,10 @@ export class PeriodicTaskService {
   toggleSubtaskExpansion(taskId: number, subtaskId: number): boolean {
     const task = this.getTask(taskId);
     if (!task) return false;
-    
+
     const subtask = this.findSubtaskById(task, subtaskId);
     if (!subtask) return false;
-    
+
     subtask.isExpanded = !subtask.isExpanded;
     this.tasksSubject.next([...this.tasksSubject.value]);
     return subtask.isExpanded;
@@ -557,7 +671,7 @@ export class PeriodicTaskService {
       }
       return null;
     };
-    
+
     return findInSubtasks(task.subtasks);
   }
 
@@ -597,7 +711,7 @@ export class PeriodicTaskService {
   private searchInSubtasks(subtasks: PeriodicSubtask[], query: string): boolean {
     return subtasks.some(subtask => {
       const matchesSubtask = subtask.title?.toLowerCase().includes(query) ||
-                            subtask.description?.toLowerCase().includes(query) || false;
+        subtask.description?.toLowerCase().includes(query) || false;
       const matchesNested = subtask.subtasks ? this.searchInSubtasks(subtask.subtasks, query) : false;
       return matchesSubtask || matchesNested;
     });

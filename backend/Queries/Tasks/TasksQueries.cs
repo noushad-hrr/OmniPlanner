@@ -88,12 +88,25 @@ namespace OmniPlanner_API.Queries.Tasks
                 -- Periodic Task
                 pt.id AS periodic_task_id,
                 pt.start_date AS periodic_start_date,
-                pt.end_date AS periodic_end_date
+                pt.end_date AS periodic_end_date,
+                pt.title AS periodic_main_task_title,
+                -- Periodic Level 1 Subtask
+                pt_l1.id AS periodic_level_1_task_id,
+                pt_l1.start_date AS periodic_level_1_start_date,
+                pt_l1.end_date AS periodic_level_1_end_date,
+                pt_l1.title AS periodic_level_1_task_title,
+                -- Periodic Level 2 Subtask
+                pt_l2.id AS periodic_level_2_task_id,
+                pt_l2.start_date AS periodic_level_2_start_date,
+                pt_l2.end_date AS periodic_level_2_end_date,
+                pt_l2.title AS periodic_level_2_task_title
             FROM tasks_main_task t
             LEFT JOIN priority_master pm ON t.priority_level_id = pm.id AND pm.is_deleted = false
             LEFT JOIN status_master sm ON t.status_id = sm.id AND sm.is_deleted = false
             LEFT JOIN category_master cm ON t.category_id = cm.id AND cm.is_deleted = false
-            LEFT JOIN periodic_tasks_main_task pt ON t.periodic_tasks_main_task_id = pt.id
+            LEFT JOIN tasks2_main_task pt ON t.periodic_tasks_main_task_id = pt.id
+            LEFT JOIN tasks2_level_1_sub_task pt_l1 ON t.periodic_tasks_level_1_sub_task_id = pt_l1.id
+            LEFT JOIN tasks2_level_2_sub_task pt_l2 ON t.periodic_tasks_level_2_sub_task_id = pt_l2.id
             ORDER BY t.task_on_date NULLS LAST, t.priority_order NULLS LAST, t.start_time NULLS LAST, t.id";
 
         // Get a single task by ID (for returning after insert/update)
@@ -130,12 +143,25 @@ namespace OmniPlanner_API.Queries.Tasks
                 -- Periodic Task
                 pt.id AS periodic_task_id,
                 pt.start_date AS periodic_start_date,
-                pt.end_date AS periodic_end_date
+                pt.end_date AS periodic_end_date,
+                pt.title AS periodic_main_task_title,
+                -- Periodic Level 1 Subtask
+                pt_l1.id AS periodic_level_1_task_id,
+                pt_l1.start_date AS periodic_level_1_start_date,
+                pt_l1.end_date AS periodic_level_1_end_date,
+                pt_l1.title AS periodic_level_1_task_title,
+                -- Periodic Level 2 Subtask
+                pt_l2.id AS periodic_level_2_task_id,
+                pt_l2.start_date AS periodic_level_2_start_date,
+                pt_l2.end_date AS periodic_level_2_end_date,
+                pt_l2.title AS periodic_level_2_task_title
             FROM tasks_main_task t
             LEFT JOIN priority_master pm ON t.priority_level_id = pm.id AND pm.is_deleted = false
             LEFT JOIN status_master sm ON t.status_id = sm.id AND sm.is_deleted = false
             LEFT JOIN category_master cm ON t.category_id = cm.id AND cm.is_deleted = false
-            LEFT JOIN periodic_tasks_main_task pt ON t.periodic_tasks_main_task_id = pt.id
+            LEFT JOIN tasks2_main_task pt ON t.periodic_tasks_main_task_id = pt.id
+            LEFT JOIN tasks2_level_1_sub_task pt_l1 ON t.periodic_tasks_level_1_sub_task_id = pt_l1.id
+            LEFT JOIN tasks2_level_2_sub_task pt_l2 ON t.periodic_tasks_level_2_sub_task_id = pt_l2.id
             WHERE t.id = @task_id";
 
         // Get URLs for a task
@@ -207,13 +233,13 @@ namespace OmniPlanner_API.Queries.Tasks
                 title, description, priority_level_id, status_id, category_id,
                 task_on_date, start_time, end_time, created_on, created_by,
                 modified_on, modified_by, estimated_hours, priority_order,
-                remarks, important, completed, periodic_tasks_main_task_id
+                remarks, important, completed, periodic_tasks_main_task_id, periodic_tasks_level_1_sub_task_id, periodic_tasks_level_2_sub_task_id
             )
             VALUES (
                 @title, @description, @priority_level_id, @status_id, @category_id,
                 @task_on_date, @start_time, @end_time, NOW(), @created_by,
                 NOW(), @modified_by, @estimated_hours, @priority_order,
-                @remarks, @important, @completed, @periodic_tasks_main_task_id
+                @remarks, @important, @completed, @periodic_tasks_main_task_id, @periodic_tasks_level_1_sub_task_id, @periodic_tasks_level_2_sub_task_id
             )
             RETURNING id";
 

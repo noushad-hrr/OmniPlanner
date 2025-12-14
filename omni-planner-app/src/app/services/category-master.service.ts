@@ -17,6 +17,7 @@ export interface Category {
 }
 
 export interface CategoryViewModel extends Category {
+  color?: string;  // Add color property
   created_by_name?: string;
   last_modified_by_name?: string;
 }

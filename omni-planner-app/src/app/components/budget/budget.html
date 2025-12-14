@@ -5,10 +5,7 @@
       Budget Management
     </h2>
     <div class="budget-controls">
-      <select 
-        class="month-selector" 
-        [value]="selectedMonth?.id || ''"
-        (change)="onMonthChange($event)">
+      <select class="month-selector" [value]="selectedMonth?.id || ''" (change)="onMonthChange($event)">
         <option value="" disabled>Select Month</option>
         <option *ngFor="let month of months" [value]="month.id">
           {{ month.monthYear }}
@@ -22,6 +19,8 @@
 
   <!-- Budget Content -->
   <div class="budget-content" *ngIf="currentMonthData">
+
+
     <div class="budget-grid">
       <!-- Credits Section (Green) -->
       <div class="credits-section">
@@ -31,7 +30,7 @@
             <i class="fas fa-plus"></i> Add Credit
           </button>
         </div>
-        
+
         <div class="table-container">
           <table class="budget-table credits-table">
             <thead>
@@ -39,6 +38,7 @@
                 <th>Source</th>
                 <th>Amount (Estimated)</th>
                 <th>Amount (Actual)</th>
+                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -47,21 +47,26 @@
                 <td>{{ credit.source }}</td>
                 <td>{{ formatCurrency(credit.amountEstimated) }}</td>
                 <td>{{ formatCurrency(credit.amountActual) }}</td>
+                <td class="status-cell">
+                  <label class="status-checkbox-wrapper">
+                    <input type="checkbox" class="status-checkbox credit-status" [(ngModel)]="credit.isCredited"
+                      (change)="updateCreditStatus(credit)" [disabled]="credit.isLastMonthBalance"
+                      title="{{ credit.isCredited ? 'Credited' : 'Not Credited' }}">
+                    <span class="checkbox-label">{{ credit.isCredited ? 'Credited' : 'Pending' }}</span>
+                  </label>
+                </td>
                 <td class="action-buttons">
                   <button class="btn-icon btn-edit" (click)="openEditCreditModal(credit)" title="Edit">
                     <i class="fas fa-edit"></i>
                   </button>
-                  <button 
-                    class="btn-icon btn-delete" 
-                    (click)="deleteCredit(credit)"
-                    *ngIf="!credit.isLastMonthBalance"
+                  <button class="btn-icon btn-delete" (click)="deleteCredit(credit)" *ngIf="!credit.isLastMonthBalance"
                     title="Delete">
                     <i class="fas fa-trash"></i>
                   </button>
                 </td>
               </tr>
               <tr *ngIf="getCredits().length === 0" class="empty-row">
-                <td colspan="4">No credits added yet</td>
+                <td colspan="5">No credits added yet</td>
               </tr>
             </tbody>
           </table>
@@ -76,7 +81,7 @@
             <i class="fas fa-plus"></i> Add Debit
           </button>
         </div>
-        
+
         <div class="table-container">
           <table class="budget-table debits-table">
             <thead>
@@ -84,6 +89,7 @@
                 <th>Target</th>
                 <th>Amount (Estimated)</th>
                 <th>Amount (Actual)</th>
+                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -92,6 +98,13 @@
                 <td>{{ debit.target }}</td>
                 <td>{{ formatCurrency(debit.amountEstimated) }}</td>
                 <td>{{ formatCurrency(debit.amountActual) }}</td>
+                <td class="status-cell">
+                  <label class="status-checkbox-wrapper">
+                    <input type="checkbox" class="status-checkbox debit-status" [(ngModel)]="debit.isDebited"
+                      (change)="updateDebitStatus(debit)" title="{{ debit.isDebited ? 'Debited' : 'Not Debited' }}">
+                    <span class="checkbox-label">{{ debit.isDebited ? 'Debited' : 'Pending' }}</span>
+                  </label>
+                </td>
                 <td class="action-buttons">
                   <button class="btn-icon btn-edit" (click)="openEditDebitModal(debit)" title="Edit">
                     <i class="fas fa-edit"></i>
@@ -102,7 +115,7 @@
                 </td>
               </tr>
               <tr *ngIf="getDebits().length === 0" class="empty-row">
-                <td colspan="4">No debits added yet</td>
+                <td colspan="5">No debits added yet</td>
               </tr>
             </tbody>
           </table>
@@ -110,187 +123,181 @@
       </div>
     </div>
 
-    <!-- Monthly Summary Section -->
+    <!-- Summary Section -->
     <div class="summary-section">
-      <div class="summary-grid">
-        <div class="summary-item">
-          <span class="summary-label">Monthly Credit</span>
-          <span class="summary-value">{{ formatCurrency(getMonthlyCredit()) }}</span>
-        </div>
-        <div class="summary-item">
-          <span class="summary-label">Monthly Debit</span>
-          <span class="summary-value">{{ formatCurrency(getMonthlyDebit()) }}</span>
-        </div>
-        <div class="summary-item balance-item">
-          <span class="summary-label">Final Balance Till Month</span>
-          <span class="summary-value">{{ formatCurrency(getFinalBalance()) }}</span>
-        </div>
+      <!-- Monthly Summary Table -->
+      <div class="summary-card">
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>Total ({{ selectedMonth?.monthYear }})</th>
+              <th>Current</th>
+              <th>Projected</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Credits</td>
+              <td>{{ formatCurrency(getMonthlyCurrentCredit()) }}</td>
+              <td>{{ formatCurrency(getMonthlyProjectedCredit()) }}</td>
+            </tr>
+            <tr>
+              <td>Debits</td>
+              <td>{{ formatCurrency(getMonthlyCurrentDebit()) }}</td>
+              <td>{{ formatCurrency(getMonthlyProjectedDebit()) }}</td>
+            </tr>
+            <tr class="balance-row">
+              <td>Balance</td>
+              <td>{{ formatCurrency(getMonthlyCurrentBalance()) }}</td>
+              <td>{{ formatCurrency(getMonthlyProjectedBalance()) }}</td>
+            </tr>
+            <!-- <tr class="cumulative-row">
+              <td>Balance till this month</td>
+              <td>{{ formatCurrency(getCumulativeCurrentBalance()) }}</td>
+              <td>{{ formatCurrency(getCumulativeProjectedBalance()) }}</td>
+            </tr> -->
+          </tbody>
+        </table>
       </div>
-    </div>
 
-    <!-- Total Row (Cyan) -->
-    <div class="total-section">
-      <div class="total-grid">
-        <div class="total-label">TOTAL</div>
-        <div class="total-item">
-          <span class="total-value-label">Monthly Credit</span>
-          <span class="total-value">{{ formatCurrency(getTotalMonthlyCredit()) }}</span>
-        </div>
-        <div class="total-item">
-          <span class="total-value-label">Monthly Debit</span>
-          <span class="total-value">{{ formatCurrency(getTotalMonthlyDebit()) }}</span>
-        </div>
-        <div class="total-item">
-          <span class="total-value-label">Final Balance Till Month</span>
-          <span class="total-value">{{ formatCurrency(getTotalFinalBalance()) }}</span>
-        </div>
+      <!-- Total Summary Table -->
+      <div class="summary-card">
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>Grand Total (All months)</th>
+              <th>Current</th>
+              <th>Projected</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Credits</td>
+              <td>{{ formatCurrency(getTotalCurrentCredit()) }}</td>
+              <td>{{ formatCurrency(getTotalProjectedCredit()) }}</td>
+            </tr>
+            <tr>
+              <td>Debits</td>
+              <td>{{ formatCurrency(getTotalCurrentDebit()) }}</td>
+              <td>{{ formatCurrency(getTotalProjectedDebit()) }}</td>
+            </tr>
+            <tr class="balance-row">
+              <td>Total (Final Balance)</td>
+              <td>{{ formatCurrency(getTotalCurrentBalance()) }}</td>
+              <td>{{ formatCurrency(getTotalProjectedBalance()) }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
 
-  <!-- Empty State -->
-  <div class="empty-state" *ngIf="!currentMonthData">
-    <i class="fas fa-wallet"></i>
-    <p>Select a month or create a new month to start managing your budget</p>
-    <button class="btn btn-primary" (click)="openAddMonthModal()">
-      <i class="fas fa-plus"></i> Create Month
-    </button>
-  </div>
-</div>
-
-<!-- Add/Edit Credit Modal -->
-<div class="modal-overlay" *ngIf="showAddCreditModal || showEditCreditModal" (click)="closeCreditModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h3>{{ showEditCreditModal ? 'Edit Credit' : 'Add Credit' }}</h3>
-      <button class="btn-icon" (click)="closeCreditModal()" title="Close">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Source</label>
-        <input 
-          type="text" 
-          [(ngModel)]="newCredit.source" 
-          placeholder="e.g., Salary, Bonus, etc."
-          class="form-control"
-          [disabled]="!!newCredit.isLastMonthBalance">
+  <!-- Credit Modal -->
+  <div class="modal-overlay" *ngIf="showAddCreditModal || showEditCreditModal" (click)="closeCreditModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ showEditCreditModal ? 'Edit Credit' : 'Add Credit' }}</h3>
+        <button class="btn-icon" (click)="closeCreditModal()" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
-      <div class="form-group">
-        <label>Amount (Estimated)</label>
-        <input 
-          type="number" 
-          [(ngModel)]="newCredit.amountEstimated" 
-          placeholder="0"
-          class="form-control">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Source</label>
+          <input type="text" [(ngModel)]="newCredit.source" placeholder="e.g., Salary, Freelance, etc."
+            class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Amount (Estimated)</label>
+          <input type="number" [(ngModel)]="newCredit.amountEstimated" placeholder="0" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Amount (Actual)</label>
+          <input type="number" [(ngModel)]="newCredit.amountActual" placeholder="0" class="form-control">
+        </div>
       </div>
-      <div class="form-group">
-        <label>Amount (Actual)</label>
-        <input 
-          type="number" 
-          [(ngModel)]="newCredit.amountActual" 
-          placeholder="0"
-          class="form-control">
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeCreditModal()">Cancel</button>
+        <button class="btn btn-success" (click)="saveCredit()">Save</button>
       </div>
-      <div class="form-group">
-        <label>
-          <input 
-            type="checkbox" 
-            [(ngModel)]="newCredit.isLastMonthBalance"
-            [disabled]="!!showEditCreditModal">
-          Last Month Balance
-        </label>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" (click)="closeCreditModal()">Cancel</button>
-      <button class="btn btn-success" (click)="saveCredit()">Save</button>
     </div>
   </div>
-</div>
 
-<!-- Add/Edit Debit Modal -->
-<div class="modal-overlay" *ngIf="showAddDebitModal || showEditDebitModal" (click)="closeDebitModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h3>{{ showEditDebitModal ? 'Edit Debit' : 'Add Debit' }}</h3>
-      <button class="btn-icon" (click)="closeDebitModal()" title="Close">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Target</label>
-        <input 
-          type="text" 
-          [(ngModel)]="newDebit.target" 
-          placeholder="e.g., Home, Daily Expenses, etc."
-          class="form-control">
+  <!-- Debit Modal -->
+  <div class="modal-overlay" *ngIf="showAddDebitModal || showEditDebitModal" (click)="closeDebitModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ showEditDebitModal ? 'Edit Debit' : 'Add Debit' }}</h3>
+        <button class="btn-icon" (click)="closeDebitModal()" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
-      <div class="form-group">
-        <label>Amount (Estimated)</label>
-        <input 
-          type="number" 
-          [(ngModel)]="newDebit.amountEstimated" 
-          placeholder="0"
-          class="form-control">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Target</label>
+          <input type="text" [(ngModel)]="newDebit.target" placeholder="e.g., Home, Daily Expenses, etc."
+            class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Amount (Estimated)</label>
+          <input type="number" [(ngModel)]="newDebit.amountEstimated" placeholder="0" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Amount (Actual)</label>
+          <input type="number" [(ngModel)]="newDebit.amountActual" placeholder="0" class="form-control">
+        </div>
       </div>
-      <div class="form-group">
-        <label>Amount (Actual)</label>
-        <input 
-          type="number" 
-          [(ngModel)]="newDebit.amountActual" 
-          placeholder="0"
-          class="form-control">
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeDebitModal()">Cancel</button>
+        <button class="btn btn-danger" (click)="saveDebit()">Save</button>
       </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" (click)="closeDebitModal()">Cancel</button>
-      <button class="btn btn-danger" (click)="saveDebit()">Save</button>
     </div>
   </div>
-</div>
 
-<!-- Add Month Modal -->
-<div class="modal-overlay" *ngIf="showAddMonthModal" (click)="closeMonthModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h3>Add New Month</h3>
-      <button class="btn-icon" (click)="closeMonthModal()" title="Close">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Month Year (e.g., "Oct 2025")</label>
-        <input 
-          type="text" 
-          [(ngModel)]="newMonth.monthYear" 
-          placeholder="Oct 2025"
-          class="form-control">
+  <!-- Add Month Modal -->
+  <div class="modal-overlay" *ngIf="showAddMonthModal" (click)="closeMonthModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Add New Month</h3>
+        <button class="btn-icon" (click)="closeMonthModal()" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
-      <div class="form-group">
-        <label>Month Number (1-12)</label>
-        <input 
-          type="number" 
-          [(ngModel)]="newMonth.monthNumber" 
-          min="1"
-          max="12"
-          class="form-control">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Month</label>
+          <select [(ngModel)]="newMonth.monthNumber" (ngModelChange)="onMonthNumberChange()" class="form-control">
+            <option value="1">January</option>
+            <option value="2">February</option>
+            <option value="3">March</option>
+            <option value="4">April</option>
+            <option value="5">May</option>
+            <option value="6">June</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Year</label>
+          <input type="number" [(ngModel)]="newMonth.yearNumber" (ngModelChange)="onYearNumberChange()" min="2020"
+            max="2100" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Month Label (Auto-generated)</label>
+          <input type="text" [value]="newMonth.monthYear" placeholder="Jan 2025" class="form-control" readonly disabled>
+        </div>
+        <div class="error-message" *ngIf="monthErrorMessage" style="color: #ef4444; margin-top: 10px; font-size: 14px;">
+          <i class="fas fa-exclamation-circle"></i> {{ monthErrorMessage }}
+        </div>
       </div>
-      <div class="form-group">
-        <label>Year</label>
-        <input 
-          type="number" 
-          [(ngModel)]="newMonth.yearNumber" 
-          class="form-control">
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeMonthModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="saveMonth()">Create</button>
       </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" (click)="closeMonthModal()">Cancel</button>
-      <button class="btn btn-primary" (click)="saveMonth()">Create</button>
     </div>
   </div>
 </div>
-

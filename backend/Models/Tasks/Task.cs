@@ -75,6 +75,8 @@ namespace OmniPlanner_API.Models.Tasks
         public bool important { get; set; } = false;
         public bool completed { get; set; } = false;
         public PeriodicTask? periodic_task { get; set; } // Reference to periodic task (nullable)
+        public PeriodicSubtask? periodic_level_1_task { get; set; } 
+        public PeriodicSubtask? periodic_level_2_task { get; set; }
     }
     public class TaskCategoryModel
     {

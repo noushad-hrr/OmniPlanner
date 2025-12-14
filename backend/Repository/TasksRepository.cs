@@ -1,4 +1,4 @@
-using Dapper;
+﻿using Dapper;
 using OmniPlanner_API.Models.Tasks;
 using OmniPlanner_API.IRepository;
 using OmniPlanner_API.Queries.Tasks;
@@ -273,7 +273,22 @@ namespace OmniPlanner_API.Repository
                             {
                                 id = GetValue("periodic_task_id") as int? ?? 0,
                                 startDate = GetValue("periodic_start_date") as DateTime?,
-                                endDate = GetValue("periodic_end_date") as DateTime?
+                                endDate = GetValue("periodic_end_date") as DateTime?,
+                                title = GetValue("periodic_main_task_title") as string ?? ""
+                            } : null,
+                            periodic_level_1_task = GetValue("periodic_level_1_task_id") != null ? new PeriodicSubtask
+                            {
+                                id = GetValue("periodic_level_1_task_id") as int? ?? 0,
+                                startDate = GetValue("periodic_level_1_start_date") as DateTime?,
+                                endDate = GetValue("periodic_level_1_end_date") as DateTime?,
+                                title = GetValue("periodic_level_1_task_title") as string ?? ""
+                            } : null,
+                            periodic_level_2_task = GetValue("periodic_level_2_task_id") != null ? new PeriodicSubtask
+                            {
+                                id = GetValue("periodic_level_2_task_id") as int? ?? 0,
+                                startDate = GetValue("periodic_level_2_start_date") as DateTime?,
+                                endDate = GetValue("periodic_level_2_end_date") as DateTime?,
+                                title = GetValue("periodic_level_2_task_title") as string ?? ""
                             } : null
                         };
                         taskIds.Add(taskId);
@@ -410,7 +425,6 @@ namespace OmniPlanner_API.Repository
 
         public async System.Threading.Tasks.Task<Task> AddMainTask(AddMainTaskRequest request, int userId)
         {
-            int taskId = 0;
             using (var connection = _context.CreateConnection())
             {
                 connection.Open();
@@ -418,59 +432,9 @@ namespace OmniPlanner_API.Repository
                 {
                     try
                     {
-                        // Auto-assign priority_order if null
-                        int? priorityOrder = request.priority_order;
-                        if (!priorityOrder.HasValue && request.task_on_date.HasValue)
-                        {
-                            var maxOrder = await connection.QueryFirstOrDefaultAsync<int?>(
-                                "SELECT MAX(priority_order) FROM tasks_main_task WHERE task_on_date = @task_on_date",
-                                new { task_on_date = request.task_on_date }, transaction);
-                            priorityOrder = (maxOrder ?? 0) + 1;
-                        }
-
-                        // Insert main task
-                        taskId = await connection.ExecuteScalarAsync<int>(TasksQueries.AddMainTask, new
-                        {
-                            title = request.title,
-                            description = request.description,
-                            priority_level_id = request.priority_level_id,
-                            status_id = request.status_id,
-                            category_id = request.category_id,
-                            task_on_date = request.task_on_date,
-                            start_time = request.start_time,
-                            end_time = request.end_time,
-                            created_by = userId,
-                            modified_by = userId,
-                            estimated_hours = request.estimated_hours,
-                            priority_order = priorityOrder,
-                            remarks = request.remarks,
-                            important = request.important,
-                            completed = request.completed,
-                            periodic_tasks_main_task_id = request.periodic_tasks_main_task_id
-                        }, transaction);
-
-                        // Reorder tasks on the same date to maintain non-gapped sequence
-                        if (request.task_on_date.HasValue)
-                        {
-                            await ReorderMainTasksByDate(connection, request.task_on_date.Value, transaction);
-                        }
-
-                        // Insert URL mappings
-                        if (request.url_ids != null && request.url_ids.Any())
-                        {
-                            foreach (var urlId in request.url_ids)
-                            {
-                                await connection.ExecuteAsync(TasksQueries.InsertTaskUrlMapping, new
-                                {
-                                    task_id = taskId,
-                                    url_id = urlId,
-                                    created_by = userId,
-                                    modified_by = userId
-                                }, transaction);
-                            }
-                        }
-
+                        var task = await AddMainTask(request, userId, connection, transaction);
                         transaction.Commit();
+                        return task;
                     }
                     catch
                     {
@@ -478,71 +442,143 @@ namespace OmniPlanner_API.Repository
                         throw;
                     }
                 }
-
-                // Fetch the created task using the same connection (after transaction commit)
-                var taskRow = await connection.QueryFirstOrDefaultAsync<dynamic>(TasksQueries.GetTaskById, new { task_id = taskId });
-                if (taskRow == null)
-                {
-                    throw new Exception("Failed to retrieve created task");
-                }
-
-                // Get URLs for the task
-                var urls = await connection.QueryAsync<TaskUrl>(TasksQueries.GetTaskUrls, new { task_id = taskId });
-                var urlList = urls.ToList();
-                
-                // Populate credentials for each URL (similar to NotesRepository)
-                var urlsMasterRepo = new UrlsMasterRepository(_context, _httpContextAccessor);
-                foreach (var url in urlList)
-                {
-                    url.credentials = await urlsMasterRepo.GetUrlCredentials(url.id);
-                }
-                
-                // Map the task (using same pattern as GetTasks method)
-                var task = new Task
-                {
-                    id = (int)taskRow.id,
-                    title = taskRow.title ?? string.Empty,
-                    description = taskRow.description,
-                    taskOnDate = taskRow.taskOnDate as DateTime?,
-                    startTime = taskRow.startTime,
-                    endTime = taskRow.endTime,
-                    createdAt = taskRow.createdAt as DateTime? ?? DateTime.UtcNow,
-                    updatedAt = taskRow.updatedAt as DateTime? ?? DateTime.UtcNow,
-                    estimatedHours = taskRow.estimatedHours as int?,
-                    priority_order = taskRow.priorityOrder as int?,
-                    remarks = taskRow.remarks,
-                    important = taskRow.important ?? false,
-                    completed = taskRow.completed ?? false,
-                    isExpanded = false,
-                    subtasks = new List<Subtask>(),
-                    urls = urlList,
-                    priority_level = !string.IsNullOrEmpty(taskRow.priority_name) ? new TaskPriority
-                    {
-                        name = taskRow.priority_name,
-                        color = taskRow.priority_color ?? "#64748B"
-                    } : null,
-                    status = !string.IsNullOrEmpty(taskRow.status_name) ? new TaskStatus
-                    {
-                        name = taskRow.status_name,
-                        color = taskRow.status_color ?? "#64748B"
-                    } : null,
-                    category = !string.IsNullOrEmpty(taskRow.category_name) ? new TaskCategory
-                    {
-                        name = taskRow.category_name,
-                        icon = taskRow.category_icon ?? ""
-                    } : null,
-                    periodic_task = taskRow.periodic_task_id != null ? new PeriodicTask
-                    {
-                        id = taskRow.periodic_task_id,
-                        startDate = taskRow.periodic_start_date as DateTime?,
-                        endDate = taskRow.periodic_end_date as DateTime?
-                    } : null
-                };
-
-                return task;
             }
         }
 
+        public async System.Threading.Tasks.Task<Task> AddMainTask(AddMainTaskRequest request, int userId, IDbConnection connection, IDbTransaction transaction)
+        {
+            int taskId = 0;
+            
+            // Auto-assign priority_order if null
+            int? priorityOrder = request.priority_order;
+            if (!priorityOrder.HasValue && request.task_on_date.HasValue)
+            {
+                var maxOrder = await connection.QueryFirstOrDefaultAsync<int?>(
+                    "SELECT MAX(priority_order) FROM tasks_main_task WHERE task_on_date = @task_on_date",
+                    new { task_on_date = request.task_on_date }, transaction);
+                priorityOrder = (maxOrder ?? 0) + 1;
+            }
+
+            // Insert main task
+            taskId = await connection.ExecuteScalarAsync<int>(TasksQueries.AddMainTask, new
+            {
+                title = request.title,
+                description = request.description,
+                priority_level_id = request.priority_level_id,
+                status_id = request.status_id,
+                category_id = request.category_id,
+                task_on_date = request.task_on_date,
+                start_time = request.start_time,
+                end_time = request.end_time,
+                created_by = userId,
+                modified_by = userId,
+                estimated_hours = request.estimated_hours,
+                priority_order = priorityOrder,
+                remarks = request.remarks,
+                important = request.important,
+                completed = request.completed,
+                periodic_tasks_main_task_id = request.periodic_tasks_main_task_id,
+                periodic_tasks_level_1_sub_task_id = request.periodic_tasks_level_1_sub_task_id,
+                periodic_tasks_level_2_sub_task_id = request.periodic_tasks_level_2_sub_task_id
+            }, transaction);
+
+            // Reorder tasks on the same date to maintain non-gapped sequence
+            if (request.task_on_date.HasValue)
+            {
+                await ReorderMainTasksByDate(connection, request.task_on_date.Value, transaction);
+            }
+
+            // Insert URL mappings
+            if (request.url_ids != null && request.url_ids.Any())
+            {
+                foreach (var urlId in request.url_ids)
+                {
+                    await connection.ExecuteAsync(TasksQueries.InsertTaskUrlMapping, new
+                    {
+                        task_id = taskId,
+                        url_id = urlId,
+                        created_by = userId,
+                        modified_by = userId
+                    }, transaction);
+                }
+            }
+
+            // Fetch the created task using the same connection and transaction
+            var taskRow = await connection.QueryFirstOrDefaultAsync<dynamic>(TasksQueries.GetTaskById, new { task_id = taskId }, transaction);
+            if (taskRow == null)
+            {
+                throw new Exception("Failed to retrieve created task");
+            }
+
+            // Get URLs for the task
+            var urls = await connection.QueryAsync<TaskUrl>(TasksQueries.GetTaskUrls, new { task_id = taskId }, transaction);
+            var urlList = urls.ToList();
+            
+            // Populate credentials for each URL (similar to NotesRepository)
+            var urlsMasterRepo = new UrlsMasterRepository(_context, _httpContextAccessor);
+            foreach (var url in urlList)
+            {
+                url.credentials = await urlsMasterRepo.GetUrlCredentials(url.id);
+            }
+            
+            // Map the task (using same pattern as GetTasks method)
+            var task = new Task
+            {
+                id = (int)taskRow.id,
+                title = taskRow.title ?? string.Empty,
+                description = taskRow.description,
+                taskOnDate = taskRow.taskOnDate as DateTime?,
+                startTime = taskRow.startTime,
+                endTime = taskRow.endTime,
+                createdAt = taskRow.createdAt as DateTime? ?? DateTime.UtcNow,
+                updatedAt = taskRow.updatedAt as DateTime? ?? DateTime.UtcNow,
+                estimatedHours = taskRow.estimatedHours as int?,
+                priority_order = taskRow.priorityOrder as int?,
+                remarks = taskRow.remarks,
+                important = taskRow.important ?? false,
+                completed = taskRow.completed ?? false,
+                isExpanded = false,
+                subtasks = new List<Subtask>(),
+                urls = urlList,
+                priority_level = !string.IsNullOrEmpty(taskRow.priority_name) ? new TaskPriority
+                {
+                    name = taskRow.priority_name,
+                    color = taskRow.priority_color ?? "#64748B"
+                } : null,
+                status = !string.IsNullOrEmpty(taskRow.status_name) ? new TaskStatus
+                {
+                    name = taskRow.status_name,
+                    color = taskRow.status_color ?? "#64748B"
+                } : null,
+                category = !string.IsNullOrEmpty(taskRow.category_name) ? new TaskCategory
+                {
+                    name = taskRow.category_name,
+                    icon = taskRow.category_icon ?? ""
+                } : null,
+                periodic_task = taskRow.periodic_task_id != null ? new PeriodicTask
+                {
+                    id = taskRow.periodic_task_id,
+                    startDate = taskRow.periodic_start_date as DateTime?,
+                    endDate = taskRow.periodic_end_date as DateTime?
+                } : null,
+                periodic_level_1_task = taskRow.periodic_level_1_task_id != null ? new PeriodicSubtask
+                {
+                    id = taskRow.periodic_level_1_task_id,
+                    startDate = taskRow.periodic_level_1_start_date as DateTime?,
+                    endDate = taskRow.periodic_level_1_end_date as DateTime?,
+                    title = taskRow.periodic_level_1_task_title ?? ""
+                } : null,
+                periodic_level_2_task = taskRow.periodic_level_2_task_id != null ? new PeriodicSubtask
+                {
+                    id = taskRow.periodic_level_2_task_id,
+                    startDate = taskRow.periodic_level_2_start_date as DateTime?,
+                    endDate = taskRow.periodic_level_2_end_date as DateTime?,
+                    title = taskRow.periodic_level_2_task_title ?? ""
+                } : null
+            };
+
+            return task;
+        }
         public async System.Threading.Tasks.Task<Task> UpdateMainTask(UpdateMainTaskRequest request, int userId)
         {
             using (var connection = _context.CreateConnection())
@@ -1770,5 +1806,6 @@ namespace OmniPlanner_API.Repository
                 order++;
             }
         }
+
     }
 }
