@@ -7,15 +7,15 @@ output will be at : frontend/dist/<app-name>/
 Create folder 'wwwroot'
 
 
-3. Copy Angular build(havingindex.html) into .NET wwwroot folder
+3. Copy Angular build(having index.html) into .NET wwwroot folder
 
-4. Enable static file hosting in .NET API
+4. Enable static file hosting in .NET API - to do so add the following 2 line code to the program.cs
 app.UseStaticFiles();
 app.MapFallbackToFile("index.html");
 
 
 5. Publish .NET as self-contained EXE
-dotnet publish -c Release -r win-x64 --self-contained true -o Published
+cmd to publish:  dotnet publish -c Release -r win-x64 --self-contained true -o Published
 note: create the static files like uploads folder if needed
 
 
@@ -26,7 +26,7 @@ note: create the static files like uploads folder if needed
    *.dll
 
 7. http://localhost:5000 (application will run on port 5000 by default)
-note: in this self contained application the both frontend and backend application will run on same production
+note: in this self contained application the both frontend and backend application will run on same port
 
 issue: what if the api URL in frontend -> environment.ts is not same as above default running URL or Port
 solu: fix the application Urls and use those fixed urls in the environment.ts

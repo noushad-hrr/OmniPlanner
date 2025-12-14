@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/services/confirmation.service.ts"],
+  "sourcesContent": ["import { Injectable } from '@angular/core';\r\nimport { Subject, Observable } from 'rxjs';\r\n\r\nexport interface ConfirmationOptions {\r\n  title?: string;\r\n  message: string;\r\n  confirmText?: string;\r\n  cancelText?: string;\r\n  confirmClass?: 'primary' | 'danger' | 'warn' | 'success';\r\n}\r\n\r\nexport interface ConfirmationResult {\r\n  confirmed: boolean;\r\n}\r\n\r\n@Injectable({ providedIn: 'root' })\r\nexport class ConfirmationService {\r\n  private confirmationSubject = new Subject<ConfirmationOptions & { resolve: (result: ConfirmationResult) => void }>();\r\n  confirmations$ = this.confirmationSubject.asObservable();\r\n\r\n  confirm(options: ConfirmationOptions): Promise<boolean> {\r\n    return new Promise<boolean>((resolve) => {\r\n      this.confirmationSubject.next({\r\n        ...options,\r\n        resolve: (result) => resolve(result.confirmed)\r\n      });\r\n    });\r\n  }\r\n}\r\n\r\n"],
+  "mappings": ";;;;;;;;;;AAgBM,IAAO,sBAAP,MAAO,qBAAmB;EACtB,sBAAsB,IAAI,QAAO;EACzC,iBAAiB,KAAK,oBAAoB,aAAY;EAEtD,QAAQ,SAA4B;AAClC,WAAO,IAAI,QAAiB,CAAC,YAAW;AACtC,WAAK,oBAAoB,KAAK,iCACzB,UADyB;QAE5B,SAAS,CAAC,WAAW,QAAQ,OAAO,SAAS;QAC9C;IACH,CAAC;EACH;;qCAXW,sBAAmB;EAAA;4EAAnB,sBAAmB,SAAnB,qBAAmB,WAAA,YADN,OAAM,CAAA;;;sEACnB,qBAAmB,CAAA;UAD/B;WAAW,EAAE,YAAY,OAAM,CAAE;;;",
+  "names": []
+}

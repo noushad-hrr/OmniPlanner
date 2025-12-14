@@ -9,6 +9,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Diagnostics;
+using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -156,18 +157,6 @@ app.UseStaticFiles(new StaticFileOptions()
     FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Uploads")),
     RequestPath = new PathString("/Uploads")
 });
-
-// app.MapFallbackToFile("index.html");
-
-// //Your EXE runs at port 7000.- Noushad
-// builder.WebHost.UseUrls("http://localhost:7000");
-
-// Process.Start(new ProcessStartInfo
-// {
-//     FileName = "http://localhost:7000",
-//     UseShellExecute = true
-// });
-
 // Directory browser only in development
 if (app.Environment.IsDevelopment())
 {
