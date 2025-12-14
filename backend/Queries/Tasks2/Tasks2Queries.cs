@@ -374,6 +374,7 @@ namespace OmniPlanner_API.Queries.Tasks2
         public const string UpdateTasksReferencesLevel2Completed = @"UPDATE public.tasks_main_task SET completed = @completed, status_id = @status_id, modified_by = @modified_by, modified_on = NOW() WHERE periodic_tasks_level_2_sub_task_id = @id";
         
         public const string UpdateTasksReferencesImportant = @"UPDATE public.tasks_main_task SET important = @important, modified_by = @modified_by, modified_on = NOW() WHERE periodic_tasks_main_task_id = @id AND periodic_tasks_level_1_sub_task_id IS NULL AND periodic_tasks_level_2_sub_task_id IS NULL";
+        public const string UpdateCategoryTasks2ReferencesInTasks = @"UPDATE public.tasks_main_task SET category_id = @category_id where periodic_tasks_main_task_id = @task_id";
 
         // Aliases without "2" suffix for repository compatibility
         public const string GetAllTasks = GetAllTasks2;
@@ -397,6 +398,7 @@ namespace OmniPlanner_API.Queries.Tasks2
         public const string DeleteTaskUrlMappings = DeleteTask2UrlMappings;
         public const string InsertTaskUrlMapping = InsertTask2UrlMapping;
         public const string DeleteTasksReferencesInTasks = DeleteTasks2ReferencesInTasks;
+        public const string UpdateCategoryTasksReferencesInTasks = UpdateCategoryTasks2ReferencesInTasks;
 
         //// Periodic Task Queries
         //public const string InsertPeriodicMainTask = @"

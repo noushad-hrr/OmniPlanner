@@ -919,6 +919,8 @@ namespace OmniPlanner_API.Repository
                             url_ids = request.url_ids
                         });
 
+                        await connection.ExecuteAsync(Tasks2Queries.UpdateCategoryTasksReferencesInTasks, new { task_id = request.id, category_id = request.category_id }, transaction);
+
                         transaction.Commit();
 
                         // Return the updated task
