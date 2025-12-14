@@ -369,6 +369,12 @@ namespace OmniPlanner_API.Queries.Tasks2
         public const string DeleteTasks2ReferencesInTasksLevel1 = @"DELETE FROM public.tasks_main_task where periodic_tasks_level_1_sub_task_id = @task_id AND periodic_tasks_level_2_sub_task_id IS NULL";
         public const string DeleteTasks2ReferencesInTasksLevel2 = @"DELETE FROM public.tasks_main_task where periodic_tasks_level_2_sub_task_id = @task_id";
 
+        public const string UpdateTasksReferencesCompleted = @"UPDATE public.tasks_main_task SET completed = @completed, status_id = @status_id, modified_by = @modified_by, modified_on = NOW() WHERE periodic_tasks_main_task_id = @id AND periodic_tasks_level_1_sub_task_id IS NULL AND periodic_tasks_level_2_sub_task_id IS NULL";
+        public const string UpdateTasksReferencesLevel1Completed = @"UPDATE public.tasks_main_task SET completed = @completed, status_id = @status_id, modified_by = @modified_by, modified_on = NOW() WHERE periodic_tasks_level_1_sub_task_id = @id AND periodic_tasks_level_2_sub_task_id IS NULL";
+        public const string UpdateTasksReferencesLevel2Completed = @"UPDATE public.tasks_main_task SET completed = @completed, status_id = @status_id, modified_by = @modified_by, modified_on = NOW() WHERE periodic_tasks_level_2_sub_task_id = @id";
+        
+        public const string UpdateTasksReferencesImportant = @"UPDATE public.tasks_main_task SET important = @important, modified_by = @modified_by, modified_on = NOW() WHERE periodic_tasks_main_task_id = @id AND periodic_tasks_level_1_sub_task_id IS NULL AND periodic_tasks_level_2_sub_task_id IS NULL";
+
         // Aliases without "2" suffix for repository compatibility
         public const string GetAllTasks = GetAllTasks2;
         public const string GetTaskById = GetTask2ById;

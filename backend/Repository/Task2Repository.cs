@@ -1073,6 +1073,12 @@ namespace OmniPlanner_API.Repository
                     important = important,
                     modified_by = userId
                 });
+
+                if (rowsAffected > 0)
+                {
+                    await connection.ExecuteAsync(Tasks2Queries.UpdateTasksReferencesImportant, new { id, important, modified_by = userId });
+                }
+
                 return rowsAffected > 0;
             }
         }
@@ -1104,6 +1110,12 @@ namespace OmniPlanner_API.Repository
                     status_id = statusId,
                     modified_by = userId
                 });
+
+                if (rowsAffected > 0)
+                {
+                    await connection.ExecuteAsync(Tasks2Queries.UpdateTasksReferencesCompleted, new { id, completed, status_id = statusId, modified_by = userId });
+                }
+
                 return rowsAffected > 0;
             }
         }
@@ -1135,6 +1147,11 @@ namespace OmniPlanner_API.Repository
                     status_id = statusId,
                     modified_by = userId
                 });
+
+                if (rowsAffected > 0)
+                {
+                    await connection.ExecuteAsync(Tasks2Queries.UpdateTasksReferencesLevel1Completed, new { id, completed, status_id = statusId, modified_by = userId });
+                }
 
                 // Cascade: If marked as not completed, mark parent main task as not completed
                 if (!completed && rowsAffected > 0)
@@ -1192,6 +1209,11 @@ namespace OmniPlanner_API.Repository
                     status_id = statusId,
                     modified_by = userId
                 });
+
+                if (rowsAffected > 0)
+                {
+                    await connection.ExecuteAsync(Tasks2Queries.UpdateTasksReferencesLevel2Completed, new { id, completed, status_id = statusId, modified_by = userId });
+                }
 
                 // Cascade: If marked as not completed, mark parent Level 1 subtask and main task as not completed
                 if (!completed && rowsAffected > 0)
